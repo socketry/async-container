@@ -28,7 +28,11 @@ module Async
 			def initialize(concurrency: 1, &block)
 				@pids = concurrency.times.collect do
 					fork do
-						Async::Reactor.run(&block)
+						begin
+							Async::Reactor.run(&block)
+						rescue Interrupt
+							# Exit cleanly.
+						end
 					end
 				end
 			end

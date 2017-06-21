@@ -34,7 +34,11 @@ module Async
 					Thread.new do
 						Thread.current.abort_on_exception = true
 						
-						reactor.run(&block)
+						begin
+							reactor.run(&block)
+						rescue Interrupt
+							# Exit cleanly.
+						end
 					end
 				end
 			end
