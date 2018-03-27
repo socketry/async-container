@@ -21,6 +21,8 @@
 require 'async/reactor'
 require 'thread'
 
+require 'async/io/notification'
+
 module Async
 	module Container
 		# Manages a reactor within one or more threads.
@@ -41,11 +43,34 @@ module Async
 						end
 					end
 				end
+				
+				@finished = nil
+			end
+			
+			def wait
+				return if @finished
+				
+				notification = Async::IO::Notification.new
+				
+				thread ||= Thread.new do
+					@threads.each do |thread|
+						thread.join
+					end
+					
+					@finished = true
+					notification.signal
+				end
+				
+				notification.wait
+				thread.join
+				
+				notification.close
 			end
 			
 			def stop
 				@reactors.each(&:stop)
-				@threads.each(&:join)
+				
+				wait
 			end
 		end
 	end

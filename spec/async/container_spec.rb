@@ -21,6 +21,8 @@
 require "async/container"
 
 RSpec.describe Async::Container do
+	include_context Async::RSpec::Reactor
+	
 	it "can run concurrently" do
 		count = 0
 		

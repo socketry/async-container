@@ -20,6 +20,8 @@
 
 require 'async/reactor'
 
+require 'async/io/notification'
+
 module Async
 	# TODO Move this into it's own gem, since it's really not required for async to work - it's only really for servers and this implementation is very basic.
 	# Manages a reactor within one or more threads.
@@ -35,13 +37,36 @@ module Async
 						end
 					end
 				end
+				
+				@finished = false
 			end
 			
-			def stop
-				@pids.each do |pid|
-					Process.kill(:INT, pid) rescue nil
-					Process.wait(pid)
+			def wait
+				return if @finished
+				
+				notification = Async::IO::Notification.new
+				
+				thread ||= Thread.new do
+					@pids.each do |pid|
+						Process.wait(pid)
+					end
+					
+					@finished = true
+					notification.signal
 				end
+				
+				notification.wait
+				thread.join
+				
+				notification.close
+			end
+			
+			def stop(signal = :INT)
+				@pids.each do |pid|
+					Process.kill(signal, pid) rescue nil
+				end
+				
+				wait
 			end
 		end
 	end
