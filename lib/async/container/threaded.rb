@@ -50,21 +50,9 @@ module Async
 			def wait
 				return if @finished
 				
-				notification = Async::IO::Notification.new
-				
-				thread ||= Thread.new do
-					@threads.each do |thread|
-						thread.join
-					end
+				@threads.each(&:join)
 					
-					@finished = true
-					notification.signal
-				end
-				
-				notification.wait
-				thread.join
-				
-				notification.close
+				@finished = true
 			end
 			
 			def stop
