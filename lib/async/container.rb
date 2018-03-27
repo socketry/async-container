@@ -20,11 +20,19 @@
 
 require_relative 'container/threaded'
 
+require 'etc'
+
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
 		def self.new(**options, &block)
 			Threaded.new(**options, &block)
+		end
+		
+		def self.hardware_concurrency
+			Etc.nprocessors
+		rescue
+			2
 		end
 	end
 end

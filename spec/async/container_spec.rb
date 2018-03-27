@@ -32,4 +32,8 @@ RSpec.describe Async::Container do
 		
 		expect(count).to be == 1
 	end
+	
+	it "can get hardware concurrency" do
+		expect(Async::Container.hardware_concurrency).to be >= 1
+	end
 end
