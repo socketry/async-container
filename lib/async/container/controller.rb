@@ -1,4 +1,4 @@
-# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,8 +18,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require 'async/reactor'
+
 module Async
 	module Container
-		VERSION = "0.5.0"
+		class Controller
+			def initialize
+				@containers = []
+			end
+			
+			def << container
+				@containers << container
+			end
+			
+			def wait
+				@containers.each(&:wait)
+			end
+			
+			def stop
+				@containers.each(&:stop)
+			end
+		end
 	end
 end

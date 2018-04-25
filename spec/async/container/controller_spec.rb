@@ -18,8 +18,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-module Async
-	module Container
-		VERSION = "0.5.0"
+require "async/container/controller"
+
+RSpec.describe Async::Container::Controller do
+	it 'can manage multiple containers' do
+		mutex = Mutex.new
+		count = 0
+		
+		subject << Async::Container::Threaded.new(concurrency: 2) do
+			mutex.synchronize do
+				count += 1
+			end
+		end
+		
+		subject << Async::Container::Threaded.new(concurrency: 2) do
+			mutex.synchronize do
+				count += 1
+			end
+		end
+		
+		subject.wait
+		expect(count).to be == 4
 	end
 end
