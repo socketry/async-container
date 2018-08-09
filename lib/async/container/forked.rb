@@ -50,7 +50,7 @@ module Async
 				@finished = true
 			end
 			
-			def stop(signal = :INT)
+			def stop(signal = :TERM)
 				@pids.each do |pid|
 					Process.kill(signal, pid) rescue nil
 				end
