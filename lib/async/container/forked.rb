@@ -44,7 +44,7 @@ module Async
 				return if @finished
 				
 				@pids.each do |pid|
-					Process.wait(pid)
+					::Process.wait(pid)
 				end
 
 				@finished = true
@@ -52,7 +52,7 @@ module Async
 			
 			def stop(signal = :TERM)
 				@pids.each do |pid|
-					Process.kill(signal, pid) rescue nil
+					::Process.kill(signal, pid) rescue nil
 				end
 				
 				wait
