@@ -1,4 +1,4 @@
-# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,51 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/reactor'
-require 'thread'
+require "async/container/threaded"
 
-require 'async/io/notification'
-
-module Async
-	module Container
-		# Manages a reactor within one or more threads.
-		class Threaded
-			def initialize(concurrency: 1, name: nil, &block)
-				@reactors = concurrency.times.collect do
-					Async::Reactor.new
-				end
-				
-				@threads = @reactors.collect do |reactor|
-					Thread.new do
-						thread = Thread.current
-						
-						thread.abort_on_exception = true
-						thread.name = name if name
-						
-						begin
-							reactor.run(&block)
-						rescue Interrupt
-							# Exit cleanly.
-						end
-					end
-				end
-				
-				@finished = nil
-			end
-			
-			def wait
-				return if @finished
-				
-				@threads.each(&:join)
-					
-				@finished = true
-			end
-			
-			def stop
-				@reactors.each(&:stop)
-				
-				wait
-			end
+RSpec.describe Async::Container::Threaded do
+	it "can run concurrently" do
+		container = described_class.new(concurrency: 8, name: "Sleepy Jerry") do
+			sleep 1
 		end
+		
+		container.stop
 	end
 end
