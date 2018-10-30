@@ -23,9 +23,12 @@ require "async/container/forked"
 RSpec.describe Async::Container::Forked do
 	it "can run concurrently" do
 		container = described_class.new(concurrency: 8, name: "Sleepy Jerry") do |task, instance|
-			instance.name = "Hello World"
-			
-			sleep 1
+			10.times do |i|
+				puts "Counting Sheep #{i}"
+				instance.name = "Counting Sheep #{i}"
+				
+				sleep 2
+			end
 		end
 		
 		container.wait
