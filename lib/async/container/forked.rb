@@ -31,14 +31,14 @@ module Async
 				end
 				
 				def name= value
-					Process.setproctitle(value)
+					::Process.setproctitle(value)
 				end
 			end
 			
 			def initialize(concurrency: 1, name: nil, &block)
 				@pids = concurrency.times.collect do
 					fork do
-						Process.setproctitle(name) if name
+						::Process.setproctitle(name) if name
 						
 						begin
 							Async::Reactor.run(Instance.new, &block)
