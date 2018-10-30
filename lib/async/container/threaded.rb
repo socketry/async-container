@@ -43,8 +43,8 @@ module Async
 				end
 				
 				@threads = @reactors.collect do |reactor|
-					Thread.new do
-						thread = Thread.current
+					::Thread.new do
+						thread = ::Thread.current
 						
 						thread.abort_on_exception = true
 						thread.name = name if name
