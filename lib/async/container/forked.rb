@@ -26,13 +26,22 @@ module Async
 	# Manages a reactor within one or more threads.
 	module Container
 		class Forked
+			class Instance
+				def initialize
+				end
+				
+				def name= value
+					Process.setproctitle(value)
+				end
+			end
+			
 			def initialize(concurrency: 1, name: nil, &block)
 				@pids = concurrency.times.collect do
 					fork do
 						Process.setproctitle(name) if name
 						
 						begin
-							Async::Reactor.run(&block)
+							Async::Reactor.run(Instance.new, &block)
 						rescue Interrupt
 							# Exit cleanly.
 						end

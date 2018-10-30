@@ -27,6 +27,16 @@ module Async
 	module Container
 		# Manages a reactor within one or more threads.
 		class Threaded
+			class Instance
+				def initialize(thread)
+					@thread = thread
+				end
+				
+				def name= value
+					@thread.name = value
+				end
+			end
+			
 			def initialize(concurrency: 1, name: nil, &block)
 				@reactors = concurrency.times.collect do
 					Async::Reactor.new
@@ -40,7 +50,7 @@ module Async
 						thread.name = name if name
 						
 						begin
-							reactor.run(&block)
+							reactor.run(Instance.new(thread), &block)
 						rescue Interrupt
 							# Exit cleanly.
 						end
