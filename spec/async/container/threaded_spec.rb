@@ -28,4 +28,8 @@ RSpec.describe Async::Container::Threaded do
 		
 		container.stop
 	end
+	
+	it "should not be multiprocess" do
+		expect(described_class).to_not be_multiprocess
+	end
 end

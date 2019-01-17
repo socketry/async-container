@@ -51,6 +51,10 @@ module Async
 				@finished = false
 			end
 			
+			def self.multiprocess?
+				true
+			end
+			
 			def wait
 				return if @finished
 				

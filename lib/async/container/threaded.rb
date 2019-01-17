@@ -60,6 +60,10 @@ module Async
 				@finished = nil
 			end
 			
+			def self.multiprocess?
+				false
+			end
+			
 			def wait
 				return if @finished
 				

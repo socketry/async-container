@@ -33,4 +33,8 @@ RSpec.describe Async::Container::Forked do
 		
 		container.wait
 	end
+	
+	it "should be multiprocess" do
+		expect(described_class).to be_multiprocess
+	end
 end
