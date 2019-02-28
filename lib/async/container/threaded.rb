@@ -84,6 +84,7 @@ module Async
 				return nil
 			end
 			
+			# Gracefully shut down all reactors.
 			def stop
 				@reactors.each(&:stop)
 				@reactors.clear
