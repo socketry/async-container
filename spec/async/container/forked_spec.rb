@@ -20,7 +20,11 @@
 
 require "async/container/forked"
 
+require_relative 'shared_examples'
+
 RSpec.describe Async::Container::Forked do
+	it_behaves_like Async::Container
+	
 	it "can run concurrently" do
 		container = described_class.new
 		
@@ -29,7 +33,7 @@ RSpec.describe Async::Container::Forked do
 				puts "Counting Sheep #{i}"
 				instance.name = "Counting Sheep #{i}"
 				
-				sleep 2
+				# sleep 2
 			end
 		end
 		

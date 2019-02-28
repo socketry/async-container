@@ -1,4 +1,4 @@
-# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,10 +18,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require "async/container"
+require 'async/rspec/reactor'
 
-RSpec.describe Async::Container do
-	it "can get processor count" do
-		expect(Async::Container.processor_count).to be >= 1
+RSpec.shared_examples_for Async::Container do
+	it "can run concurrently" do
+		input, output = IO.pipe
+		
+		container = described_class.new
+		
+		container.async do
+			output.write "Hello World"
+		end
+		
+		container.wait
+		
+		output.close
+		expect(input.read).to be == "Hello World"
 	end
 end

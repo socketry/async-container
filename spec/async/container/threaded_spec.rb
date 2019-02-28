@@ -20,7 +20,11 @@
 
 require "async/container/threaded"
 
+require_relative 'shared_examples'
+
 RSpec.describe Async::Container::Threaded do
+	it_behaves_like Async::Container
+	
 	it "can run concurrently" do
 		container = described_class.new
 		

@@ -1,4 +1,4 @@
-# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2019, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,20 @@
 
 require "async/container/hybrid"
 
+require_relative 'shared_examples'
+
 RSpec.describe Async::Container::Hybrid do
+	it_behaves_like Async::Container
+	
 	it "can run concurrently" do
 		container = described_class.new
 		
-		container.run(name: "Sleepy Jerry") do |task, instance|
+		container.run(processes: 1, threads: 1, name: "Sleepy Jerry") do |task, instance|
 			3.times do |i|
 				puts "Counting Sheep #{i}"
 				instance.name = "Counting Sheep #{i}"
 				
-				sleep 2
+				# sleep 2
 			end
 		end
 		
