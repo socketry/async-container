@@ -47,7 +47,7 @@ module Async
 				return self
 			end
 			
-			def spawn(name: nil, restart: true)
+			def spawn(name: nil, restart: false)
 				Fiber.new do
 					while true
 						exit_status = @group.fork do
