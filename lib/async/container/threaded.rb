@@ -21,8 +21,6 @@
 require 'async/reactor'
 require 'thread'
 
-require 'async/io/notification'
-
 module Async
 	module Container
 		# Manages a reactor within one or more threads.
@@ -37,27 +35,42 @@ module Async
 				end
 			end
 			
-			def initialize(concurrency: 1, name: nil, &block)
-				@reactors = concurrency.times.collect do
-					Async::Reactor.new
+			def self.run(*args, &block)
+				self.new.run(*args, &block)
+			end
+			
+			def initialize
+				@reactors = []
+				@threads = []
+			end
+			
+			def run(threads: Container.processor_count, **options, &block)
+				threads.times do
+					async(**options, &block)
 				end
 				
-				@threads = @reactors.collect do |reactor|
-					::Thread.new do
-						thread = ::Thread.current
-						
-						thread.abort_on_exception = true
-						thread.name = name if name
-						
-						begin
-							reactor.run(Instance.new(thread), &block)
-						rescue Interrupt
-							# Exit cleanly.
-						end
+				return self
+			end
+			
+			def async(name: nil, &block)
+				reactor = Async::Reactor.new
+				
+				@reactors << reactor
+				
+				@threads << ::Thread.new do
+					thread = ::Thread.current
+					
+					thread.abort_on_exception = true
+					thread.name = name if name
+					
+					begin
+						reactor.run(Instance.new(thread), &block)
+					rescue Interrupt
+						# Graceful exit.
 					end
 				end
 				
-				@finished = nil
+				return self
 			end
 			
 			def self.multiprocess?
@@ -65,15 +78,15 @@ module Async
 			end
 			
 			def wait
-				return if @finished
-				
 				@threads.each(&:join)
-					
-				@finished = true
+				@threads.clear
+				
+				return nil
 			end
 			
 			def stop
 				@reactors.each(&:stop)
+				@reactors.clear
 				
 				wait
 			end

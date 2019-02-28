@@ -19,36 +19,62 @@
 # THE SOFTWARE.
 
 require 'async/reactor'
-
-require 'async/io/notification'
+require 'process/group'
 
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
 		class Forked
 			class Instance
-				def initialize
-				end
-				
 				def name= value
 					::Process.setproctitle(value)
 				end
 			end
 			
-			def initialize(concurrency: 1, name: nil, &block)
-				@pids = concurrency.times.collect do
-					fork do
-						::Process.setproctitle(name) if name
-						
-						begin
-							Async::Reactor.run(Instance.new, &block)
-						rescue Interrupt
-							# Exit cleanly.
-						end
-					end
+			def self.run(*args, &block)
+				self.new.run(*args, &block)
+			end
+			
+			def initialize
+				@group = Process::Group.new
+			end
+			
+			def run(processes: Container.processor_count, **options, &block)
+				processes.times do
+					async(**options, &block)
 				end
 				
-				@finished = false
+				return self
+			end
+			
+			def spawn(name: nil, restart: true)
+				Fiber.new do
+					while true
+						exit_status = @group.fork do
+							::Process.setproctitle(name) if name
+							
+							yield
+						end
+						
+						unless exit_status.success?
+							Async.logger.error("Process failed: #{exit_status}")
+						end
+						
+						break if !restart
+					end
+				end.resume
+				
+				return self
+			end
+			
+			def async(**options, &block)
+				spawn(**options) do
+					begin
+						Async::Reactor.run(Instance.new, &block)
+					rescue Interrupt
+						# Graceful exit.
+					end
+				end
 			end
 			
 			def self.multiprocess?
@@ -56,21 +82,11 @@ module Async
 			end
 			
 			def wait
-				return if @finished
-				
-				@pids.each do |pid|
-					::Process.wait(pid)
-				end
-
-				@finished = true
+				@group.wait
 			end
 			
-			def stop(signal = :TERM)
-				@pids.each do |pid|
-					::Process.kill(signal, pid) rescue nil
-				end
-				
-				wait
+			def stop(signal = :INT)
+				@group.kill(signal)
 			end
 		end
 	end

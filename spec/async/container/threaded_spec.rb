@@ -22,7 +22,9 @@ require "async/container/threaded"
 
 RSpec.describe Async::Container::Threaded do
 	it "can run concurrently" do
-		container = described_class.new(concurrency: 8, name: "Sleepy Jerry") do
+		container = described_class.new
+		
+		container.async(name: "Sleepy Jerry") do
 			sleep 1
 		end
 		

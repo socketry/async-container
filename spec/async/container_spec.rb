@@ -26,7 +26,9 @@ RSpec.describe Async::Container do
 	it "can run concurrently" do
 		count = 0
 		
-		container = described_class.new do
+		container = described_class.new
+		
+		container.async do
 			count += 1
 		end
 		
@@ -35,7 +37,7 @@ RSpec.describe Async::Container do
 		expect(count).to be == 1
 	end
 	
-	it "can get hardware concurrency" do
-		expect(Async::Container.hardware_concurrency).to be >= 1
+	it "can get processor count" do
+		expect(Async::Container.processor_count).to be >= 1
 	end
 end

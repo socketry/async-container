@@ -25,11 +25,11 @@ require 'etc'
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
-		def self.new(**options, &block)
-			Threaded.new(**options, &block)
+		def self.run(concurrency_class: Threaded, **options, &block)
+			concurrency_class.run(**options, &block)
 		end
 		
-		def self.hardware_concurrency
+		def self.processor_count
 			Etc.nprocessors
 		rescue
 			2
