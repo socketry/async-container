@@ -20,6 +20,7 @@
 
 require 'async/reactor'
 require 'thread'
+require_relative 'statistics'
 
 module Async
 	module Container
@@ -42,7 +43,10 @@ module Async
 			def initialize
 				@reactors = []
 				@threads = []
+				@statistics = Statistics.new
 			end
+			
+			attr :statistics
 			
 			def run(threads: Container.processor_count, **options, &block)
 				threads.times do
@@ -52,10 +56,41 @@ module Async
 				return self
 			end
 			
-			def async(name: nil, &block)
+			def spawn(name: nil, restart: false, &block)
+				@statistics.spawn!
+				
+				thread = ::Thread.new do
+					thread = ::Thread.current
+					
+					thread.abort_on_exception = true
+					thread.name = name if name
+					
+					begin
+						yield
+					rescue Exception => exception
+						Async.logger.error(self) {exception}
+						
+						@statistics.failure!
+						
+						# In theory this shuold be okay, but not quite as robust as using processes:
+						if restart
+							@statistics.restart!
+							retry
+						end
+					end
+				end
+				
+				@threads << thread
+				
+				return self
+			end
+			
+			def async(name: nil, restart: false, &block)
 				reactor = Async::Reactor.new
 				
 				@reactors << reactor
+				
+				@statistics.spawn!
 				
 				@threads << ::Thread.new do
 					thread = ::Thread.current
@@ -67,6 +102,7 @@ module Async
 						reactor.run(Instance.new(thread), &block)
 					rescue Interrupt
 						# Graceful exit.
+						
 					end
 				end
 				
@@ -78,6 +114,8 @@ module Async
 			end
 			
 			def wait
+				yield if block_given?
+				
 				@threads.each(&:join)
 				@threads.clear
 				

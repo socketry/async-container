@@ -24,20 +24,12 @@ require_relative 'threaded'
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
-		class Hybrid
-			def self.run(*args, &block)
-				self.new.run(*args, &block)
-			end
-			
-			def initialize
-				@container = Forked.new
-			end
-			
+		class Hybrid < Forked
 			def run(processes: Container.processor_count, threads: nil, **options, &block)
 				threads ||= processes
 				
 				processes.times do
-					@container.spawn(**options) do
+					self.spawn(**options) do
 						container = Threaded.new
 						
 						container.run(threads: threads, **options, &block)
@@ -47,22 +39,6 @@ module Async
 				end
 				
 				return self
-			end
-			
-			def async(**options, &block)
-				@container.async(**options, &block)
-			end
-			
-			def self.multiprocess?
-				true
-			end
-			
-			def wait
-				@container.wait
-			end
-			
-			def stop(*args)
-				@container.stop(*args)
 			end
 		end
 	end

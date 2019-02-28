@@ -26,9 +26,7 @@ RSpec.describe Async::Container::Forked do
 	it_behaves_like Async::Container
 	
 	it "can run concurrently" do
-		container = described_class.new
-		
-		container.async(name: "Sleepy Jerry") do |task, instance|
+		subject.async(name: "Sleepy Jerry") do |task, instance|
 			3.times do |i|
 				puts "Counting Sheep #{i}"
 				instance.name = "Counting Sheep #{i}"
@@ -37,7 +35,32 @@ RSpec.describe Async::Container::Forked do
 			end
 		end
 		
-		container.wait
+		subject.wait
+	end
+	
+	it "can restart child" do
+		trigger = IO.pipe
+		pids = IO.pipe
+		
+		thread = Thread.new do
+			subject.async(restart: true) do
+				trigger.first.gets
+				pids.last.puts Process.pid.to_s
+			end
+			
+			subject.wait
+		end
+		
+		3.times do
+			trigger.last.puts "die"
+			child_pid = pids.first.gets
+		end
+		
+		thread.kill
+		thread.join
+		
+		expect(subject.statistics.spawns).to be == 3
+		expect(subject.statistics.restarts).to be == 2
 	end
 	
 	it "should be multiprocess" do

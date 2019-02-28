@@ -24,13 +24,11 @@ RSpec.shared_examples_for Async::Container do
 	it "can run concurrently" do
 		input, output = IO.pipe
 		
-		container = described_class.new
-		
-		container.async do
+		subject.async do
 			output.write "Hello World"
 		end
 		
-		container.wait
+		subject.wait
 		
 		output.close
 		expect(input.read).to be == "Hello World"

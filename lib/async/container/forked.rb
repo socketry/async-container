@@ -20,11 +20,14 @@
 
 require 'async/reactor'
 require 'process/group'
+require_relative 'statistics'
 
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
 		class Forked
+			UNNAMED = "Unnamed"
+			
 			class Instance
 				def name= value
 					::Process.setproctitle(value)
@@ -37,7 +40,10 @@ module Async
 			
 			def initialize
 				@group = Process::Group.new
+				@statistics = Statistics.new
 			end
+			
+			attr :statistics
 			
 			def run(processes: Container.processor_count, **options, &block)
 				processes.times do
@@ -50,17 +56,25 @@ module Async
 			def spawn(name: nil, restart: false)
 				Fiber.new do
 					while true
+						@statistics.spawn!
 						exit_status = @group.fork do
 							::Process.setproctitle(name) if name
 							
 							yield
 						end
 						
-						unless exit_status.success?
-							Async.logger.error("Process failed: #{exit_status}")
+						if exit_status.success?
+							Async.logger.info(self) {"#{name || UNNAMED} #{exit_status}"}
+						else
+							@statistics.failure!
+							Async.logger.error(self) {exit_status}
 						end
 						
-						break if !restart
+						if restart
+							@statistics.restart!
+						else
+							break
+						end
 					end
 				end.resume
 				
@@ -81,8 +95,8 @@ module Async
 				true
 			end
 			
-			def wait
-				@group.wait
+			def wait(&block)
+				@group.wait(&block)
 			end
 			
 			# Gracefully shut down all children processes.

@@ -18,27 +18,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require "async/container/hybrid"
+require 'async/reactor'
 
-require_relative 'shared_examples'
-
-RSpec.describe Async::Container::Hybrid do
-	it_behaves_like Async::Container
-	
-	it "can run concurrently" do
-		subject.run(processes: 1, threads: 1, name: "Sleepy Jerry") do |task, instance|
-			3.times do |i|
-				puts "Counting Sheep #{i}"
-				instance.name = "Counting Sheep #{i}"
-				
-				# sleep 2
+module Async
+	module Container
+		class Statistics
+			def initialize
+				@spawns = 0
+				@restarts = 0
+				@failures = 0
+			end
+			
+			attr :spawns
+			attr :restarts
+			attr :failures
+			
+			def spawn!
+				@spawns += 1
+			end
+			
+			def restart!
+				@restarts += 1
+			end
+			
+			def failure!
+				@failures += 1
 			end
 		end
-		
-		subject.wait
-	end
-	
-	it "should be multiprocess" do
-		expect(described_class).to be_multiprocess
 	end
 end

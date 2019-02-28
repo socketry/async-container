@@ -26,13 +26,11 @@ RSpec.describe Async::Container::Threaded do
 	it_behaves_like Async::Container
 	
 	it "can run concurrently" do
-		container = described_class.new
-		
-		container.async(name: "Sleepy Jerry") do
+		subject.async(name: "Sleepy Jerry") do
 			sleep 1
 		end
 		
-		container.stop
+		subject.stop
 	end
 	
 	it "should not be multiprocess" do
