@@ -49,6 +49,10 @@ module Async
 				return self
 			end
 			
+			def async(**options, &block)
+				@container.async(**options, &block)
+			end
+			
 			def self.multiprocess?
 				true
 			end
