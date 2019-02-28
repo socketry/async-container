@@ -26,7 +26,7 @@ RSpec.describe Async::Container::Hybrid do
 	it_behaves_like Async::Container
 	
 	it "can run concurrently" do
-		subject.run(processes: 1, threads: 1, name: "Sleepy Jerry") do |task, instance|
+		subject.run(count: 1, name: "Sleepy Jerry") do |task, instance|
 			3.times do |i|
 				puts "Counting Sheep #{i}"
 				instance.name = "Counting Sheep #{i}"

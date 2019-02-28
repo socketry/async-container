@@ -25,14 +25,17 @@ module Async
 	# Manages a reactor within one or more threads.
 	module Container
 		class Hybrid < Forked
-			def run(processes: Container.processor_count, threads: nil, **options, &block)
-				threads ||= processes
+			def run(count: nil, forks: nil, threads: nil, **options, &block)
+				processor_count = Container.processor_count
+				count ||= processor_count ** 2
+				forks ||= [processor_count, count].min
+				threads = (count / forks).ceil
 				
-				processes.times do
+				forks.times do
 					self.spawn(**options) do
 						container = Threaded.new
 						
-						container.run(threads: threads, **options, &block)
+						container.run(count: threads, **options, &block)
 						
 						container.wait
 					end

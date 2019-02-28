@@ -25,13 +25,13 @@ RSpec.describe Async::Container::Controller do
 		mutex = Mutex.new
 		count = 0
 		
-		subject << Async::Container::Threaded.run(threads: 2) do
+		subject << Async::Container::Threaded.run(count: 2) do
 			mutex.synchronize do
 				count += 1
 			end
 		end
 		
-		subject << Async::Container::Threaded.run(threads: 2) do
+		subject << Async::Container::Threaded.run(count: 2) do
 			mutex.synchronize do
 				count += 1
 			end

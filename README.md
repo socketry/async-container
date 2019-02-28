@@ -25,12 +25,16 @@ Or install it yourself as:
 ## Usage
 
 ```ruby
-container = Async::Container.new(concurrency: 8) do
-	# 8 reactors will be spawned, probably in threads since it's the default policy.
+container = Async::Container::Threaded.new
+
+container.run(count: 8)
+	# 8 reactors will be spawned, in separate threads.
 	Server.new.run(...)
 end
 
-container = Async::Container::Forked.new(concurrency: 8) do
+container = Async::Container::Forked.new
+
+container.run(count: 8) do
 	# 8 reactors will be spawned, in separate forked processes.
 	Server.new.run(...)
 end

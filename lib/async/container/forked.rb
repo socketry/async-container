@@ -45,8 +45,8 @@ module Async
 			
 			attr :statistics
 			
-			def run(processes: Container.processor_count, **options, &block)
-				processes.times do
+			def run(count: Container.processor_count, **options, &block)
+				count.times do
 					async(**options, &block)
 				end
 				
