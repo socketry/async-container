@@ -85,8 +85,11 @@ module Async
 				@group.wait
 			end
 			
+			# Gracefully shut down all children processes.
 			def stop(signal = :INT)
 				@group.kill(signal)
+				
+				@group.wait
 			end
 		end
 	end
