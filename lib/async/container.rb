@@ -18,7 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require_relative 'container/forked'
 require_relative 'container/threaded'
+require_relative 'container/hybrid'
 
 require 'etc'
 
