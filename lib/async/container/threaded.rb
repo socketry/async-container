@@ -115,7 +115,6 @@ module Async
 				return nil
 			rescue Interrupt
 				# Graceful exit.
-				Async.logger.debug(self) {$!}
 			end
 			
 			# Gracefully shut down all reactors.

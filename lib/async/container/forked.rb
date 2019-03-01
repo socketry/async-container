@@ -101,7 +101,6 @@ module Async
 				@group.wait(&block)
 			rescue Interrupt
 				# Graceful exit.
-				Async.logger.debug(self) {$!}
 			end
 			
 			# Gracefully shut down all children processes.
