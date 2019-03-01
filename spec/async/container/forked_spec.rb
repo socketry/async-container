@@ -25,19 +25,6 @@ require_relative 'shared_examples'
 RSpec.describe Async::Container::Forked do
 	it_behaves_like Async::Container
 	
-	it "can run concurrently" do
-		subject.async(name: "Sleepy Jerry") do |task, instance|
-			3.times do |i|
-				puts "Counting Sheep #{i}"
-				instance.name = "Counting Sheep #{i}"
-				
-				# sleep 2
-			end
-		end
-		
-		subject.wait
-	end
-	
 	it "can restart child" do
 		trigger = IO.pipe
 		pids = IO.pipe

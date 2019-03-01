@@ -33,4 +33,17 @@ RSpec.shared_examples_for Async::Container do
 		output.close
 		expect(input.read).to be == "Hello World"
 	end
+	
+	it "can run concurrently" do
+		subject.async(name: "Sleepy Jerry") do |task, instance|
+			3.times do |i|
+				puts "Counting Sheep #{i}"
+				instance.name = "Counting Sheep #{i}"
+				
+				sleep 0.01
+			end
+		end
+		
+		subject.wait
+	end
 end

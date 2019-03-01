@@ -25,14 +25,6 @@ require_relative 'shared_examples'
 RSpec.describe Async::Container::Threaded do
 	it_behaves_like Async::Container
 	
-	it "can run concurrently" do
-		subject.async(name: "Sleepy Jerry") do
-			sleep 1
-		end
-		
-		subject.stop
-	end
-	
 	it "should not be multiprocess" do
 		expect(described_class).to_not be_multiprocess
 	end
