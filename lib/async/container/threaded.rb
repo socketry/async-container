@@ -62,7 +62,6 @@ module Async
 				thread = ::Thread.new do
 					thread = ::Thread.current
 					
-					thread.report_on_exception = false
 					thread.name = name if name
 					
 					instance = Instance.new(thread)
@@ -82,6 +81,8 @@ module Async
 							break
 						end
 					end
+				# rescue Interrupt
+				# 	# Graceful exit.
 				end
 				
 				@threads << thread
