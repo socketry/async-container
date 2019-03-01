@@ -41,8 +41,8 @@ module Async
 			end
 			
 			def initialize
-				@reactors = []
 				@threads = []
+				@running = true
 				@statistics = Statistics.new
 			end
 			
@@ -62,20 +62,24 @@ module Async
 				thread = ::Thread.new do
 					thread = ::Thread.current
 					
-					thread.abort_on_exception = true
+					thread.report_on_exception = false
 					thread.name = name if name
 					
-					begin
-						yield
-					rescue Exception => exception
-						Async.logger.error(self) {exception}
+					instance = Instance.new(thread)
+					
+					while @running
+						begin
+							yield instance
+						rescue Exception => exception
+							Async.logger.error(self) {exception}
+							
+							@statistics.failure!
+						end
 						
-						@statistics.failure!
-						
-						# In theory this shuold be okay, but not quite as robust as using processes:
 						if restart
 							@statistics.restart!
-							retry
+						else
+							break
 						end
 					end
 				end
@@ -86,23 +90,11 @@ module Async
 			end
 			
 			def async(name: nil, restart: false, &block)
-				reactor = Async::Reactor.new
-				
-				@reactors << reactor
-				
-				@statistics.spawn!
-				
-				@threads << ::Thread.new do
-					thread = ::Thread.current
-					
-					thread.abort_on_exception = true
-					thread.name = name if name
-					
+				spawn do |instance|
 					begin
-						reactor.run(Instance.new(thread), &block)
+						Async::Reactor.run(instance, &block)
 					rescue Interrupt
 						# Graceful exit.
-						
 					end
 				end
 				
@@ -120,14 +112,24 @@ module Async
 				@threads.clear
 				
 				return nil
+			rescue Interrupt
+				# Graceful exit.
+				Async.logger.debug(self) {$!}
 			end
 			
 			# Gracefully shut down all reactors.
-			def stop
-				@reactors.each(&:stop)
-				@reactors.clear
+			def stop(graceful = true, &block)
+				@running = false
 				
-				wait
+				if graceful
+					@threads.each{|thread| thread.raise(Interrupt)}
+				else
+					@threads.each(&:kill)
+				end
+				
+				self.wait(&block)
+			ensure
+				@running = true
 			end
 		end
 	end

@@ -39,8 +39,10 @@ module Async
 			end
 			
 			def initialize
-				@group = Process::Group.new
+				@group = ::Process::Group.new
 				@statistics = Statistics.new
+				
+				@running = true
 			end
 			
 			attr :statistics
@@ -55,12 +57,12 @@ module Async
 			
 			def spawn(name: nil, restart: false)
 				Fiber.new do
-					while true
+					while @running
 						@statistics.spawn!
 						exit_status = @group.fork do
 							::Process.setproctitle(name) if name
 							
-							yield
+							yield Instance.new
 						end
 						
 						if exit_status.success?
@@ -82,9 +84,9 @@ module Async
 			end
 			
 			def async(**options, &block)
-				spawn(**options) do
+				spawn(**options) do |instance|
 					begin
-						Async::Reactor.run(Instance.new, &block)
+						Async::Reactor.run(instance, &block)
 					rescue Interrupt
 						# Graceful exit.
 					end
@@ -97,13 +99,20 @@ module Async
 			
 			def wait(&block)
 				@group.wait(&block)
+			rescue Interrupt
+				# Graceful exit.
+				Async.logger.debug(self) {$!}
 			end
 			
 			# Gracefully shut down all children processes.
-			def stop(signal = :INT)
-				@group.kill(signal)
+			def stop(graceful = true, &block)
+				@running = false
 				
-				@group.wait
+				@group.kill(graceful ? :INT : :TERM)
+				
+				self.wait(&block)
+			ensure
+				@running = true
 			end
 		end
 	end
