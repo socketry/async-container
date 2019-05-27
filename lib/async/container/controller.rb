@@ -23,20 +23,22 @@ require 'async/reactor'
 module Async
 	module Container
 		class Controller
-			def initialize
-				@containers = []
+			def async(**options, &block)
+				spawn(**options) do |instance|
+					begin
+						Async::Reactor.run(instance, &block)
+					rescue Interrupt
+						# Graceful exit.
+					end
+				end
 			end
 			
-			def << container
-				@containers << container
-			end
-			
-			def wait
-				@containers.each(&:wait)
-			end
-			
-			def stop
-				@containers.each(&:stop)
+			def run(count: Container.processor_count, **options, &block)
+				count.times do
+					async(**options, &block)
+				end
+				
+				return self
 			end
 		end
 	end

@@ -20,81 +20,79 @@
 
 require 'async/reactor'
 
-require_relative 'group'
 require_relative 'controller'
 require_relative 'statistics'
 
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
-		class Forked < Controller
-			UNNAMED = "Unnamed"
+		class Group
+			def initialize
+				@pgid = nil
+				@running = {}
+			end
 			
-			class Instance
-				def name= value
-					::Process.setproctitle(value)
+			def spawn(*arguments)
+				if pid = ::Process.spawn(*arguments)
+					wait_for(pid)
 				end
 			end
 			
-			def self.run(*args, &block)
-				self.new.run(*args, &block)
+			def fork(&block)
+				if pid = ::Process.fork(&block)
+					wait_for(pid)
+				end
 			end
 			
-			def self.multiprocess?
-				true
+			def kill(signal = :INT)
+				::Process.kill(-@pgid, signal)
 			end
 			
-			def initialize
-				@group = Group.new
-				@statistics = Statistics.new
-				@running = true
+			def close
+				kill(:TERM)
 			end
 			
-			attr :statistics
+			def any?
+				@running.any?
+			end
 			
-			def spawn(name: nil, restart: false)
-				Fiber.new do
-					while @running
-						@statistics.spawn!
-						exit_status = @group.fork do
-							::Process.setproctitle(name) if name
-							
-							yield Instance.new
-						end
-						
-						if exit_status.success?
-							Async.logger.info(self) {"#{name || UNNAMED} #{exit_status}"}
-						else
-							@statistics.failure!
-							Async.logger.error(self) {exit_status}
-						end
-						
-						if restart
-							@statistics.restart!
-						else
-							break
-						end
-					end
-				end.resume
+			# Wait for one process, should only be called when a child process has finished, otherwise would block.
+			def wait(flags = 0)
+				return unless @pgid
 				
-				return self
+				# Wait for processes in this group:
+				pid, status = Process.wait2(-@pgid, flags)
+			
+				return if flags & Process::WNOHANG and pid == nil
+			
+				fiber = @running.delete(pid)
+				
+				if @running.empty?
+					@pgid = nil
+				end
+				
+				# This should never happen unless something very odd has happened:
+				raise RuntimeError.new("Process id=#{pid} is not part of group!") unless fiber
+				
+				fiber.resume(status)
 			end
 			
-			def wait
-				@group.wait while @group.any?
-			rescue Interrupt
-				# Graceful exit.
-			end
-			
-			# Gracefully shut down all children processes.
-			def stop(graceful = true, &block)
-				@running = false
+			def wait_for(pid)
+				if @pgid
+					# Set this process as part of the existing process group:
+					Process.setpgid(pid, @pgid)
+				else
+					# Establishes the child process as a process group leader:
+					Process.setpgid(pid, 0)
+					
+					# Save the process group id:
+					@pgid = pid
+				end
 				
-				@group.kill(graceful ? :INT : :TERM)
+				@running[pid] = Fiber.current
 				
-				self.wait(&block)
-			ensure
-				@running = true
+				# Return process status:
+				return Fiber.yield
 			end
 		end
 	end

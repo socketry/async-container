@@ -20,12 +20,14 @@
 
 require 'async/reactor'
 require 'thread'
+
+require_relative 'controller'
 require_relative 'statistics'
 
 module Async
 	module Container
 		# Manages a reactor within one or more threads.
-		class Threaded
+		class Threaded < Controller
 			class Instance
 				def initialize(thread)
 					@thread = thread
@@ -40,6 +42,10 @@ module Async
 				self.new.run(*args, &block)
 			end
 			
+			def self.multiprocess?
+				false
+			end
+			
 			def initialize
 				@threads = []
 				@running = true
@@ -47,14 +53,6 @@ module Async
 			end
 			
 			attr :statistics
-			
-			def run(count: Container.processor_count, **options, &block)
-				count.times do
-					async(**options, &block)
-				end
-				
-				return self
-			end
 			
 			def spawn(name: nil, restart: false, &block)
 				@statistics.spawn!
@@ -90,25 +88,7 @@ module Async
 				return self
 			end
 			
-			def async(name: nil, restart: false, &block)
-				spawn do |instance|
-					begin
-						Async::Reactor.run(instance, &block)
-					rescue Interrupt
-						# Graceful exit.
-					end
-				end
-				
-				return self
-			end
-			
-			def self.multiprocess?
-				false
-			end
-			
 			def wait
-				yield if block_given?
-				
 				@threads.each(&:join)
 				@threads.clear
 				
