@@ -47,14 +47,13 @@ module Async
 			def initialize
 				@group = Group.new
 				@statistics = Statistics.new
-				@running = true
 			end
 			
 			attr :statistics
 			
 			def spawn(name: nil, restart: false)
 				Fiber.new do
-					while @running
+					while true
 						@statistics.spawn!
 						exit_status = @group.fork do
 							::Process.setproctitle(name) if name
@@ -81,20 +80,14 @@ module Async
 			end
 			
 			def wait
-				@group.wait while @group.any?
+				@group.wait
 			rescue Interrupt
 				# Graceful exit.
 			end
 			
 			# Gracefully shut down all children processes.
-			def stop(graceful = true, &block)
-				@running = false
-				
-				@group.kill(graceful ? :INT : :TERM)
-				
-				self.wait(&block)
-			ensure
-				@running = true
+			def stop(graceful = true)
+				@group.stop(graceful)
 			end
 		end
 	end

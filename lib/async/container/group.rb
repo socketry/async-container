@@ -44,46 +44,93 @@ module Async
 				end
 			end
 			
-			def kill(signal = :INT)
-				::Process.kill(-@pgid, signal)
-			end
-			
-			def close
-				kill(:TERM)
-			end
-			
 			def any?
 				@running.any?
 			end
 			
+			def wait
+				while self.any?
+					self.wait_one
+				end
+			rescue Interrupt
+				# If the user interrupts the wait, interrupt the process group and wait for them to finish:
+				self.kill(:INT)
+				
+				# If user presses Ctrl-C again (or something else goes wrong), we will come out and kill(:TERM) in the ensure below:
+				wait_all
+
+				raise
+			ensure
+				self.close
+			end
+			
+			def kill(signal = :INT)
+				::Process.kill(signal, -@pgid) if @pgid
+			end
+			
+			def stop(graceful = false)
+				if graceful
+					self.kill(:INT)
+					wait_all
+				end
+			ensure
+				self.close
+			end
+			
+			def close
+				begin
+					self.kill(:TERM)
+				rescue Errno::EPERM
+					# Sometimes, `kill` code can give EPERM, if any signal couldn't be delivered to a child. This might occur if an exception is thrown in the user code (e.g. within the fiber), and there are other zombie processes which haven't been reaped yet. These should be dealt with below, so it shouldn't be an issue to ignore this condition.
+				end
+				
+				# Clean up zombie processes - if user presses Ctrl-C or for some reason something else blows up, exception would propagate back to caller:
+				wait_all
+			end
+			
+			protected
+			
+			def wait_all
+				while self.any?
+					self.wait_one do |fiber, status|
+						begin
+							fiber.resume(nil)
+						rescue Interrupt
+							# Graceful exit.
+						end
+					end
+				end
+			end
+			
 			# Wait for one process, should only be called when a child process has finished, otherwise would block.
-			def wait(flags = 0)
+			def wait_one(flags = 0)
 				return unless @pgid
 				
 				# Wait for processes in this group:
-				pid, status = Process.wait2(-@pgid, flags)
-			
-				return if flags & Process::WNOHANG and pid == nil
-			
+				pid, status = ::Process.wait2(-@pgid, flags)
+				
+				return if flags & ::Process::WNOHANG and pid == nil
+				
 				fiber = @running.delete(pid)
 				
 				if @running.empty?
 					@pgid = nil
 				end
 				
-				# This should never happen unless something very odd has happened:
-				raise RuntimeError.new("Process id=#{pid} is not part of group!") unless fiber
-				
-				fiber.resume(status)
+				if block_given?
+					yield fiber, status
+				else
+					fiber.resume(status)
+				end
 			end
 			
 			def wait_for(pid)
 				if @pgid
 					# Set this process as part of the existing process group:
-					Process.setpgid(pid, @pgid)
+					::Process.setpgid(pid, @pgid)
 				else
 					# Establishes the child process as a process group leader:
-					Process.setpgid(pid, 0)
+					::Process.setpgid(pid, 0)
 					
 					# Save the process group id:
 					@pgid = pid
@@ -92,7 +139,11 @@ module Async
 				@running[pid] = Fiber.current
 				
 				# Return process status:
-				return Fiber.yield
+				if result = Fiber.yield
+					return result
+				else
+					raise Interrupt
+				end
 			end
 		end
 	end

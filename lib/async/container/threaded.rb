@@ -98,7 +98,7 @@ module Async
 			end
 			
 			# Gracefully shut down all reactors.
-			def stop(graceful = true, &block)
+			def stop(graceful = true)
 				@running = false
 				
 				if graceful
@@ -107,7 +107,7 @@ module Async
 					@threads.each(&:kill)
 				end
 				
-				self.wait(&block)
+				self.wait
 			ensure
 				@running = true
 			end
