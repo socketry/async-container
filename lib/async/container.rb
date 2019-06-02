@@ -35,6 +35,7 @@ module Async
 			end
 		end
 		
+		# @return [Integer] the number of hardware processors which can run threads/processes simultaneously.
 		def self.processor_count
 			Etc.nprocessors
 		rescue
