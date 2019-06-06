@@ -36,6 +36,12 @@ module Async
 				def name= value
 					@thread.name = value
 				end
+				
+				def exec(*arguments)
+					pid = ::Process.spawn(*arguments)
+					
+					::Process.waitpid(pid)
+				end
 			end
 			
 			def self.run(*args, &block)

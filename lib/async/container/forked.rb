@@ -34,6 +34,10 @@ module Async
 				def name= value
 					::Process.setproctitle(value)
 				end
+				
+				def exec(*arguments)
+					::Process.exec(*arguments)
+				end
 			end
 			
 			def self.run(*args, &block)
