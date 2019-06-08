@@ -42,7 +42,7 @@ module Async
 			2
 		end
 		
-		def self.new
+		def self.new(*arguments)
 			best_container_class.new(*arguments)
 		end
 	end

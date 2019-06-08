@@ -28,4 +28,12 @@ RSpec.describe Async::Container do
 	it "can get best container class" do
 		expect(Async::Container.best_container_class).to_not be_nil
 	end
+	
+	subject {Async::Container.new}
+	
+	it "can get best container class" do
+		expect(subject).to_not be_nil
+		
+		subject.stop
+	end
 end
