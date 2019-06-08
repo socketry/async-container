@@ -49,6 +49,8 @@ module Async
 			end
 			
 			def initialize
+				super
+				
 				@group = Group.new
 				@statistics = Statistics.new
 			end
@@ -91,6 +93,8 @@ module Async
 			
 			# Gracefully shut down all children processes.
 			def stop(graceful = true)
+				super
+				
 				@group.stop(graceful)
 			end
 		end

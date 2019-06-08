@@ -22,7 +22,33 @@ require 'async/reactor'
 
 module Async
 	module Container
+		class Terminator
+			def initialize(&block)
+				@block = block
+			end
+			
+			def stop(graceful = true)
+				@block.call(graceful)
+			end
+		end
+		
 		class Controller
+			def initialize
+				@attached = []
+			end
+			
+			def attach(controller = nil, &block)
+				if controller
+					@attached << controller
+				end
+				
+				if block_given?
+					@attached << Terminator.new(&block)
+				end
+				
+				return self
+			end
+			
 			def async(**options, &block)
 				spawn(**options) do |instance|
 					begin
@@ -39,6 +65,10 @@ module Async
 				end
 				
 				return self
+			end
+			
+			def stop(graceful = true)
+				@attached.each(&:stop)
 			end
 		end
 	end
