@@ -96,11 +96,11 @@ module Async
 				return self
 			end
 			
-			def wait
+			def wait(forever = false)
 				@threads.each(&:join)
 				@threads.clear
 				
-				return nil
+				sleep if forever
 			rescue Interrupt
 				# Graceful exit.
 			end

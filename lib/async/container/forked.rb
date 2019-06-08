@@ -85,8 +85,10 @@ module Async
 				return self
 			end
 			
-			def wait
+			def wait(forever = false)
 				@group.wait
+				
+				sleep if forever
 			rescue Interrupt
 				# Graceful exit.
 			end
