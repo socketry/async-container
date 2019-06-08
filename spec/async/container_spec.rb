@@ -24,4 +24,8 @@ RSpec.describe Async::Container do
 	it "can get processor count" do
 		expect(Async::Container.processor_count).to be >= 1
 	end
+	
+	it "can get best container class" do
+		expect(Async::Container.best_container_class).to_not be_nil
+	end
 end
