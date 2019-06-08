@@ -1,4 +1,4 @@
-# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2019, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,44 +18,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/rspec/reactor'
-
-RSpec.shared_examples_for Async::Container do
-	it "can attach terminator" do
-		terminated = false
-		
-		subject.attach do
-			terminated = true
-		end
-		
-		subject.stop
-		
-		expect(terminated).to be_truthy
-	end
-	
-	it "can run concurrently" do
-		input, output = IO.pipe
-		
-		subject.async do
-			output.write "Hello World"
-		end
-		
-		subject.wait
-		
-		output.close
-		expect(input.read).to be == "Hello World"
-	end
-	
-	it "can run concurrently" do
-		subject.async(name: "Sleepy Jerry") do |task, instance|
-			3.times do |i|
-				puts "Counting Sheep #{i}"
-				instance.name = "Counting Sheep #{i}"
-				
-				sleep 0.01
+module Async
+	module Container
+		class Terminator
+			def initialize(&block)
+				@block = block
+			end
+			
+			def stop(graceful = true)
+				@block.call(graceful)
 			end
 		end
-		
-		subject.wait
 	end
 end

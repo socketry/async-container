@@ -18,20 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require_relative 'terminator'
+
 require 'async/reactor'
 
 module Async
 	module Container
-		class Terminator
-			def initialize(&block)
-				@block = block
-			end
-			
-			def stop(graceful = true)
-				@block.call(graceful)
-			end
-		end
-		
 		class Controller
 			def initialize
 				@attached = []
