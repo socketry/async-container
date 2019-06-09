@@ -18,11 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require "async/container"
 require "async/container/forked"
 
 require_relative 'shared_examples'
 
-RSpec.describe Async::Container::Forked do
+RSpec.describe Async::Container::Forked, if: Async::Container.fork? do
 	it_behaves_like Async::Container
 	
 	it "can restart child" do
