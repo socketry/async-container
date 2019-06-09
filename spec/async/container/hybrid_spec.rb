@@ -22,7 +22,7 @@ require "async/container/hybrid"
 
 require_relative 'shared_examples'
 
-RSpec.describe Async::Container::Hybrid do
+RSpec.describe Async::Container::Hybrid, if: Async::Container.fork? do
 	it_behaves_like Async::Container
 	
 	it "should be multiprocess" do
