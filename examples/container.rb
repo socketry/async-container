@@ -6,7 +6,7 @@ container = Async::Container::Forked.new
 
 puts "Controller process: #{Process.pid}"
 
-container.run(processes: 8, restart: true) do
+container.run(count: 8, restart: true) do
 	puts "Starting process: #{Process.pid}"
 	
 	while true
