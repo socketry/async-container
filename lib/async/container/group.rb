@@ -30,15 +30,21 @@ module Async
 			def initialize
 				@pgid = nil
 				@running = {}
+				
+				@queue = nil
 			end
 			
 			def spawn(*arguments)
+				self.yield
+				
 				if pid = ::Process.spawn(*arguments)
 					wait_for(pid)
 				end
 			end
 			
 			def fork(&block)
+				self.yield
+				
 				if pid = ::Process.fork(&block)
 					wait_for(pid)
 				end
@@ -48,20 +54,22 @@ module Async
 				@running.any?
 			end
 			
+			def sleep(duration)
+				self.resume
+				self.suspend
+				
+				Kernel::sleep(duration)
+				
+				while self.wait_one(::Process::WNOHANG)
+				end
+			end
+			
 			def wait
+				self.resume
+				
 				while self.any?
 					self.wait_one
 				end
-			rescue Interrupt
-				# If the user interrupts the wait, interrupt the process group and wait for them to finish:
-				self.kill(:INT)
-				
-				# If user presses Ctrl-C again (or something else goes wrong), we will come out and kill(:TERM) in the ensure below:
-				wait_all
-
-				raise
-			ensure
-				self.close
 			end
 			
 			def kill(signal = :INT)
@@ -71,7 +79,7 @@ module Async
 			def stop(graceful = false)
 				if graceful
 					self.kill(:INT)
-					wait_all
+					interrupt_all
 				end
 			ensure
 				self.close
@@ -85,15 +93,34 @@ module Async
 				end
 				
 				# Clean up zombie processes - if user presses Ctrl-C or for some reason something else blows up, exception would propagate back to caller:
-				wait_all
+				interrupt_all
 			end
 			
 			protected
 			
-			def wait_all
+			def yield
+				if @queue
+					@queue << Fiber.current
+					Fiber.yield
+				end
+			end
+			
+			def suspend
+				@queue ||= []
+			end
+			
+			def resume
+				if @queue
+					@queue.each(&:resume)
+					@queue = nil
+				end
+			end
+			
+			def interrupt_all
 				while self.any?
 					self.wait_one do |fiber, status|
 						begin
+							# This causes the waiting fiber to `raise Interrupt`:
 							fiber.resume(nil)
 						rescue Interrupt
 							# Graceful exit.

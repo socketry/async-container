@@ -18,36 +18,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/reactor'
+require_relative 'forked'
+require_relative 'threaded'
+require_relative 'hybrid'
 
 module Async
+	# Containers execute one or more "instances" which typically contain a reactor. A container spawns "instances" using threads and/or processes. Because these are resources that must be cleaned up some how (either by `join` or `waitpid`), their creation is deferred until the user invokes `Container#wait`. When executed this way, the container guarantees that all "instances" will be complete once `Container#wait` returns. Containers are constructs for achieving parallelism, and are not designed to be used directly for concurrency. Typically, you'd create one or more container, add some tasks to it, and then wait for it to complete.
 	module Container
-		class Statistics
-			def initialize
-				@spawns = 0
-				@restarts = 0
-				@failures = 0
+		def self.fork?
+			Process.respond_to?(:fork) and Process.respond_to?(:setpgid)
+		end
+		
+		def self.best_container_class
+			if fork?
+				return Forked
+			else
+				return Threaded
 			end
-			
-			attr :spawns
-			attr :restarts
-			attr :failures
-			
-			def spawn!
-				@spawns += 1
-			end
-			
-			def restart!
-				@restarts += 1
-			end
-			
-			def failure!
-				@failures += 1
-			end
-			
-			def failed?
-				@failures > 0
-			end
+		end
+		
+		def self.new(*arguments)
+			best_container_class.new(*arguments)
 		end
 	end
 end

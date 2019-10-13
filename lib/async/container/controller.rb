@@ -18,49 +18,84 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'terminator'
-
-require 'async/reactor'
+require_relative 'error'
+require_relative 'best'
 
 module Async
 	module Container
+		class ContainerFailed < Error
+			def initialize(container)
+				super("Could not create container!")
+				@container = container
+			end
+			
+			attr :container
+		end
+		
 		class Controller
-			def initialize
-				@attached = []
+			SIGHUP = Signal.list["HUP"]
+			DEFAULT_TIMEOUT = 8
+			
+			def initialize(container_class: Container.best_container_class, timeout: DEFAULT_TIMEOUT, &constructor)
+				@container = nil
+				
+				@container_class = container_class
+				@timeout = timeout
+				@constructor = constructor
 			end
 			
-			def attach(controller = nil, &block)
-				if controller
-					@attached << controller
+			def restart(duration = @timeout)
+				hup_action = Signal.trap(:HUP, :IGNORE)
+				container = @container_class.new
+				
+				begin
+					@constructor.call(container)
+				rescue
+					raise ContainerFailed, container
 				end
 				
-				if block_given?
-					@attached << Terminator.new(&block)
+				Async.logger.debug(self, "Waiting for startup...")
+				container.sleep(duration)
+				Async.logger.debug(self, "Finished startup.")
+				
+				if container.failed?
+					container.stop
+					
+					raise ContainerFailed, container
 				end
 				
-				return self
+				@container&.stop
+				@container = container
+			ensure
+				Signal.trap(:HUP, hup_action)
 			end
 			
-			def async(**options, &block)
-				spawn(**options) do |instance|
+			def run(forever: false)
+				Async.logger.debug(self) {"Starting container..."}
+				
+				self.restart
+				
+				while true
 					begin
-						Async::Reactor.run(instance, &block)
-					rescue Interrupt
-						# Graceful exit.
+						@container.wait
+						# sleep if forever
+					rescue SignalException => exception
+						if exception.signo == SIGHUP
+							Async.logger.info(self) {"Reloading container..."}
+							
+							begin
+								self.restart
+							rescue ContainerFailed => failure
+								Async.logger.error(self) {failure}
+							end
+						else
+							raise
+						end
 					end
 				end
-			end
-			
-			def run(count: Container.processor_count, **options, &block)
-				count.times do
-					async(**options, &block)
-				end
-				
-				return self
-			end
-			
-			def stop(graceful = true)
-				@attached.each(&:stop)
+			ensure
+				@container&.stop
+				@container = nil
 			end
 		end
 	end

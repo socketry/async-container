@@ -21,13 +21,13 @@
 require 'async/reactor'
 
 require_relative 'group'
-require_relative 'controller'
+require_relative 'generic'
 require_relative 'statistics'
 
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
-		class Forked < Controller
+		class Forked < Generic
 			UNNAMED = "Unnamed"
 			
 			class Instance
@@ -52,10 +52,7 @@ module Async
 				super
 				
 				@group = Group.new
-				@statistics = Statistics.new
 			end
-			
-			attr :statistics
 			
 			def spawn(name: nil, restart: false)
 				Fiber.new do
@@ -85,12 +82,12 @@ module Async
 				return self
 			end
 			
-			def wait(forever = false)
+			def sleep(duration)
+				@group.sleep(duration)
+			end
+			
+			def wait
 				@group.wait
-				
-				sleep if forever
-			rescue Interrupt
-				# Graceful exit.
 			end
 			
 			# Gracefully shut down all children processes.

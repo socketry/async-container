@@ -1,21 +1,32 @@
 #!/usr/bin/env ruby
 
-require 'async/container/forked'
+require '../lib/async/container/controller'
+require '../lib/async/container/forked'
 
-container = Async::Container::Forked.new
+Async.logger.debug!
 
-puts "Controller process: #{Process.pid}"
+Async.logger.debug(self, "Starting up...")
 
-container.run(count: 8, restart: true) do
-	puts "Starting process: #{Process.pid}"
-	
-	while true
-		sleep 1
+controller = Async::Container::Controller.new do |container|
+	Async.logger.debug(self, "Setting up container...")
+
+	container.run(count: 1, restart: true) do
+		Async.logger.debug(self, "Child process started.")
+		
+		while true
+			sleep 1
+			
+			if rand < 0.1
+				exit(1)
+			end
+		end
+	ensure
+		Async.logger.debug(self, "Child process exiting:", $!)
 	end
-ensure
-	puts "Exiting: #{$!}"
 end
 
-container.wait
-
-puts "Controller procss exiting!"
+begin
+	controller.run
+ensure
+	Async.logger.debug(controller, "Parent process exiting:", $!)
+end

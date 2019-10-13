@@ -1,4 +1,4 @@
-# Copyright, 2019, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,35 +18,65 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require_relative 'terminator'
+
 require 'async/reactor'
+
+require 'etc'
 
 module Async
 	module Container
-		class Statistics
+		# @return [Integer] the number of hardware processors which can run threads/processes simultaneously.
+		def self.processor_count
+			Etc.nprocessors
+		rescue
+			2
+		end
+		
+		class Generic
 			def initialize
-				@spawns = 0
-				@restarts = 0
-				@failures = 0
+				@attached = []
+				@statistics = Statistics.new
 			end
 			
-			attr :spawns
-			attr :restarts
-			attr :failures
-			
-			def spawn!
-				@spawns += 1
-			end
-			
-			def restart!
-				@restarts += 1
-			end
-			
-			def failure!
-				@failures += 1
-			end
+			attr :statistics
 			
 			def failed?
-				@failures > 0
+				@statistics.failed?
+			end
+			
+			def attach(controller = nil, &block)
+				if controller
+					@attached << controller
+				end
+				
+				if block_given?
+					@attached << Terminator.new(&block)
+				end
+				
+				return self
+			end
+			
+			def async(**options, &block)
+				spawn(**options) do |instance|
+					begin
+						Async::Reactor.run(instance, &block)
+					rescue Interrupt
+						# Graceful exit.
+					end
+				end
+			end
+			
+			def run(count: Container.processor_count, **options, &block)
+				count.times do
+					async(**options, &block)
+				end
+				
+				return self
+			end
+			
+			def stop(graceful = true)
+				@attached.each(&:stop)
 			end
 		end
 	end

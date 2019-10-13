@@ -18,36 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/reactor'
-
 module Async
 	module Container
-		class Statistics
-			def initialize
-				@spawns = 0
-				@restarts = 0
-				@failures = 0
-			end
-			
-			attr :spawns
-			attr :restarts
-			attr :failures
-			
-			def spawn!
-				@spawns += 1
-			end
-			
-			def restart!
-				@restarts += 1
-			end
-			
-			def failure!
-				@failures += 1
-			end
-			
-			def failed?
-				@failures > 0
-			end
+		class Error < StandardError
 		end
 	end
 end

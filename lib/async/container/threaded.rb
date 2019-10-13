@@ -21,13 +21,13 @@
 require 'async/reactor'
 require 'thread'
 
-require_relative 'controller'
+require_relative 'generic'
 require_relative 'statistics'
 
 module Async
 	module Container
 		# Manages a reactor within one or more threads.
-		class Threaded < Controller
+		class Threaded < Generic
 			class Instance
 				def initialize(thread)
 					@thread = thread
@@ -59,10 +59,7 @@ module Async
 				
 				@threads = []
 				@running = true
-				@statistics = Statistics.new
 			end
-			
-			attr :statistics
 			
 			def spawn(name: nil, restart: false, &block)
 				@statistics.spawn!
@@ -98,13 +95,9 @@ module Async
 				return self
 			end
 			
-			def wait(forever = false)
+			def wait
 				@threads.each(&:join)
 				@threads.clear
-				
-				sleep if forever
-			rescue Interrupt
-				# Graceful exit.
 			end
 			
 			# Gracefully shut down all reactors.
