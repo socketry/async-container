@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
 	spec.add_runtime_dependency "process-group"
 	
 	spec.add_runtime_dependency "async", "~> 1.0"
-	spec.add_runtime_dependency "async-io", "~> 1.4"
+	spec.add_runtime_dependency "async-io", "~> 1.26"
 	
 	spec.add_development_dependency "async-rspec", "~> 1.1"
 	
