@@ -2,7 +2,7 @@
 
 Provides containers which implement concurrency policy for high-level servers (and potentially clients).
 
-[![Build Status](https://secure.travis-ci.org/socketry/async-container.svg)](http://travis-ci.org/socketry/async-container)
+[![Actions Status](https://github.com/socketry/async-container/workflows/Tests/badge.svg)](https://github.com/socketry/async-container/actions?workflow=Tests)
 [![Code Climate](https://codeclimate.com/github/socketry/async-container.svg)](https://codeclimate.com/github/socketry/async-container)
 [![Coverage Status](https://coveralls.io/repos/socketry/async-container/badge.svg)](https://coveralls.io/r/socketry/async-container)
 
