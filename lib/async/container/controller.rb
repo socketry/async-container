@@ -87,6 +87,9 @@ module Async
 				@container = container
 			ensure
 				Signal.trap(:HUP, hup_action)
+				
+				# If we are leaving this function with an exception, try to kill the container:
+				container&.stop(false) if $!
 			end
 			
 			def run
