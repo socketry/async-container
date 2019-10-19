@@ -103,7 +103,6 @@ module Async
 			# Gracefully shut down all reactors.
 			def stop(graceful = true)
 				@running = false
-				super
 				
 				if graceful
 					@threads.each{|thread| thread.raise(Interrupt)}

@@ -21,6 +21,8 @@
 require_relative 'error'
 require_relative 'best'
 
+require_relative 'statistics'
+
 module Async
 	module Container
 		class ContainerFailed < Error
@@ -32,24 +34,41 @@ module Async
 			attr :container
 		end
 		
+		# Manages the life-cycle of a container.
 		class Controller
 			SIGHUP = Signal.list["HUP"]
-			DEFAULT_TIMEOUT = 8
+			DEFAULT_TIMEOUT = 2
 			
-			def initialize(container_class: Container.best_container_class, timeout: DEFAULT_TIMEOUT, &constructor)
+			def initialize(startup_duration: DEFAULT_TIMEOUT)
 				@container = nil
 				
-				@container_class = container_class
-				@timeout = timeout
-				@constructor = constructor
+				@startup_duration = startup_duration
 			end
 			
-			def restart(duration = @timeout)
+			attr :container
+			
+			def create_container
+				Container.new
+			end
+			
+			def setup(container)
+			end
+			
+			def start
+				self.restart
+			end
+			
+			def stop(graceful = true)
+				@container&.stop(graceful)
+				@container = nil
+			end
+			
+			def restart(duration = @startup_duration)
 				hup_action = Signal.trap(:HUP, :IGNORE)
-				container = @container_class.new
+				container = self.create_container
 				
 				begin
-					@constructor.call(container)
+					self.setup(container)
 				rescue
 					raise ContainerFailed, container
 				end
@@ -70,15 +89,14 @@ module Async
 				Signal.trap(:HUP, hup_action)
 			end
 			
-			def run(forever: false)
+			def run
 				Async.logger.debug(self) {"Starting container..."}
 				
-				self.restart
+				self.start
 				
 				while true
 					begin
 						@container.wait
-						# sleep if forever
 					rescue SignalException => exception
 						if exception.signo == SIGHUP
 							Async.logger.info(self) {"Reloading container..."}
@@ -94,8 +112,7 @@ module Async
 					end
 				end
 			ensure
-				@container&.stop
-				@container = nil
+				self.stop
 			end
 		end
 	end

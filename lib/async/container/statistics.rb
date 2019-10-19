@@ -48,6 +48,12 @@ module Async
 			def failed?
 				@failures > 0
 			end
+			
+			def << other
+				@spawns += other.spawns
+				@restarts += other.restarts
+				@failures += other.failures
+			end
 		end
 	end
 end

@@ -18,16 +18,36 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-module Async
-	module Container
-		class Terminator
-			def initialize(&block)
-				@block = block
+require "async/container/controller"
+
+RSpec.describe Async::Container::Controller do
+	describe '#start' do
+		it "can start up a container" do
+			expect(subject).to receive(:setup)
+			
+			subject.start
+			
+			expect(subject.container).to_not be_nil
+			
+			subject.stop
+			
+			expect(subject.container).to be_nil
+		end
+		
+		it "can spawn a reactor" do
+			def subject.setup(container)
+				container.async do |task|
+					task.sleep 1
+				end
 			end
 			
-			def stop(graceful = true)
-				@block.call(graceful)
-			end
+			subject.start
+			
+			statistics = subject.container.statistics
+			
+			expect(statistics.spawns).to be == 1
+			
+			subject.stop
 		end
 	end
 end

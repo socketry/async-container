@@ -21,18 +21,6 @@
 require 'async/rspec/reactor'
 
 RSpec.shared_examples_for Async::Container do
-	it "can attach terminator" do
-		terminated = false
-		
-		subject.attach do
-			terminated = true
-		end
-		
-		subject.stop
-		
-		expect(terminated).to be_truthy
-	end
-	
 	it "can run concurrently" do
 		input, output = IO.pipe
 		

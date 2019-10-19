@@ -92,8 +92,6 @@ module Async
 			
 			# Gracefully shut down all children processes.
 			def stop(graceful = true)
-				super
-				
 				@group.stop(graceful)
 			end
 		end

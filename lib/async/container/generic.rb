@@ -18,8 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'terminator'
-
 require 'async/reactor'
 
 require 'etc'
@@ -35,7 +33,6 @@ module Async
 		
 		class Generic
 			def initialize
-				@attached = []
 				@statistics = Statistics.new
 			end
 			
@@ -43,18 +40,6 @@ module Async
 			
 			def failed?
 				@statistics.failed?
-			end
-			
-			def attach(controller = nil, &block)
-				if controller
-					@attached << controller
-				end
-				
-				if block_given?
-					@attached << Terminator.new(&block)
-				end
-				
-				return self
 			end
 			
 			def async(**options, &block)
@@ -73,10 +58,6 @@ module Async
 				end
 				
 				return self
-			end
-			
-			def stop(graceful = true)
-				@attached.each(&:stop)
 			end
 		end
 	end
