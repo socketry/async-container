@@ -95,6 +95,10 @@ module Async
 				return self
 			end
 			
+			def sleep(duration)
+				Kernel::sleep(duration)
+			end
+			
 			def wait
 				@threads.each(&:join)
 				@threads.clear
