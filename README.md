@@ -24,20 +24,53 @@ Or install it yourself as:
 
 ## Usage
 
+### Container
+
+A container represents a set of child processes (or threads) which are doing work for you.
+
 ```ruby
-container = Async::Container::Threaded.new
+require 'async/container'
 
-container.run(count: 8)
-	# 8 reactors will be spawned, in separate threads.
-	Server.new.run(...)
+Async.logger.debug!
+
+container = Async::Container.new
+
+container.async do |task|
+	task.logger.debug "Sleeping..."
+	task.sleep(1)
+	task.logger.debug "Waking up!"
 end
 
-container = Async::Container::Forked.new
+Async.logger.debug "Waiting for container..."
+container.wait
+Async.logger.debug "Finished."
+```
 
-container.run(count: 8) do
-	# 8 reactors will be spawned, in separate forked processes.
-	Server.new.run(...)
+### Controller
+
+A controller manages the life-cycle of a container. It handles receiving SIGHUP and recreating the container as required.
+
+```ruby
+require 'async/container'
+
+Async.logger.debug!
+
+class Controller < Async::Container::Controller
+	def setup(container)
+		container.async do |task|
+			while true
+				Async.logger.debug("Sleeping...")
+				task.sleep(1)
+			end
+		end
+	end
 end
+
+controller = Controller.new
+
+controller.run
+
+# If you send SIGHUP to this process, it will recreate the container.
 ```
 
 ## Contributing
