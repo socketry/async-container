@@ -86,7 +86,6 @@ module Async
 			def restart(duration = @startup_duration)
 				Async.logger.info(self) {"Restarting container..."}
 				
-				hangup_action = Signal.trap(:HUP, :IGNORE)
 				container = self.create_container
 				
 				begin
@@ -105,19 +104,18 @@ module Async
 					raise ContainerError, container
 				end
 				
-				@container&.stop
+				# Make this swap as atomic as possible:
+				old_container = @container
 				@container = container
-			ensure
-				Signal.trap(:HUP, hangup_action)
 				
+				old_container&.stop
+			rescue
 				# If we are leaving this function with an exception, try to kill the container:
-				container&.stop(false) if $!
+				container&.stop(false)
 			end
 			
 			def reload(duration = @startup_duration)
-				Async.logger.info(self) {"Reloading container..."}
-				
-				hangup_action = Signal.trap(:HUP, :IGNORE)
+				Async.logger.info(self) {"Reloading container: #{@container}..."}
 				
 				begin
 					self.setup(@container)
@@ -132,8 +130,6 @@ module Async
 				if @container.failed?
 					raise ContainerError, @container
 				end
-			ensure
-				Signal.trap(:HUP, hangup_action)
 			end
 			
 			def run
@@ -141,8 +137,6 @@ module Async
 				interrupt_action = Signal.trap(:INT) do
 					raise Interrupt
 				end
-				
-				Async.logger.debug(self) {"Starting container: #{interrupt_action}..."}
 				
 				self.start
 				

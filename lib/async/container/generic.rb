@@ -37,9 +37,13 @@ module Async
 		class Generic
 			UNNAMED = "Unnamed"
 			
-			def initialize
+			def initialize(**options)
 				@statistics = Statistics.new
 				@keyed = {}
+			end
+			
+			def [] key
+				@keyed[key]&.value
 			end
 			
 			attr :statistics
@@ -49,13 +53,16 @@ module Async
 			end
 			
 			# Wait until all spawned tasks are completed.
-			def wait
-			end
+			# def wait
+			# end
 			
 			def spawn(name: nil, restart: false, key: nil)
 				name ||= UNNAMED
 				
-				return if mark?(key)
+				if mark?(key)
+					Async.logger.debug(self) {"Reusing existing child for #{key}: #{name}"}
+					return false
+				end
 				
 				@statistics.spawn!
 				
@@ -68,7 +75,6 @@ module Async
 						insert(key, child)
 						
 						begin
-							# child.wait -> Fiber.yield
 							status = child.wait
 						ensure
 							delete(key)
@@ -89,7 +95,7 @@ module Async
 					end
 				end.resume
 				
-				return self
+				return true
 			end
 			
 			def async(**options, &block)
@@ -115,9 +121,13 @@ module Async
 				
 				yield
 				
+				dirty = false
+				
 				@keyed.delete_if do |key, value|
-					value.stop?
+					value.stop? && (dirty = true)
 				end
+				
+				return dirty
 			end
 			
 			def mark?(key)
@@ -132,31 +142,25 @@ module Async
 				return false
 			end
 			
-			def compact!
-				@keyed.delete_if do |key, value|
-					!value.marked?
-				end
-			end
-			
 			def key?(key)
 				if key
 					@keyed.key?(key)
 				end
 			end
 			
-			def delete(key)
-				if key
-					if value = @keyed.delete(key)
-						value.stop
-					end
-				end
-			end
-			
 			protected
 			
+			# Register the child (value) as running.
 			def insert(key, value)
 				if key
 					@keyed[key] = Keyed.new(key, value)
+				end
+			end
+			
+			# Clear the child (value) as running.
+			def delete(key)
+				if key
+					@keyed.delete(key)
 				end
 			end
 		end

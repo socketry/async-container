@@ -26,7 +26,7 @@ module Async
 	module Container
 		module Forked
 			class Container < Generic
-				def initialize
+				def initialize(**options)
 					super
 					
 					@group = Group.new

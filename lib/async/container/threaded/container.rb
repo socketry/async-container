@@ -26,7 +26,7 @@ module Async
 	module Container
 		module Threaded
 			class Container < Generic
-				def initialize
+				def initialize(**options)
 					super
 					
 					@group = Group.new

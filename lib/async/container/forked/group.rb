@@ -104,7 +104,9 @@ module Async
 				
 				def yield
 					if @queue
-						@queue << Fiber.current
+						fiber = Fiber.current
+						
+						@queue << fiber
 						Fiber.yield
 					end
 				end

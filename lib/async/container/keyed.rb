@@ -24,10 +24,11 @@ module Async
 			def initialize(key, value)
 				@key = key
 				@value = value
-				@marked = false
+				@marked = true
 			end
 			
 			attr :key
+			attr :value
 			
 			def marked?
 				@marked
@@ -41,9 +42,10 @@ module Async
 				@marked = false
 			end
 			
-			def stop
+			def stop?
 				unless @marked
 					@value.stop
+					return true
 				end
 			end
 		end

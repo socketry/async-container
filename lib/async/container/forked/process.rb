@@ -37,8 +37,6 @@ module Async
 				
 				def stop
 					self.kill(:TERM)
-					
-					self.wait
 				end
 				
 				def wait

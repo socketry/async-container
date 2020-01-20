@@ -32,8 +32,8 @@ module Async
 				false
 			end
 			
-			def self.new
-				Container.new
+			def self.new(**options)
+				Container.new(**options)
 			end
 		end
 	end

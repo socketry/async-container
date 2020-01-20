@@ -48,8 +48,6 @@ module Async
 				
 				def stop
 					self.raise(Interrupt)
-					
-					self.wait
 				end
 				
 				def wait
