@@ -1,4 +1,4 @@
-# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,16 +18,60 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require "async/container/threaded"
+require 'thread'
 
-require_relative 'shared_examples'
-
-RSpec.describe Async::Container::Threaded do
-	subject {described_class.new}
-	
-	it_behaves_like Async::Container
-	
-	it "should not be multiprocess" do
-		expect(described_class).to_not be_multiprocess
+module Async
+	module Container
+		module Threaded
+			class Thread < ::Thread
+				def initialize(group, name: nil, &block)
+					@group = group
+					
+					if name
+						self.name = name
+					end
+					
+					@status = nil
+					
+					super do
+						begin
+							yield self
+						ensure
+							finished
+						end
+					end
+				end
+				
+				def kill
+					raise NotImplementedError
+				end
+				
+				def stop
+					self.raise(Interrupt)
+					
+					self.wait
+				end
+				
+				def wait
+					@status ||= @group.wait_for(self)
+				end
+				
+				protected
+				
+				def finished(result = $!)
+					@group.finished(self, Status.new(result))
+				end
+			end
+			
+			class Status
+				def initialize(result = nil)
+					@result = result
+				end
+				
+				def success?
+					@result.nil?
+				end
+			end
+		end
 	end
 end

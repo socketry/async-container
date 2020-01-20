@@ -24,6 +24,8 @@ require "async/container/forked"
 require_relative 'shared_examples'
 
 RSpec.describe Async::Container::Forked, if: Async::Container.fork? do
+	subject {described_class.new}
+	
 	it_behaves_like Async::Container
 	
 	it "can restart child" do
@@ -47,7 +49,7 @@ RSpec.describe Async::Container::Forked, if: Async::Container.fork? do
 		thread.kill
 		thread.join
 		
-		expect(subject.statistics.spawns).to be == 3
+		expect(subject.statistics.spawns).to be == 1
 		expect(subject.statistics.restarts).to be == 2
 	end
 	

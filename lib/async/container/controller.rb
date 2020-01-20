@@ -25,7 +25,7 @@ require_relative 'statistics'
 
 module Async
 	module Container
-		class ContainerFailed < Error
+		class ContainerError < Error
 			def initialize(container)
 				super("Could not create container!")
 				@container = container
@@ -37,12 +37,24 @@ module Async
 		# Manages the life-cycle of a container.
 		class Controller
 			SIGHUP = Signal.list["HUP"]
-			DEFAULT_TIMEOUT = 2
+			SIGINT = Signal.list["INT"]
+			SIGUSR1 = Signal.list["USR1"]
+			SIGUSR2 = Signal.list["USR2"]
+			
+			DEFAULT_TIMEOUT = 5
 			
 			def initialize(startup_duration: DEFAULT_TIMEOUT)
 				@container = nil
 				
+				@signals = {}
+				
+				trap(SIGHUP, &self.method(:restart))
+				
 				@startup_duration = startup_duration
+			end
+			
+			def trap(signal, &block)
+				@signals[signal] = block
 			end
 			
 			attr :container
@@ -51,11 +63,19 @@ module Async
 				Container.new
 			end
 			
+			def running?
+				!!@container
+			end
+			
+			def wait
+				@container&.wait
+			end
+			
 			def setup(container)
 			end
 			
 			def start
-				self.restart
+				self.restart unless @container
 			end
 			
 			def stop(graceful = true)
@@ -64,13 +84,15 @@ module Async
 			end
 			
 			def restart(duration = @startup_duration)
-				hup_action = Signal.trap(:HUP, :IGNORE)
+				Async.logger.info(self) {"Restarting container..."}
+				
+				hangup_action = Signal.trap(:HUP, :IGNORE)
 				container = self.create_container
 				
 				begin
 					self.setup(container)
 				rescue
-					raise ContainerFailed, container
+					raise ContainerError, container
 				end
 				
 				Async.logger.debug(self, "Waiting for startup...")
@@ -80,20 +102,47 @@ module Async
 				if container.failed?
 					container.stop
 					
-					raise ContainerFailed, container
+					raise ContainerError, container
 				end
 				
 				@container&.stop
 				@container = container
 			ensure
-				Signal.trap(:HUP, hup_action)
+				Signal.trap(:HUP, hangup_action)
 				
 				# If we are leaving this function with an exception, try to kill the container:
 				container&.stop(false) if $!
 			end
 			
+			def reload(duration = @startup_duration)
+				Async.logger.info(self) {"Reloading container..."}
+				
+				hangup_action = Signal.trap(:HUP, :IGNORE)
+				
+				begin
+					self.setup(@container)
+				rescue
+					raise ContainerError, container
+				end
+				
+				Async.logger.debug(self, "Waiting for startup...")
+				@container.sleep(duration)
+				Async.logger.debug(self, "Finished startup.")
+				
+				if @container.failed?
+					raise ContainerError, @container
+				end
+			ensure
+				Signal.trap(:HUP, hangup_action)
+			end
+			
 			def run
-				Async.logger.debug(self) {"Starting container..."}
+				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
+				interrupt_action = Signal.trap(:INT) do
+					raise Interrupt
+				end
+				
+				Async.logger.debug(self) {"Starting container: #{interrupt_action}..."}
 				
 				self.start
 				
@@ -101,12 +150,10 @@ module Async
 					begin
 						@container.wait
 					rescue SignalException => exception
-						if exception.signo == SIGHUP
-							Async.logger.info(self) {"Reloading container..."}
-							
+						if handler = @signals[exception.signo]
 							begin
-								self.restart
-							rescue ContainerFailed => failure
+								handler.call
+							rescue ContainerError => failure
 								Async.logger.error(self) {failure}
 							end
 						else
@@ -115,6 +162,9 @@ module Async
 					end
 				end
 			ensure
+				# Restore the interrupt handler:
+				Signal.trap(:INT, interrupt_action)
+				
 				self.stop
 			end
 		end

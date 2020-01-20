@@ -18,81 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/reactor'
-
-require_relative 'group'
-require_relative 'generic'
-require_relative 'statistics'
+require_relative 'forked/container'
 
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
-		class Forked < Generic
-			UNNAMED = "Unnamed"
-			
-			class Instance
-				def name= value
-					::Process.setproctitle(value)
-				end
-				
-				def exec(*arguments)
-					::Process.exec(*arguments)
-				end
-			end
-			
-			def self.run(*args, &block)
-				self.new.run(*args, &block)
+		module Forked
+			def self.run(*arguments, **options, &block)
+				Container.run(*arguments, **options, &block)
 			end
 			
 			def self.multiprocess?
 				true
 			end
 			
-			def initialize
-				super
-				
-				@group = Group.new
-			end
-			
-			def spawn(name: nil, restart: false)
-				Fiber.new do
-					while true
-						@statistics.spawn!
-						exit_status = @group.fork do
-							::Process.setproctitle(name) if name
-							
-							yield Instance.new
-						end
-						
-						if exit_status.success?
-							Async.logger.info(self) {"#{name || UNNAMED} #{exit_status}"}
-						else
-							@statistics.failure!
-							Async.logger.error(self) {exit_status}
-						end
-						
-						if restart
-							@statistics.restart!
-						else
-							break
-						end
-					end
-				end.resume
-				
-				return self
-			end
-			
-			def sleep(duration)
-				@group.sleep(duration)
-			end
-			
-			def wait
-				@group.wait
-			end
-			
-			# Gracefully shut down all children processes.
-			def stop(graceful = true)
-				@group.stop(graceful)
+			def self.new
+				Container.new
 			end
 		end
 	end

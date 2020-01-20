@@ -18,9 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/reactor'
+require 'async'
 
 require 'etc'
+
+require_relative 'keyed'
+require_relative 'statistics'
 
 module Async
 	module Container
@@ -32,14 +35,61 @@ module Async
 		end
 		
 		class Generic
+			UNNAMED = "Unnamed"
+			
 			def initialize
 				@statistics = Statistics.new
+				@keyed = {}
 			end
 			
 			attr :statistics
 			
 			def failed?
 				@statistics.failed?
+			end
+			
+			# Wait until all spawned tasks are completed.
+			def wait
+			end
+			
+			def spawn(name: nil, restart: false, key: nil)
+				name ||= UNNAMED
+				
+				return if mark?(key)
+				
+				@statistics.spawn!
+				
+				Fiber.new do
+					while true
+						child = self.start(name) do |instance|
+							yield instance
+						end
+						
+						insert(key, child)
+						
+						begin
+							# child.wait -> Fiber.yield
+							status = child.wait
+						ensure
+							delete(key)
+						end
+						
+						if status.success?
+							Async.logger.info(self) {"#{child} #{status}"}
+						else
+							@statistics.failure!
+							Async.logger.error(self) {status}
+						end
+						
+						if restart
+							@statistics.restart!
+						else
+							break
+						end
+					end
+				end.resume
+				
+				return self
 			end
 			
 			def async(**options, &block)
@@ -58,6 +108,56 @@ module Async
 				end
 				
 				return self
+			end
+			
+			def reload
+				@keyed.each_value(&:clear!)
+				
+				yield
+				
+				@keyed.delete_if do |key, value|
+					value.stop?
+				end
+			end
+			
+			def mark?(key)
+				if key
+					if value = @keyed[key]
+						value.mark!
+						
+						return true
+					end
+				end
+				
+				return false
+			end
+			
+			def compact!
+				@keyed.delete_if do |key, value|
+					!value.marked?
+				end
+			end
+			
+			def key?(key)
+				if key
+					@keyed.key?(key)
+				end
+			end
+			
+			def delete(key)
+				if key
+					if value = @keyed.delete(key)
+						value.stop
+					end
+				end
+			end
+			
+			protected
+			
+			def insert(key, value)
+				if key
+					@keyed[key] = Keyed.new(key, value)
+				end
 			end
 		end
 	end

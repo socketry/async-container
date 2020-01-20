@@ -50,17 +50,20 @@ RSpec.shared_examples_for Async::Container do
 	describe '#sleep' do
 		it "can sleep for a short time" do
 			subject.spawn do
+				puts "Sleep(2)"
 				sleep(2)
+				puts "Boom"
 				raise "Boom"
 			end
 			
+			puts "Sleep(1)"
 			subject.sleep(1)
-			
-			expect(subject.statistics.failures).to be_zero
+			puts "Failures?"
+			expect(subject.statistics).to have_attributes(failures: 0)
 			
 			subject.wait
 			
-			expect(subject.statistics.failures).to_not be_zero
+			expect(subject.statistics).to have_attributes(failures: 1)
 		end
 	end
 end

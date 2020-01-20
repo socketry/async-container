@@ -1,4 +1,4 @@
-# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,16 +18,33 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require "async/container/threaded"
+require_relative '../forked'
+require_relative '../threaded'
 
-require_relative 'shared_examples'
+module Async
+	module Container
+		module Hybrid
+			class Container < Forked::Container
+				def run(count: nil, forks: nil, threads: nil, **options, &block)
+					processor_count = Container.processor_count
+					count ||= processor_count ** 2
+					forks ||= [processor_count, count].min
+					threads = (count / forks).ceil
+					
+					forks.times do
+						self.spawn(**options) do
+							container = Threaded::Container.new
+							
+							container.run(count: threads, **options, &block)
+							
+							container.wait
+						end
+					end
+					
+					return self
+				end
 
-RSpec.describe Async::Container::Threaded do
-	subject {described_class.new}
-	
-	it_behaves_like Async::Container
-	
-	it "should not be multiprocess" do
-		expect(described_class).to_not be_multiprocess
+			end
+		end
 	end
 end

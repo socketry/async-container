@@ -18,105 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/reactor'
-require 'thread'
-
-require_relative 'generic'
-require_relative 'statistics'
+require_relative 'threaded/container'
 
 module Async
+	# Manages a reactor within one or more threads.
 	module Container
-		# Manages a reactor within one or more threads.
-		class Threaded < Generic
-			class Instance
-				def initialize(thread)
-					@thread = thread
-				end
-				
-				def name= value
-					@thread.name = value
-				end
-				
-				def exec(*arguments)
-					pid = ::Process.spawn(*arguments)
-					
-					::Process.waitpid(pid)
-				ensure
-					::Process.kill(:TERM, pid)
-				end
-			end
-			
-			def self.run(*args, &block)
-				self.new.run(*args, &block)
+		module Threaded
+			def self.run(*arguments, **options, &block)
+				Container.run(*arguments, **options, &block)
 			end
 			
 			def self.multiprocess?
 				false
 			end
 			
-			def initialize
-				super
-				
-				@threads = []
-				@running = true
-			end
-			
-			def spawn(name: nil, restart: false, &block)
-				@statistics.spawn!
-				
-				thread = ::Thread.new do
-					thread = ::Thread.current
-					
-					thread.name = name if name
-					
-					instance = Instance.new(thread)
-					
-					while @running
-						begin
-							yield instance
-						rescue Exception => exception
-							Async.logger.error(self) {exception}
-							
-							@statistics.failure!
-						end
-						
-						if restart
-							@statistics.restart!
-						else
-							break
-						end
-					end
-				# rescue Interrupt
-				# 	# Graceful exit.
-				end
-				
-				@threads << thread
-				
-				return self
-			end
-			
-			def sleep(duration)
-				Kernel::sleep(duration)
-			end
-			
-			def wait
-				@threads.each(&:join)
-				@threads.clear
-			end
-			
-			# Gracefully shut down all reactors.
-			def stop(graceful = true)
-				@running = false
-				
-				if graceful
-					@threads.each{|thread| thread.raise(Interrupt)}
-				else
-					@threads.each(&:kill)
-				end
-				
-				self.wait
-			ensure
-				@running = true
+			def self.new
+				Container.new
 			end
 		end
 	end

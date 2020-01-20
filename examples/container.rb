@@ -9,7 +9,7 @@ Async.logger.debug(self, "Starting up...")
 
 controller = Async::Container::Controller.new do |container|
 	Async.logger.debug(self, "Setting up container...")
-
+	
 	container.run(count: 1, restart: true) do
 		Async.logger.debug(self, "Child process started.")
 		

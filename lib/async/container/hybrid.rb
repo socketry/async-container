@@ -18,30 +18,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'forked'
-require_relative 'threaded'
+require_relative 'hybrid/container'
 
 module Async
-	# Manages a reactor within one or more threads.
 	module Container
-		class Hybrid < Forked
-			def run(count: nil, forks: nil, threads: nil, **options, &block)
-				processor_count = Container.processor_count
-				count ||= processor_count ** 2
-				forks ||= [processor_count, count].min
-				threads = (count / forks).ceil
-				
-				forks.times do
-					self.spawn(**options) do
-						container = Threaded.new
-						
-						container.run(count: threads, **options, &block)
-						
-						container.wait
-					end
-				end
-				
-				return self
+		module Hybrid
+			def self.run(*arguments, **options, &block)
+				Container.run(*arguments, **options, &block)
+			end
+			
+			def self.multiprocess?
+				true
+			end
+			
+			def self.new
+				Container.new
 			end
 		end
 	end

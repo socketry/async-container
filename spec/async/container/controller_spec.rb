@@ -21,16 +21,49 @@
 require "async/container/controller"
 
 RSpec.describe Async::Container::Controller do
+	describe '#reload' do
+		it "can reuse keyed child" do
+			input, output = IO.pipe
+			
+			subject.instance_variable_set(:@output, output)
+			
+			def subject.setup(container)
+				container.spawn(key: "test") do
+					@output.write(".")
+					@output.flush
+				end
+				
+				container.spawn do
+					# Introduce some "determinism"...
+					sleep(0.001)
+					
+					@output.write(",")
+					@output.flush
+				end
+			end
+			
+			subject.start
+			expect(input.read(2)).to be == ".,"
+			
+			subject.reload
+			
+			expect(input.read(1)).to be == ","
+			subject.wait
+		end
+	end
+	
 	describe '#start' do
 		it "can start up a container" do
 			expect(subject).to receive(:setup)
 			
 			subject.start
 			
+			expect(subject).to be_running
 			expect(subject.container).to_not be_nil
 			
 			subject.stop
 			
+			expect(subject).to_not be_running
 			expect(subject.container).to be_nil
 		end
 		

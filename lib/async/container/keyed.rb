@@ -1,4 +1,4 @@
-# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2019, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,16 +18,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require "async/container/threaded"
-
-require_relative 'shared_examples'
-
-RSpec.describe Async::Container::Threaded do
-	subject {described_class.new}
-	
-	it_behaves_like Async::Container
-	
-	it "should not be multiprocess" do
-		expect(described_class).to_not be_multiprocess
+module Async
+	module Container
+		class Keyed
+			def initialize(key, value)
+				@key = key
+				@value = value
+				@marked = false
+			end
+			
+			attr :key
+			
+			def marked?
+				@marked
+			end
+			
+			def mark!
+				@marked = true
+			end
+			
+			def clear!
+				@marked = false
+			end
+			
+			def stop
+				unless @marked
+					@value.stop
+				end
+			end
+		end
 	end
 end

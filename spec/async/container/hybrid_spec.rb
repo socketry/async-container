@@ -18,11 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require "async/container/hybrid"
+require 'async/container/hybrid'
+require 'async/container/best'
 
 require_relative 'shared_examples'
 
 RSpec.describe Async::Container::Hybrid, if: Async::Container.fork? do
+	subject {described_class.new}
+	
 	it_behaves_like Async::Container
 	
 	it "should be multiprocess" do
