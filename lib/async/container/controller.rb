@@ -72,6 +72,8 @@ module Async
 			end
 			
 			def setup(container)
+				# Don't do this, otherwise calling super is risky for sub-classes:
+				# raise NotImplementedError, "Container setup is must be implemented in derived class!"
 			end
 			
 			def start
