@@ -69,7 +69,11 @@ module Async
 				Fiber.new do
 					while true
 						child = self.start(name) do |instance|
-							yield instance
+							begin
+								yield instance
+							rescue Interrupt
+								# Graceful exit.
+							end
 						end
 						
 						insert(key, child)
@@ -100,17 +104,13 @@ module Async
 			
 			def async(**options, &block)
 				spawn(**options) do |instance|
-					begin
-						Async::Reactor.run(instance, &block)
-					rescue Interrupt
-						# Graceful exit.
-					end
+					Async::Reactor.run(instance, &block)
 				end
 			end
 			
 			def run(count: Container.processor_count, **options, &block)
 				count.times do
-					async(**options, &block)
+					spawn(**options, &block)
 				end
 				
 				return self
