@@ -31,6 +31,8 @@ RSpec.describe Async::Container::Controller do
 				container.spawn(key: "test") do
 					@output.write(".")
 					@output.flush
+					
+					sleep(8)
 				end
 				
 				container.spawn do
