@@ -39,11 +39,13 @@ module Async
 				
 				def spawn(*arguments, **options)
 					fork do
-						pid = ::Process.spawn(*arguments)
-						
-						::Process.waitpid(pid)
-					ensure
-						::Process.kill(:TERM, pid)
+						begin
+							pid = ::Process.spawn(*arguments)
+							
+							::Process.waitpid(pid)
+						ensure
+							::Process.kill(:TERM, pid)
+						end
 					end
 				end
 				
