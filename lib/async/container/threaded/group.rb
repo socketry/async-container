@@ -83,13 +83,12 @@ module Async
 					end
 				end
 				
-				def kill(signal = :INT)
-					@running.each_value 
-				end
-				
 				def stop(graceful = false)
 					if graceful
-						self.kill(:INT)
+						@running.each_key do |thread|
+							thread.raise(Interrupt)
+						end
+						
 						interrupt_all
 					end
 				ensure
@@ -97,12 +96,10 @@ module Async
 				end
 				
 				def close
-					self.kill(:TERM)
+					@running.each_key(&:kill)
 					
 					# Clean up zombie processes - if user presses Ctrl-C or for some reason something else blows up, exception would propagate back to caller:
 					interrupt_all
-				ensure
-					@pgid = nil
 				end
 				
 				protected
