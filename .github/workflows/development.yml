@@ -1,9 +1,9 @@
-name: Tests
+name: Development
 
 on: [push]
 
 jobs:
-  build:
+  test:
     strategy:
       matrix:
         os:
