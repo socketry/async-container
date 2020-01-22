@@ -22,12 +22,22 @@ module Async
 	module Container
 		module Forked
 			class Instance
-				def name= value
-					::Process.setproctitle(value)
+				def initialize(name = nil)
+					@name = name
+				end
+				
+				def name= name
+					@name = name
+					
+					::Process.setproctitle(@name)
 				end
 				
 				def exec(*arguments)
 					::Process.exec(*arguments)
+				end
+				
+				def to_s
+					"\#<#{self.class}: #{@name}>"
 				end
 			end
 		end

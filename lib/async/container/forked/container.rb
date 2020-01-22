@@ -34,9 +34,9 @@ module Async
 				
 				def start(name)
 					@group.fork do
-						::Process.setproctitle(name) if name
+						instance = Instance.new(name)
 						
-						yield Instance.new
+						yield instance
 					end
 				end
 				
