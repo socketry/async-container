@@ -37,6 +37,10 @@ module Async
 				ensure
 					::Process.kill(:TERM, pid)
 				end
+				
+				def to_s
+					"\#<#{self.class}: #{@thread.name}>"
+				end
 			end
 		end
 	end
