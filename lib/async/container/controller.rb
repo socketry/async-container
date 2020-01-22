@@ -140,7 +140,7 @@ module Async
 				
 				self.start
 				
-				while true
+				while @container
 					begin
 						@container.wait
 					rescue SignalException => exception
