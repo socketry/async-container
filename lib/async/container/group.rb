@@ -64,8 +64,11 @@ module Async
 					timeout = 1
 				end
 				
-				self.interrupt
-				self.sleep(timeout)
+				# Timeout can also be `graceful = false`:
+				if timeout
+					self.interrupt
+					self.sleep(timeout)
+				end
 			ensure
 				self.close
 			end
