@@ -22,6 +22,7 @@ require_relative 'error'
 require_relative 'best'
 
 require_relative 'statistics'
+require_relative 'notify'
 
 module Async
 	module Container
@@ -42,10 +43,10 @@ module Async
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
 			
-			DEFAULT_TIMEOUT = 5
-			
-			def initialize(startup_duration: DEFAULT_TIMEOUT)
+			def initialize
 				@container = nil
+				
+				@notify = Notify::Client.open
 				
 				@signals = {}
 				
@@ -88,6 +89,7 @@ module Async
 			
 			def restart(duration = @startup_duration)
 				if @container
+					@notify&.restarting!
 					Async.logger.debug(self) {"Restarting container..."}
 				else
 					Async.logger.debug(self) {"Starting container..."}
@@ -98,14 +100,13 @@ module Async
 				begin
 					self.setup(container)
 				rescue
+					@notify&.error!($!.to_s)
 					raise ContainerError, container
 				end
 				
-				Async.logger.debug(self, "Waiting for startup...")
-				container.sleep(duration)
-				Async.logger.debug(self, "Finished startup.")
-				
 				if container.failed?
+					@notify&.error!($!.to_s)
+					
 					container.stop
 					
 					raise ContainerError, container
@@ -116,12 +117,15 @@ module Async
 				@container = container
 				
 				old_container&.stop
+				@notify&.ready!
 			rescue
 				# If we are leaving this function with an exception, try to kill the container:
 				container&.stop(false)
 			end
 			
 			def reload(duration = @startup_duration)
+				@notify.reloading!
+				
 				Async.logger.info(self) {"Reloading container: #{@container}..."}
 				
 				begin
@@ -135,7 +139,10 @@ module Async
 				Async.logger.debug(self, "Finished startup.")
 				
 				if @container.failed?
+					@notify.error!("Container failed!")
 					raise ContainerError, @container
+				else
+					@notify&.ready!
 				end
 			end
 			
@@ -145,7 +152,15 @@ module Async
 					raise Interrupt
 				end
 				
+				terminate_action = Signal.trap(:TERM) do
+					raise Terminate
+				end
+				
+				Async.logger.warn("starting")
+				
 				self.start
+				
+				Async.logger.warn("started: #{@container}")
 				
 				while @container
 					begin
@@ -162,11 +177,19 @@ module Async
 						end
 					end
 				end
+			rescue Interrupt
+				Async.logger.warn("run: #{$!} #{@container}")
+				self.stop(true)
+			rescue Terminate
+				Async.logger.warn("run: #{$!} #{@container}")
+				self.stop(false)
+			else
+				Async.logger.warn("run: graceful #{$!} #{@container}")
+				self.stop(true)
 			ensure
 				# Restore the interrupt handler:
 				Signal.trap(:INT, interrupt_action)
-				
-				self.stop
+				Signal.trap(:TERM, terminate_action)
 			end
 		end
 	end

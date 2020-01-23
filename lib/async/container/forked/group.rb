@@ -50,6 +50,7 @@ module Async
 				def kill(signal = :INT)
 					if @pgid
 						begin
+							Async.logger.warn("Process.kill signal: #{signal} process group: #{@pgid}")
 							::Process.kill(signal, -@pgid)
 						rescue Errno::EPERM
 							# Sometimes, `kill` code can give EPERM, if any signal couldn't be delivered to a child. This might occur if an exception is thrown in the user code (e.g. within the fiber), and there are other zombie processes which haven't been reaped yet. These should be dealt with below, so it shouldn't be an issue to ignore this condition.
