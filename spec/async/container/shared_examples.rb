@@ -75,7 +75,6 @@ RSpec.shared_examples_for Async::Container do
 			
 			is_expected.to be_running
 			
-			sleep 1
 			subject.stop
 			
 			is_expected.to_not be_running

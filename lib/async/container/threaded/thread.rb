@@ -43,6 +43,7 @@ module Async
 							self.join
 						rescue Interrupt
 							# Graceful shutdown.
+							self.finished
 						rescue StandardError => error
 							self.finished(error)
 						else
