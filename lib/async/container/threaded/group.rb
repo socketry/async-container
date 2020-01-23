@@ -33,7 +33,6 @@ module Async
 				end
 				
 				def finished(*arguments)
-					puts "Finished: #{arguments.inspect}"
 					@finished.push(arguments)
 				end
 				
