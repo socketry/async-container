@@ -33,17 +33,24 @@ module Async
 					
 					@status = nil
 					
-					super do
+					super(&block)
+					
+					# I tried putting this block into the thread itself, but if the user cancels the thread before it even starts, `self.finished` is never called. By using a 2nd thread, we will capture all scenarios that cause the thread to exit in a determanistic way.
+					@waiter = ::Thread.new do
 						begin
-							yield self
-						ensure
-							finished
+							self.join
+						rescue Interrupt
+							# Graceful shutdown.
+						rescue StandardError => error
+							self.finished(error)
+						else
+							self.finished
 						end
 					end
 				end
 				
-				def kill
-					raise NotImplementedError
+				def finish
+					@waiter.join
 				end
 				
 				def stop
@@ -56,7 +63,7 @@ module Async
 				
 				protected
 				
-				def finished(result = $!)
+				def finished(result = nil)
 					@group.finished(self, Status.new(result))
 				end
 			end

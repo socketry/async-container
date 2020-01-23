@@ -32,6 +32,10 @@ module Async
 					@group = Group.new
 				end
 				
+				def running?
+					!@group.empty?
+				end
+				
 				def start(name)
 					@group.fork(name: name) do |thread|
 						yield Instance.new(thread)
@@ -47,8 +51,8 @@ module Async
 				end
 				
 				# Gracefully shut down all children processes.
-				def stop(graceful = true)
-					@group.stop(graceful)
+				def stop(timeout = 0)
+					@group.stop(timeout)
 				end
 			end
 		end

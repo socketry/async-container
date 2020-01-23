@@ -52,6 +52,10 @@ module Async
 				@statistics.failed?
 			end
 			
+			# Whether there are running tasks.
+			# def running?
+			# end
+			
 			# Wait until all spawned tasks are completed.
 			# def wait
 			# end

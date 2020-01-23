@@ -22,5 +22,17 @@ module Async
 	module Container
 		class Error < StandardError
 		end
+		
+		Interrupt = ::Interrupt
+		
+		class Terminate < Interrupt
+			def signm
+				'Terminate'
+			end
+			
+			def signo
+				Signal.list['TERM']
+			end
+		end
 	end
 end

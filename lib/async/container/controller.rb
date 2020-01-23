@@ -38,6 +38,7 @@ module Async
 		class Controller
 			SIGHUP = Signal.list["HUP"]
 			SIGINT = Signal.list["INT"]
+			SIGTERM = Signal.list["TERM"]
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
 			

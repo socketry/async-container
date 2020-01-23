@@ -66,4 +66,19 @@ RSpec.shared_examples_for Async::Container do
 			expect(subject.statistics).to have_attributes(failures: 1)
 		end
 	end
+	
+	describe '#stop' do
+		it 'can stop the child process' do
+			subject.spawn do
+				sleep(10)
+			end
+			
+			is_expected.to be_running
+			
+			sleep 1
+			subject.stop
+			
+			is_expected.to_not be_running
+		end
+	end
 end
