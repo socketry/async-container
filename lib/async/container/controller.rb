@@ -87,7 +87,11 @@ module Async
 			end
 			
 			def restart(duration = @startup_duration)
-				Async.logger.info(self) {"Restarting container..."}
+				if @container
+					Async.logger.debug(self) {"Restarting container..."}
+				else
+					Async.logger.debug(self) {"Starting container..."}
+				end
 				
 				container = self.create_container
 				
