@@ -90,6 +90,7 @@ module Async
 			def restart(duration = @startup_duration)
 				if @container
 					@notify&.restarting!
+					
 					Async.logger.debug(self) {"Restarting container..."}
 				else
 					Async.logger.debug(self) {"Starting container..."}
@@ -101,6 +102,7 @@ module Async
 					self.setup(container)
 				rescue
 					@notify&.error!($!.to_s)
+					
 					raise ContainerError, container
 				end
 				

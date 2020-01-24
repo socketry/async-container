@@ -42,36 +42,42 @@ module Async
 				end
 				
 				def ready!
-					send("READY=1\nPID=#{@pid}")
-				end
-				
-				def restarting!
-					send("READY=0\nPID=#{@pid}")
+					send("READY=1")
 				end
 				
 				def reloading!
-					send("RELOADING=1\nPID=#{@pid}")
+					send("RELOADING=1")
 				end
 				
 				def stopping!
-					send("STOPPING=1\nPID=#{@pid}")
+					send("STOPPING=1")
 				end
 				
 				def status!(text)
-					send("STATUS=#{text}\nPID=#{@pid}")
+					send("STATUS=#{text}")
 				end
 				
-				def error!(text)
-					send("ERROR=#{text}\nPID=#{@pid}")
+				def error!(text, errno = -1)
+					send("STATUS=#{text}\nERRNO=#{text}")
 				end
 			end
 			
-			class Parent
+			class Server
 				def initialize(path)
 					@path = path
 				end
 				
-				def 
+				def accept
+					socket = Addrinfo.unix(@path, Socket::SOCK_DGRAM).bind
+					
+					while true
+						peer = socket.accept
+						
+						
+					end
+				ensure
+					socket&.close
+				end
 			end
 		end
 	end
