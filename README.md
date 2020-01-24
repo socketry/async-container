@@ -85,6 +85,28 @@ controller.run
 
 `SIGSTOP` is the pause signal. The only behavior is to pause the process; the signal cannot be caught or ignored. The shell uses pausing (and its counterpart, resuming via `SIGCONT`) to implement job control.
 
+### Integration
+
+#### systemd
+
+Install a template file into `/etc/systemd/system/`:
+
+```
+# my-daemon.service
+[Unit]
+Description=My Daemon
+AssertPathExists=/srv/
+
+[Service]
+Type=notify
+WorkingDirectory=/srv/my-daemon
+ExecStart=bundle exec my-daemon
+Nice=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
 ## Contributing
 
 1. Fork it
