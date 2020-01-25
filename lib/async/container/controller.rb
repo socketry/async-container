@@ -43,7 +43,7 @@ module Async
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
 			
-			def initialize
+			def initialize(startup_duration: nil)
 				@container = nil
 				
 				@notify = Notify::Client.open
@@ -106,6 +106,10 @@ module Async
 					raise ContainerError, container
 				end
 				
+				# Wait for all child processes to enter the ready state.
+				Async.logger.debug(self) {"Waiting for container to become ready..."}
+				container.sleep(duration)
+				
 				if container.failed?
 					@notify&.error!($!.to_s)
 					
@@ -126,7 +130,7 @@ module Async
 			end
 			
 			def reload(duration = @startup_duration)
-				@notify.reloading!
+				@notify&.reloading!
 				
 				Async.logger.info(self) {"Reloading container: #{@container}..."}
 				
@@ -136,6 +140,7 @@ module Async
 					raise ContainerError, container
 				end
 				
+				# Wait for all child processes to enter the ready state.
 				Async.logger.debug(self, "Waiting for startup...")
 				@container.sleep(duration)
 				Async.logger.debug(self, "Finished startup.")

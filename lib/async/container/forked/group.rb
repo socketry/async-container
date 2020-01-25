@@ -34,6 +34,8 @@ module Async
 				def spawn(*arguments, **options)
 					self.yield
 					
+					arguments = self.prepare_for_spawn(arguments)
+					
 					pid = ::Process.spawn(*arguments, **options)
 					
 					return Process.new(self, pid)
@@ -42,7 +44,11 @@ module Async
 				def fork(&block)
 					self.yield
 					
-					pid = ::Process.fork(&block)
+					pid = ::Process.fork do
+						self.after_fork
+						
+						yield
+					end
 					
 					return Process.new(self, pid)
 				end

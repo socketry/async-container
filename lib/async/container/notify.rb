@@ -19,78 +19,166 @@
 # THE SOFTWARE.
 
 require 'async/io'
+require 'async/io/unix_endpoint'
+require 'kernel/sync'
+
+require 'tmpdir'
+require 'securerandom'
 
 module Async
 	module Container
 		module Notify
-			class Endpoint < Async::IO::Endpoint
-				def self.unix(path = ENV['NOTIFY_SOCKET'], **options)
-					self.new(::Async::IO::Endpoint.unix(path), **options)
-				end
+			MAXIMUM_MESSAGE_SIZE = 4096
+			
+			def self.load(message)
+				lines = message.split("\n")
+				
+				return Hash[
+					lines.map{|line| line.split("=", 2)}
+				]
 			end
 			
 			class Client
-				def self.open
+				def self.open(path = ENV['NOTIFY_SOCKET'])
 					if path
-						self.new(Endpoint.unix)
+						self.new(
+							IO::Endpoint.unix(path, Socket::SOCK_DGRAM)
+						)
 					end
 				end
 				
-				def initialize(endpoint)
+				def initialize(endpoint, pid: Process.pid)
 					@endpoint = endpoint
+					@pid = pid
 				end
 				
 				def send(message)
-					Async do
-						socket = @endpoint.connect
-						begin
-							socket.write(message)
-						ensure
-							socket.close
+					if message.bytesize > MAXIMUM_MESSAGE_SIZE
+						raise ArgumentError, "Message length #{message.bytesize} exceeds #{MAXIMUM_MESSAGE_SIZE}: #{message.inspect}"
+					end
+					
+					Sync do
+						@endpoint.connect do |peer|
+							peer.send(message)
 						end
 					end
 				end
 				
 				def ready!(status = "Ready...")
-					send("READY=1\nSTATUS=#{status}")
+					send("PID=#{@pid}\nREADY=1\nSTATUS=#{status}")
 				end
 				
 				def reloading!(status = "Reloading...")
-					send("RELOADING=1\nSTATUS=#{status}")
+					send("PID=#{@pid}\nRELOADING=1\nSTATUS=#{status}")
 				end
 				
 				def restarting!(status = "Restarting...")
-					send("RELOADING=1\nSTATUS=#{status}")
+					send("PID=#{@pid}\nRELOADING=1\nSTATUS=#{status}")
 				end
 				
 				def stopping!
-					send("STOPPING=1")
+					send("PID=#{@pid}\nSTOPPING=1")
 				end
 				
 				def status!(text)
-					send("STATUS=#{text}")
+					send("PID=#{@pid}\nSTATUS=#{text}")
 				end
 				
-				def error!(status, errno = -1)
-					send("ERRNO=-1")
+				def error!(status, errno: -1)
+					send("PID=#{@pid}\nERRNO=#{errno}\nSTATUS=#{status}")
 				end
 			end
 			
 			class Server
+				def self.generate_path
+					File.expand_path(
+						"async-container-#{Process.pid}-#{SecureRandom.hex(8)}.ipc",
+						Dir.tmpdir
+					)
+				end
+				
+				def self.open(path = self.generate_path)
+					self.new(path)
+				end
+				
 				def initialize(path)
 					@path = path
 				end
 				
-				def accept
-					socket = Addrinfo.unix(@path, Socket::SOCK_DGRAM).bind
-					
-					while true
-						peer = socket.accept
+				attr :path
+				
+				def export
+					{'NOTIFY_SOCKET' => @path}
+				end
+				
+				def bind
+					Context.new(@path)
+				end
+				
+				class Context
+					def initialize(path)
+						@path = path
+						@endpoint = IO::Endpoint.unix(@path, Socket::SOCK_DGRAM)
 						
+						Sync do
+							@bound = @endpoint.bind
+						end
 						
+						@state = {}
+						@status = {}
 					end
-				ensure
-					socket&.close
+					
+					def clear
+						@state.clear
+						@status.clear
+					end
+					
+					attr :state
+					attr :status
+					
+					def update(pid, message)
+						if status = message['STATUS']
+							@status[pid] = status
+						end
+						
+						if message['RELOADING'] == '1'
+							@state[pid] = :reloading
+						end
+						
+						if message['READY'] == '1'
+							@state[pid] = :ready
+						end
+						
+						if message['STOPPING'] == '1'
+							@state[pid] = :stopping
+						end
+					end
+					
+					def ready?(pids)
+						pids.all?{|pid| @state[pid] == :ready}
+					end
+					
+					def close
+						Sync do
+							@bound.close
+						end
+						
+						File.unlink(@path)
+					end
+					
+					def receive
+						while true
+							data, address, flags, *controls = @bound.recvmsg(MAXIMUM_MESSAGE_SIZE)
+							
+							message = Notify.load(data)
+							
+							if pid = message['PID']&.to_i
+								update(pid, message)
+							end
+							
+							yield message
+						end
+					end
 				end
 			end
 		end

@@ -22,14 +22,21 @@ require_relative 'thread'
 require_relative '../group'
 require_relative '../error'
 
+require 'set'
+
 module Async
 	module Container
 		module Threaded
 			class Group < Async::Container::Group
 				def initialize
 					@finished = Thread::Queue.new
+					@pids = Set.new
 					
 					super
+				end
+				
+				def self.pids
+					@pids
 				end
 				
 				def finished(*arguments)
@@ -37,12 +44,16 @@ module Async
 				end
 				
 				def spawn(*arguments, **options)
-					fork do
+					arguments = prepare_for_spawn(arguments)
+					
+					self.fork do
 						begin
 							pid = ::Process.spawn(*arguments)
+							@pids.add(pid)
 							
 							::Process.waitpid(pid)
 						ensure
+							@pids.delete(pid)
 							::Process.kill(:TERM, pid)
 						end
 					end

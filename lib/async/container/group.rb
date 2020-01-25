@@ -28,6 +28,9 @@ module Async
 				
 				# This queue allows us to wait for processes to complete, without spawning new processes as a result.
 				@queue = nil
+				
+				@notify = Notify::Server.open
+				@context = @notify.bind
 			end
 			
 			def any?
@@ -38,12 +41,16 @@ module Async
 				@running.empty?
 			end
 			
+			def pids
+				@running.keys
+			end
+			
 			# This method sleeps for the specified duration, then 
 			def sleep(duration)
 				self.resume
 				self.suspend
 				
-				::Kernel::sleep(duration)
+				self.wait_for_children(self.pids, duration || 1)
 				
 				# This waits for any process to exit.
 				while self.wait_one(false)
@@ -76,9 +83,54 @@ module Async
 			def close
 				self.terminate
 				self.interrupt_all
+				
+				@context&.close
 			end
 			
 			protected
+			
+			def after_fork
+				ENV.update(@notify.export)
+			end
+			
+			def prepare_for_spawn(arguments)
+				if arguments.first.is_a?(Hash)
+					arguments[0] = arguments[0].merge(@notify.export)
+				else
+					arguments.unshift(@notify.export)
+				end
+				
+				return arguments
+			end
+			
+			def wait_for_children(pids, duration)
+				@context.clear
+				
+				puts "Waiting on #{self.pids}"
+				
+				Sync do |task|
+					waiting_task = nil
+					
+					receiving_task = task.async do
+						@context.receive do |message, address|
+							pp message
+							
+							yield message
+							
+							break if @context.ready?(self.pids)
+						end
+						
+						waiting_task&.stop
+					end
+					
+					if duration
+						waiting_task = task.async do |subtask|
+							subtask.sleep(duration)
+							receiving_task.stop
+						end
+					end
+				end
+			end
 			
 			def yield
 				if @queue
