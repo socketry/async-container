@@ -18,35 +18,49 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require 'async/io'
+
 module Async
 	module Container
 		module Notify
+			class Endpoint < Async::IO::Endpoint
+				def self.unix(path = ENV['NOTIFY_SOCKET'], **options)
+					self.new(::Async::IO::Endpoint.unix(path), **options)
+				end
+			end
+			
 			class Client
-				def self.open(path = ENV['NOTIFY_SOCKET'], pid: Process.pid)
+				def self.open
 					if path
-						self.new(path, pid)
+						self.new(Endpoint.unix)
 					end
 				end
 				
-				def initialize(path, pid)
-					@path = path
-					@pid = pid
+				def initialize(endpoint)
+					@endpoint = endpoint
 				end
 				
 				def send(message)
-					socket = Addrinfo.unix(@path, Socket::SOCK_DGRAM).connect
-					
-					socket.write(message)
-				ensure
-					socket&.close
+					Async do
+						socket = @endpoint.connect
+						begin
+							socket.write(message)
+						ensure
+							socket.close
+						end
+					end
 				end
 				
-				def ready!
-					send("READY=1")
+				def ready!(status = "Ready...")
+					send("READY=1\nSTATUS=#{status}")
 				end
 				
-				def reloading!
-					send("RELOADING=1")
+				def reloading!(status = "Reloading...")
+					send("RELOADING=1\nSTATUS=#{status}")
+				end
+				
+				def restarting!(status = "Restarting...")
+					send("RELOADING=1\nSTATUS=#{status}")
 				end
 				
 				def stopping!
@@ -57,8 +71,8 @@ module Async
 					send("STATUS=#{text}")
 				end
 				
-				def error!(text, errno = -1)
-					send("STATUS=#{text}\nERRNO=#{text}")
+				def error!(status, errno = -1)
+					send("ERRNO=-1")
 				end
 			end
 			
