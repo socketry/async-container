@@ -20,7 +20,7 @@
 
 require "async/container/controller"
 
-RSpec.describe Async::Container::Notify do
+RSpec.describe Async::Container::Notify, if: Async::Container.fork? do
 	let(:server) {described_class::Server.open}
 	let(:notify_socket) {server.path}
 	let(:client) {described_class::Client.open(notify_socket)}
