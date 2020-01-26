@@ -42,6 +42,14 @@ module Async
 				@keyed = {}
 			end
 			
+			def to_s
+				"#{self.class} with #{@statistics.spawns} spawns and #{@statistics.failures} failures."
+			end
+			
+			def to_s
+				self.class.name
+			end
+			
 			def [] key
 				@keyed[key]&.value
 			end

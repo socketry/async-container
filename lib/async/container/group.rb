@@ -101,8 +101,6 @@ module Async
 			end
 			
 			def wait_until_ready(duration)
-				puts "Waiting on #{@context.pids}"
-				
 				Sync do |task|
 					waiting_task = nil
 					

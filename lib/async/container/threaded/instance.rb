@@ -30,6 +30,7 @@ module Async
 					@thread.name = value
 				end
 				
+				# Althought it would be nice, this is too tricky to implement correctly.
 				# def exec(*arguments)
 				# 	pid = ::Process.spawn(*arguments)
 				# 

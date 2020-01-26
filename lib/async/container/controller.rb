@@ -56,6 +56,18 @@ module Async
 				@startup_duration = startup_duration
 			end
 			
+			def state_string
+				if running?
+					"running"
+				else
+					"stopped"
+				end
+			end
+			
+			def to_s
+				"#{self.class} #{state_string}"
+			end
+			
 			def trap(signal, &block)
 				@signals[signal] = block
 			end
@@ -108,8 +120,9 @@ module Async
 				end
 				
 				# Wait for all child processes to enter the ready state.
-				Async.logger.debug(self) {"Waiting for container to become ready..."}
+				Async.logger.debug(self, "Waiting for startup...")
 				container.sleep(duration)
+				Async.logger.debug(self, "Finished startup.")
 				
 				if container.failed?
 					@notify&.error!($!.to_s)
@@ -164,11 +177,7 @@ module Async
 					raise Terminate
 				end
 				
-				Async.logger.warn("starting")
-				
 				self.start
-				
-				Async.logger.warn("started: #{@container}")
 				
 				while @container
 					begin
@@ -186,13 +195,10 @@ module Async
 					end
 				end
 			rescue Interrupt
-				Async.logger.warn("run: #{$!} #{@container}")
 				self.stop(true)
 			rescue Terminate
-				Async.logger.warn("run: #{$!} #{@container}")
 				self.stop(false)
 			else
-				Async.logger.warn("run: graceful #{$!} #{@container}")
 				self.stop(true)
 			ensure
 				# Restore the interrupt handler:
