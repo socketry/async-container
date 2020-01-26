@@ -32,9 +32,9 @@ module Async
 					::Process.setproctitle(@name)
 				end
 				
-				def exec(*arguments)
-					::Process.exec(*arguments)
-				end
+				# def exec(*arguments)
+				# 	::Process.exec(*arguments)
+				# end
 				
 				def to_s
 					"\#<#{self.class}: #{@name}>"

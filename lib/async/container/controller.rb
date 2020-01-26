@@ -46,6 +46,7 @@ module Async
 			def initialize(startup_duration: nil)
 				@container = nil
 				
+				# If there is no `NOTIFY_SOCKET` this will be nil:
 				@notify = Notify::Client.open
 				
 				@signals = {}

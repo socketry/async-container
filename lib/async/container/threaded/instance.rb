@@ -30,13 +30,13 @@ module Async
 					@thread.name = value
 				end
 				
-				def exec(*arguments)
-					pid = ::Process.spawn(*arguments)
-					
-					::Process.waitpid(pid)
-				ensure
-					::Process.kill(:TERM, pid)
-				end
+				# def exec(*arguments)
+				# 	pid = ::Process.spawn(*arguments)
+				# 
+				# 	::Process.waitpid(pid)
+				# ensure
+				# 	::Process.kill(:TERM, pid)
+				# end
 				
 				def to_s
 					"\#<#{self.class}: #{@thread.name}>"

@@ -23,14 +23,21 @@ require 'fiber'
 module Async
 	module Container
 		class Group
-			def initialize
+			def initialize(notify: false)
 				@running = {}
 				
 				# This queue allows us to wait for processes to complete, without spawning new processes as a result.
 				@queue = nil
 				
-				@notify = Notify::Server.open
-				@context = @notify.bind
+				if notify == true
+					@notify = Notify::Server.open
+				elsif notify
+					@notify = notify
+				else
+					@notify = nil
+				end
+				
+				@context = @notify&.context
 			end
 			
 			def any?
@@ -41,16 +48,12 @@ module Async
 				@running.empty?
 			end
 			
-			def pids
-				@running.keys
-			end
-			
 			# This method sleeps for the specified duration, then 
 			def sleep(duration)
 				self.resume
 				self.suspend
 				
-				self.wait_for_children(self.pids, duration || 1)
+				self.wait_for_children(duration)
 				
 				# This waits for any process to exit.
 				while self.wait_one(false)
@@ -89,24 +92,16 @@ module Async
 			
 			protected
 			
-			def after_fork
-				ENV.update(@notify.export)
-			end
-			
-			def prepare_for_spawn(arguments)
-				if arguments.first.is_a?(Hash)
-					arguments[0] = arguments[0].merge(@notify.export)
-				else
-					arguments.unshift(@notify.export)
+			def wait_for_children(duration)
+				if @notify
+					self.wait_until_ready(duration)
+				elsif duration
+					Kernel::sleep(duration)
 				end
-				
-				return arguments
 			end
 			
-			def wait_for_children(pids, duration)
-				@context.clear
-				
-				puts "Waiting on #{self.pids}"
+			def wait_until_ready(duration)
+				puts "Waiting on #{@context.pids}"
 				
 				Sync do |task|
 					waiting_task = nil
@@ -117,7 +112,7 @@ module Async
 							
 							yield message
 							
-							break if @context.ready?(self.pids)
+							break if @context.ready?
 						end
 						
 						waiting_task&.stop

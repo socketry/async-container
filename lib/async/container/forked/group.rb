@@ -25,7 +25,7 @@ module Async
 	module Container
 		module Forked
 			class Group < Async::Container::Group
-				def initialize
+				def initialize(**options)
 					@pgid = nil
 					
 					super
@@ -34,9 +34,12 @@ module Async
 				def spawn(*arguments, **options)
 					self.yield
 					
-					arguments = self.prepare_for_spawn(arguments)
+					# Arguments are modified in place.
+					Notify.before_spawn(@notify, arguments)
 					
 					pid = ::Process.spawn(*arguments, **options)
+					
+					@context&.add(pid)
 					
 					return Process.new(self, pid)
 				end
@@ -45,10 +48,12 @@ module Async
 					self.yield
 					
 					pid = ::Process.fork do
-						self.after_fork
+						Notify.after_fork(@notify)
 						
 						yield
 					end
+					
+					@context&.add(pid)
 					
 					return Process.new(self, pid)
 				end
@@ -110,6 +115,7 @@ module Async
 					
 					return if !blocking && pid == nil
 					
+					@context&.delete(pid)
 					fiber = @running.delete(pid)
 					
 					if @running.empty?

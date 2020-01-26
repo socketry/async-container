@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+#
 # Copyright, 2020, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,6 +30,7 @@ require 'securerandom'
 module Async
 	module Container
 		module Notify
+			NOTIFY_SOCKET = 'NOTIFY_SOCKET'
 			MAXIMUM_MESSAGE_SIZE = 4096
 			
 			def self.load(message)
@@ -38,8 +41,35 @@ module Async
 				]
 			end
 			
+			# Sets or clears NOTIFY_SOCKET environment variable depending on whether the server exists (and in theory bound).
+			def self.after_fork(server, environment = ENV)
+				if server
+					# Set the environment variable:
+					environment[NOTIFY_SOCKET] = server.path
+				else
+					# Unset the environment variable (this doesn't actually set it to nil):
+					environment[NOTIFY_SOCKET] = nil
+				end
+				
+				return environment
+			end
+			
+			# Inserts or duplicates the environment given an argument array.
+			# Sets or clears it in a way that is suitable for {::Process.spawn}.
+			def self.before_spawn(server, arguments)
+				if arguments.first.is_a?(Hash)
+					environment = arguments.first = arguments.first.dup
+				else
+					arguments.unshift(environment = Hash.new)
+				end
+				
+				after_fork(server, arguments.first)
+				
+				return arguments
+			end
+			
 			class Client
-				def self.open(path = ENV['NOTIFY_SOCKET'])
+				def self.open(path = ENV[NOTIFY_SOCKET])
 					if path
 						self.new(
 							IO::Endpoint.unix(path, Socket::SOCK_DGRAM)
@@ -107,10 +137,6 @@ module Async
 				
 				attr :path
 				
-				def export
-					{'NOTIFY_SOCKET' => @path}
-				end
-				
 				def bind
 					Context.new(@path)
 				end
@@ -133,6 +159,24 @@ module Async
 						@status.clear
 					end
 					
+					def pids
+						@state.keys
+					end
+					
+					def add(pid)
+						@state[pid] = :preparing
+					end
+					
+					def fail(pid, reason = nil)
+						@state[pid] = :failed
+						@status[pid] = reason
+					end
+					
+					def remove(pid)
+						@state.delete(pid)
+						@status.delete(pid)
+					end
+					
 					attr :state
 					attr :status
 					
@@ -142,7 +186,7 @@ module Async
 						end
 						
 						if message['RELOADING'] == '1'
-							@state[pid] = :reloading
+							@state[pid] = :preparing
 						end
 						
 						if message['READY'] == '1'
@@ -155,7 +199,7 @@ module Async
 					end
 					
 					def ready?(pids)
-						pids.all?{|pid| @state[pid] == :ready}
+						pids.all?{|pid| @state[pid] != :preparing}
 					end
 					
 					def close

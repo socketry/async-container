@@ -28,15 +28,11 @@ module Async
 	module Container
 		module Threaded
 			class Group < Async::Container::Group
-				def initialize
+				def initialize(**options)
 					@finished = Thread::Queue.new
 					@pids = Set.new
 					
 					super
-				end
-				
-				def self.pids
-					@pids
 				end
 				
 				def finished(*arguments)
@@ -44,16 +40,16 @@ module Async
 				end
 				
 				def spawn(*arguments, **options)
-					arguments = prepare_for_spawn(arguments)
+					# Arguments are modified in place:
+					Notify.before_spawn(@notify, arguments)
+					
+					pid = ::Process.spawn(*arguments)
+					@context&.add(pid)
 					
 					self.fork do
 						begin
-							pid = ::Process.spawn(*arguments)
-							@pids.add(pid)
-							
 							::Process.waitpid(pid)
 						ensure
-							@pids.delete(pid)
 							::Process.kill(:TERM, pid)
 						end
 					end
