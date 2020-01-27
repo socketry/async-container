@@ -198,8 +198,8 @@ module Async
 						end
 					end
 					
-					def ready?(pids)
-						self.pids.all?{|pid| @state[pid] != :preparing}
+					def ready?(pids = self.pids)
+						pids.all?{|pid| @state[pid] != :preparing}
 					end
 					
 					def close

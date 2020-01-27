@@ -34,9 +34,11 @@ RSpec.describe Async::Container::Notify, if: Async::Container.fork? do
 					client.ready!
 				end
 				
+				context.add(pid)
+				
 				Sync do
 					context.receive do |message, address|
-						break if context.ready?([pid])
+						break if context.ready?
 					end
 				end
 				
