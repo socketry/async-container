@@ -23,21 +23,11 @@ require 'fiber'
 module Async
 	module Container
 		class Group
-			def initialize(notify: false)
+			def initialize
 				@running = {}
 				
 				# This queue allows us to wait for processes to complete, without spawning new processes as a result.
 				@queue = nil
-				
-				if notify == true
-					@notify = Notify::Server.open
-				elsif notify
-					@notify = notify
-				else
-					@notify = nil
-				end
-				
-				@context = @notify&.context
 			end
 			
 			def any?
@@ -86,8 +76,6 @@ module Async
 			def close
 				self.terminate
 				self.interrupt_all
-				
-				@context&.close
 			end
 			
 			protected
@@ -97,31 +85,6 @@ module Async
 					self.wait_until_ready(duration)
 				elsif duration
 					Kernel::sleep(duration)
-				end
-			end
-			
-			def wait_until_ready(duration)
-				Sync do |task|
-					waiting_task = nil
-					
-					receiving_task = task.async do
-						@context.receive do |message, address|
-							pp message
-							
-							yield message
-							
-							break if @context.ready?
-						end
-						
-						waiting_task&.stop
-					end
-					
-					if duration
-						waiting_task = task.async do |subtask|
-							subtask.sleep(duration)
-							receiving_task.stop
-						end
-					end
 				end
 			end
 			
