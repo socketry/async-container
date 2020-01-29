@@ -51,6 +51,10 @@ module Async
 				self.resume
 				self.suspend
 				
+				if duration.nil?
+					Async.logger.warn(self) {"Waiting for children indefinitely, requires readiness notification!"}
+				end
+				
 				self.wait_for_children(duration)
 			end
 			
