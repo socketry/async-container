@@ -46,7 +46,7 @@ module Async
 				@running.empty?
 			end
 			
-			# This method sleeps for the specified duration, then 
+			# This method sleeps for at most the specified duration.
 			def sleep(duration)
 				self.resume
 				self.suspend

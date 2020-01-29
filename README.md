@@ -48,7 +48,7 @@ Async.logger.debug "Finished."
 
 ### Controller
 
-A controller manages the life-cycle of a container. It handles receiving SIGHUP and recreating the container as required.
+The controller provides the life-cycle management for one or more containers of processes. It provides behaviour like starting, restarting, reloading and stopping. You can see some [example implementations in Falcon](https://github.com/socketry/falcon/blob/master/lib/falcon/controller/). If the process running the controller receives `SIGHUP` it will recreate the container gracefully.
 
 ```ruby
 require 'async/container'
