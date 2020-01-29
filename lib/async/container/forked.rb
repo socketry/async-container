@@ -18,22 +18,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'forked/container'
+require_relative 'generic'
+require_relative 'process'
 
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
-		module Forked
-			def self.run(*arguments, **options, &block)
-				Container.run(*arguments, **options, &block)
-			end
-			
+		class Forked < Generic
 			def self.multiprocess?
 				true
 			end
 			
-			def self.new
-				Container.new
+			def start(name, &block)
+				Process.fork(name: name, &block)
 			end
 		end
 	end

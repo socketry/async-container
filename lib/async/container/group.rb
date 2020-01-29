@@ -20,6 +20,8 @@
 
 require 'fiber'
 
+require_relative 'error'
+
 module Async
 	module Container
 		class Group
@@ -28,6 +30,12 @@ module Async
 				
 				# This queue allows us to wait for processes to complete, without spawning new processes as a result.
 				@queue = nil
+			end
+			
+			attr :running
+			
+			def running?
+				@running.any?
 			end
 			
 			def any?
@@ -44,17 +52,25 @@ module Async
 				self.suspend
 				
 				self.wait_for_children(duration)
-				
-				# This waits for any process to exit.
-				while self.wait_one(false)
-				end
 			end
 			
 			def wait
 				self.resume
 				
 				while self.any?
-					self.wait_one
+					self.wait_for_children
+				end
+			end
+			
+			def interrupt
+				@running.each_value do |fiber|
+					fiber.resume(Interrupt)
+				end
+			end
+			
+			def terminate
+				@running.each_value do |fiber|
+					fiber.resume(Terminate)
 				end
 			end
 			
@@ -70,21 +86,39 @@ module Async
 					self.sleep(timeout)
 				end
 			ensure
-				self.close
+				self.terminate
 			end
 			
-			def close
-				self.terminate
-				self.interrupt_all
+			def wait_for(channel)
+				io = channel.in
+				
+				@running[io] = Fiber.current
+				
+				while @running.key?(io)
+					result = Fiber.yield
+					if result == Interrupt
+						channel.interrupt!
+					elsif result == Terminate
+						channel.terminate!
+					elsif message = channel.receive
+						yield message
+					else
+						return channel.wait
+					end
+				end
+			ensure
+				@running.delete(io)
 			end
 			
 			protected
 			
-			def wait_for_children(duration)
-				if @notify
-					self.wait_until_ready(duration)
-				elsif duration
-					Kernel::sleep(duration)
+			def wait_for_children(duration = nil)
+				if !@running.empty?
+					readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)
+					
+					readable&.each do |io|
+						@running[io].resume
+					end
 				end
 			end
 			
@@ -107,32 +141,6 @@ module Async
 					@queue = nil
 					
 					queue.each(&:resume)
-				end
-			end
-			
-			def interrupt_all
-				while self.any?
-					self.wait_one do |fiber, status|
-						begin
-							# This causes the waiting fiber to `raise Interrupt`:
-							fiber.resume(nil)
-						rescue Interrupt
-							# Graceful exit.
-						end
-					end
-				end
-			end
-			
-			public
-			
-			def wait_for(value)
-				@running[value] = Fiber.current
-				
-				# Return process status:
-				if result = Fiber.yield
-					return result
-				else
-					raise Interrupt
 				end
 			end
 		end

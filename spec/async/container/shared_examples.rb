@@ -37,7 +37,6 @@ RSpec.shared_examples_for Async::Container do
 	it "can run concurrently" do
 		subject.async(name: "Sleepy Jerry") do |task, instance|
 			3.times do |i|
-				puts "Counting Sheep #{i}"
 				instance.name = "Counting Sheep #{i}"
 				
 				sleep 0.01
@@ -50,15 +49,11 @@ RSpec.shared_examples_for Async::Container do
 	describe '#sleep' do
 		it "can sleep for a short time" do
 			subject.spawn do
-				puts "Sleep(2)"
-				sleep(2)
-				puts "Boom"
+				sleep(0.2)
 				raise "Boom"
 			end
 			
-			puts "Sleep(1)"
-			subject.sleep(1)
-			puts "Failures?"
+			subject.sleep(0.1)
 			expect(subject.statistics).to have_attributes(failures: 0)
 			
 			subject.wait
@@ -70,7 +65,7 @@ RSpec.shared_examples_for Async::Container do
 	describe '#stop' do
 		it 'can stop the child process' do
 			subject.spawn do
-				sleep(10)
+				sleep(1)
 			end
 			
 			is_expected.to be_running

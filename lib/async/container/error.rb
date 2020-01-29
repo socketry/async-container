@@ -25,13 +25,11 @@ module Async
 		
 		Interrupt = ::Interrupt
 		
-		class Terminate < Interrupt
-			def signm
-				'Terminate'
-			end
-			
-			def signo
-				Signal.list['TERM']
+		class Terminate < SignalException
+			SIGTERM = Signal.list['TERM']
+
+			def initialize
+				super(SIGTERM)
 			end
 		end
 	end

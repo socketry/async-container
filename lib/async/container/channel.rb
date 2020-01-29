@@ -24,7 +24,14 @@ module Async
 	module Container
 		class Channel
 			def initialize
-				@in, @out = IO.pipe
+				@in, @out = ::IO.pipe
+			end
+			
+			attr :in
+			attr :out
+			
+			def close_read
+				@in.close
 			end
 			
 			def close_write
@@ -32,8 +39,12 @@ module Async
 			end
 			
 			def receive
-				if data = @in.gets
-					return JSON.parse(data, symbolize_names: true)
+				if data = @in.gets(chomp: true)
+					begin
+						return JSON.parse(data, symbolize_names: true)
+					rescue
+						return {line: data}
+					end
 				end
 			end
 			

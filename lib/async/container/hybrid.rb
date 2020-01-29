@@ -1,4 +1,4 @@
-# Copyright, 2019, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,21 +18,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'hybrid/container'
+require_relative 'forked'
+require_relative 'threaded'
 
 module Async
 	module Container
-		module Hybrid
-			def self.run(*arguments, **options, &block)
-				Container.run(*arguments, **options, &block)
-			end
-			
-			def self.multiprocess?
-				true
-			end
-			
-			def self.new
-				Container.new
+		class Hybrid < Forked
+			def run(count: nil, forks: nil, threads: nil, **options, &block)
+				processor_count = Container.processor_count
+				count ||= processor_count ** 2
+				forks ||= [processor_count, count].min
+				threads = (count / forks).ceil
+				
+				forks.times do
+					self.spawn(**options) do
+						container = Threaded::Container.new
+						
+						container.run(count: threads, **options, &block)
+						
+						container.wait
+					end
+				end
+				
+				return self
 			end
 		end
 	end

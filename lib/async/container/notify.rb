@@ -77,7 +77,7 @@ module Async
 					end
 				end
 				
-				def initialize(endpoint, pid: Process.pid)
+				def initialize(endpoint, pid: ::Process.pid)
 					@endpoint = endpoint
 					@pid = pid
 				end
@@ -122,7 +122,7 @@ module Async
 			class Server
 				def self.generate_path
 					File.expand_path(
-						"async-container-#{Process.pid}-#{SecureRandom.hex(8)}.ipc",
+						"async-container-#{::Process.pid}-#{SecureRandom.hex(8)}.ipc",
 						Dir.tmpdir
 					)
 				end

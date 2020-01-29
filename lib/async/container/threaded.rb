@@ -18,22 +18,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'threaded/container'
+require_relative 'generic'
+require_relative 'thread'
 
 module Async
 	# Manages a reactor within one or more threads.
 	module Container
-		module Threaded
-			def self.run(*arguments, **options, &block)
-				Container.run(*arguments, **options, &block)
-			end
-			
+		class Threaded < Generic
 			def self.multiprocess?
 				false
 			end
 			
-			def self.new(**options)
-				Container.new(**options)
+			def start(name, &block)
+				Thread.fork(name: name, &block)
 			end
 		end
 	end

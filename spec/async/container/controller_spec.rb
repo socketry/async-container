@@ -32,7 +32,7 @@ RSpec.describe Async::Container::Controller do
 					@output.write(".")
 					@output.flush
 					
-					sleep(8)
+					sleep(0.1)
 				end
 				
 				container.spawn do

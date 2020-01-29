@@ -22,6 +22,7 @@ require 'async'
 
 require 'etc'
 
+require_relative 'group'
 require_relative 'keyed'
 require_relative 'statistics'
 
@@ -35,19 +36,22 @@ module Async
 		end
 		
 		class Generic
+			def self.run(*arguments, **options, &block)
+				self.new.run(*arguments, **options, &block)
+			end
+			
 			UNNAMED = "Unnamed"
 			
 			def initialize(**options)
+				@group = Group.new
+				@running = true
+				
 				@statistics = Statistics.new
 				@keyed = {}
 			end
 			
 			def to_s
 				"#{self.class} with #{@statistics.spawns} spawns and #{@statistics.failures} failures."
-			end
-			
-			def to_s
-				self.class.name
 			end
 			
 			def [] key
@@ -61,12 +65,29 @@ module Async
 			end
 			
 			# Whether there are running tasks.
-			# def running?
-			# end
+			def running?
+				@group.running?
+			end
+			
+			def sleep(duration)
+				@group.sleep(duration)
+			end
 			
 			# Wait until all spawned tasks are completed.
-			# def wait
-			# end
+			def wait
+				@group.wait
+			end
+			
+			def stop(timeout = true)
+				@running = false
+				@group.stop(timeout)
+				
+				if @group.running?
+					Async.logger.warn(self) {"Group is still running after stopping it!"}
+				end
+			ensure
+				@running = true
+			end
 			
 			def spawn(name: nil, restart: false, key: nil)
 				name ||= UNNAMED
@@ -79,10 +100,10 @@ module Async
 				@statistics.spawn!
 				
 				Fiber.new do
-					while true
-						child = self.start(name) do |instance|
+					while @running
+						child = self.start(name) do |channel|
 							begin
-								yield instance
+								yield channel
 							rescue Interrupt
 								# Graceful exit.
 							end
@@ -91,7 +112,7 @@ module Async
 						insert(key, child)
 						
 						begin
-							status = child.wait
+							status = @group.wait_for(child)
 						ensure
 							delete(key)
 						end
