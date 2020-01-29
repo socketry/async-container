@@ -39,7 +39,7 @@ module Async
 			end
 			
 			def receive
-				if data = @in.gets(chomp: true)
+				if data = @in.gets
 					begin
 						return JSON.parse(data, symbolize_names: true)
 					rescue
