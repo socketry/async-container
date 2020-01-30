@@ -28,7 +28,7 @@ RSpec.describe Async::Container::Notify::Pipe do
 		
 		container.spawn(restart: false) do |instance|
 			instance.exec(
-				# "bundle", "exec", "--keep-file-descriptors",
+				"bundle", "exec", "--keep-file-descriptors",
 				notify_script, ready: false
 			)
 		end
