@@ -177,7 +177,7 @@ module Async
 				
 				self.start
 				
-				while @container
+				while @container&.running?
 					begin
 						@container.wait
 					rescue SignalException => exception
