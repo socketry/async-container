@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+#
 # Copyright, 2020, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,38 +20,40 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'json'
-
 module Async
 	module Container
-		class Channel
-			def initialize
-				@in, @out = ::IO.pipe
-			end
-			
-			attr :in
-			attr :out
-			
-			def close_read
-				@in.close
-			end
-			
-			def close_write
-				@out.close
-			end
-			
-			def close
-				close_read
-				close_write
-			end
-			
-			def receive
-				if data = @in.gets
-					begin
-						return JSON.parse(data, symbolize_names: true)
-					rescue
-						return {line: data}
-					end
+		module Notify
+			class Client
+				def ready!(**message)
+					send(ready: true, **message)
+				end
+				
+				def reloading!(**message)
+					message[:ready] = false
+					message[:reloading] = true
+					message[:status] ||= "Reloading..."
+					
+					send(**message)
+				end
+				
+				def restarting!(**message)
+					message[:ready] = false
+					message[:reloading] = true
+					message[:status] ||= "Restarting..."
+					
+					send(**message)
+				end
+				
+				def stopping!(**message)
+					message[:stopping] = true
+				end
+				
+				def status=(text)
+					send(status: text)
+				end
+				
+				def error!(text, **message)
+					send(status: text, **message)
 				end
 			end
 		end

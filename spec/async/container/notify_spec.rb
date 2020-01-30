@@ -19,11 +19,12 @@
 # THE SOFTWARE.
 
 require "async/container/controller"
+require "async/container/notify/server"
 
 RSpec.describe Async::Container::Notify, if: Async::Container.fork? do
 	let(:server) {described_class::Server.open}
 	let(:notify_socket) {server.path}
-	let(:client) {described_class::Client.open(notify_socket)}
+	let(:client) {described_class::Socket.new(notify_socket)}
 	
 	describe '#ready!' do
 		it "should send message" do
@@ -34,16 +35,16 @@ RSpec.describe Async::Container::Notify, if: Async::Container.fork? do
 					client.ready!
 				end
 				
-				context.add(pid)
+				messages = []
 				
 				Sync do
 					context.receive do |message, address|
-						break if context.ready?
+						messages << message
+						break
 					end
 				end
 				
-				expect(context.status[pid]).to be == "Ready..."
-				expect(context.state[pid]).to be :ready
+				expect(messages.last).to include(ready: true)
 			ensure
 				context&.close
 				Process.wait(pid) if pid

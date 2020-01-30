@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 require_relative 'channel'
+require_relative 'notify/pipe'
 
 require 'async/logger'
 
@@ -39,10 +40,49 @@ module Async
 				end
 			end
 			
+			class Instance < Notify::Pipe
+				def self.for(thread)
+					instance = self.new(thread.out)
+					
+					return instance
+				end
+				
+				def initialize(io)
+					@name = nil
+					@thread = ::Thread.current
+					
+					super
+				end
+				
+				def name= value
+					@thread.name = value
+				end
+				
+				def name
+					@thread.name
+				end
+				
+				def exec(*arguments, ready: true, **options)
+					if ready
+						self.ready!(status: "(spawn)") if ready
+					else
+						arguments = self.before_spawn(arguments)
+					end
+					
+					begin
+						pid = ::Process.spawn(*arguments, **options)
+					ensure
+						_, status = ::Process.wait2(@pid)
+						
+						raise Exit, status
+					end
+				end
+			end
+			
 			def self.fork(**options)
 				self.new(**options) do |thread|
 					::Thread.new do
-						yield thread
+						yield Instance.for(thread)
 					end
 				end
 			end
@@ -96,34 +136,14 @@ module Async
 			end
 			
 			def interrupt!
-				raise ArgumentError, "Cannot invoke from worker thread!" if @thread == ::Thread.current
-				
 				@thread.raise(Interrupt)
 			end
 			
 			def terminate!
-				raise ArgumentError, "Cannot invoke from worker thread!" if @thread == ::Thread.current
-				
 				@thread.raise(Terminate)
 			end
 			
-			def exec(*arguments, ready: true, **options)
-				raise ArgumentError, "Can only invoke from worker thread!" if @thread == ::Thread.current
-				
-				self.ready!(status: "(spawn)") if ready
-				
-				begin
-					pid = ::Process.spawn(*arguments, **options)
-				ensure
-					_, status = ::Process.wait2(@pid)
-					
-					raise Exit, status
-				end
-			end
-			
 			def wait
-				raise ArgumentError, "Cannot invoke from worker thread!" if @thread == ::Thread.current
-				
 				if @waiter
 					@waiter.join
 					@waiter = nil

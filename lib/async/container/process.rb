@@ -21,9 +21,47 @@
 require_relative 'channel'
 require_relative 'error'
 
+require_relative 'notify/pipe'
+
 module Async
 	module Container
 		class Process < Channel
+			class Instance < Notify::Pipe
+				def self.for(process)
+					instance = self.new(process.out)
+					
+					instance.name = process.name
+					
+					return instance
+				end
+				
+				def initialize(io)
+					super
+					
+					@name = nil
+				end
+				
+				def name= value
+					if @name = value
+						::Process.setproctitle(@name)
+					end
+				end
+				
+				def name
+					@name
+				end
+				
+				def exec(*arguments, ready: true, **options)
+					if ready
+						self.ready!(status: "(exec)") if ready
+					else
+						arguments = self.before_spawn(arguments)
+					end
+					
+					::Process.exec(*arguments, **options)
+				end
+			end
+			
 			def self.fork(**options)
 				self.new(**options) do |process|
 					::Process.fork do
@@ -31,11 +69,7 @@ module Async
 						Signal.trap(:TERM) {raise Terminate}
 						
 						begin
-							process.close_read
-							
-							::Process.setproctitle(process.name)
-							
-							yield process
+							yield Instance.for(process)
 						rescue Interrupt
 							# Graceful exit.
 						rescue Exception => error
@@ -96,32 +130,18 @@ module Async
 			end
 			
 			def interrupt!
-				raise ArgumentError, "Cannot invoke from child process!" unless @pid
-				
 				unless @status
 					::Process.kill(:INT, @pid)
 				end
 			end
 			
 			def terminate!
-				raise ArgumentError, "Cannot invoke from child process!" unless @pid
-				
 				unless @status
 					::Process.kill(:TERM, @pid)
 				end
 			end
 			
-			def exec(*arguments, ready: true, **options)
-				raise ArgumentError, "Can only invoke from child process!" if @pid
-				
-				self.ready!(status: "(exec)") if ready
-				
-				::Process.exec(*arguments, **options)
-			end
-			
 			def wait
-				raise ArgumentError, "Cannot invoke from child process!" unless @pid
-				
 				unless @status
 					pid, @status = ::Process.wait2(@pid)
 				end

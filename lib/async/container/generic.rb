@@ -89,6 +89,13 @@ module Async
 			
 			def wait_until_ready
 				while true
+					Async.logger.debug(self) do |buffer|
+						buffer.puts "Waiting for ready:"
+						@state.each do |child, state|
+							buffer.puts "\t#{child.class}: #{state.inspect}"
+						end
+					end
+					
 					self.sleep
 					
 					break if self.status?(:ready)
@@ -124,6 +131,7 @@ module Async
 						
 						begin
 							status = @group.wait_for(child) do |message|
+								Async.logger.debug(self) {"State change: #{message}"}
 								state.update(message)
 							end
 						ensure

@@ -43,17 +43,14 @@ module Async
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
 			
-			def initialize(startup_duration: nil)
+			def initialize(notify: Notify.open!)
 				@container = nil
 				
-				# If there is no `NOTIFY_SOCKET` this will be nil:
-				@notify = Notify::Client.open
+				@notify = notify
 				
 				@signals = {}
 				
 				trap(SIGHUP, &self.method(:restart))
-				
-				@startup_duration = startup_duration
 			end
 			
 			def state_string
@@ -100,7 +97,7 @@ module Async
 				@container = nil
 			end
 			
-			def restart(duration = @startup_duration)
+			def restart
 				if @container
 					@notify&.restarting!
 					
@@ -143,7 +140,7 @@ module Async
 				container&.stop(false)
 			end
 			
-			def reload(duration = @startup_duration)
+			def reload
 				@notify&.reloading!
 				
 				Async.logger.info(self) {"Reloading container: #{@container}..."}
