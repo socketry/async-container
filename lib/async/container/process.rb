@@ -147,16 +147,16 @@ module Async
 			
 			def wait
 				if @pid && @status.nil?
-					pid, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
+					_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 					
 					if @status.nil?
 						sleep(0.01)
-						pid, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
+						_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 					end
 					
 					if @status.nil?
 						Async.logger.warn(self) {"Process #{@pid} is blocking, has it exited?"}
-						pid, @status = ::Process.wait2(@pid)
+						_, @status = ::Process.wait2(@pid)
 					end
 				end
 				

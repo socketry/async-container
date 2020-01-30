@@ -72,7 +72,7 @@ module Async
 					begin
 						pid = ::Process.spawn(*arguments, **options)
 					ensure
-						_, status = ::Process.wait2(@pid)
+						_, status = ::Process.wait2(pid)
 						
 						raise Exit, status
 					end
@@ -100,7 +100,7 @@ module Async
 					begin
 						@thread.join
 					rescue Exit => exit
-						finished(exit.result)
+						finished(exit.error)
 					rescue Interrupt
 						# Graceful shutdown.
 						finished
