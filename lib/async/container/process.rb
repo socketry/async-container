@@ -146,7 +146,7 @@ module Async
 			end
 			
 			def wait
-				unless @status
+				if @pid && @status.nil?
 					pid, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 					
 					if @status.nil?
