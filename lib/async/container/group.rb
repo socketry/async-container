@@ -61,7 +61,7 @@ module Async
 			def wait
 				self.resume
 				
-				while self.any?
+				while self.running?
 					self.wait_for_children
 				end
 			end
@@ -123,6 +123,7 @@ module Async
 				
 				while @running.key?(io)
 					result = Fiber.yield
+					
 					if result == Interrupt
 						channel.interrupt!
 					elsif result == Terminate
