@@ -66,7 +66,7 @@ module Async
 					if ready
 						self.ready!(status: "(spawn)") if ready
 					else
-						arguments = self.before_spawn(arguments)
+						self.before_spawn(arguments, options)
 					end
 					
 					begin
@@ -174,7 +174,7 @@ module Async
 				end
 				
 				@status = Status.new(error)
-				@out.close
+				self.close_write
 			end
 		end
 	end

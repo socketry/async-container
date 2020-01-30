@@ -22,6 +22,8 @@
 
 require_relative 'client'
 
+require 'json'
+
 module Async
 	module Container
 		module Notify
@@ -32,34 +34,40 @@ module Async
 					if descriptor = environment.delete(NOTIFY_PIPE)
 						self.new(::IO.for_fd(descriptor.to_i))
 					end
+				rescue Errno::EBADF => error
+					Async.logger.error(self) {error}
+					
+					return nil
 				end
 				
 				def initialize(io)
 					@io = io
 				end
 				
-				def before_exec(environment = ENV)
-					environment[NOTIFY_PIPE] = @io.fileno
+				def before_exec(arguments)
+					@io.close_on_exec = false
+					
+					# Insert or duplicate the environment hash which is the first argument:
+					environment = environment_for(arguments)
+					
+					environment[NOTIFY_PIPE] = @io.fileno.to_s
 				end
 				
 				# Inserts or duplicates the environment given an argument array.
 				# Sets or clears it in a way that is suitable for {::Process.spawn}.
-				def self.before_spawn(server, arguments)
-					if arguments.first.is_a?(Hash)
-						environment = arguments.first = arguments.first.dup
-					else
-						arguments.unshift(environment = Hash.new)
-					end
+				def before_spawn(arguments, options)
+					environment = environment_for(arguments)
 					
-					before_exec(arguments.first)
+					options[3] = @io
 					
-					return arguments
+					environment[NOTIFY_PIPE] = "3"
 				end
 				
 				def send(**message)
-					data = JSON.dump(message)
+					data = ::JSON.dump(message)
 					
 					@io.puts(data)
+					@io.flush
 				end
 				
 				def ready!(**message)
@@ -80,6 +88,19 @@ module Async
 					message[:status] ||= "Reloading..."
 					
 					send(**message)
+				end
+				
+				private
+				
+				def environment_for(arguments)
+					# Insert or duplicate the environment hash which is the first argument:
+					if arguments.first.is_a?(Hash)
+						environment = arguments[0] = arguments.first.dup
+					else
+						arguments.unshift(environment = Hash.new)
+					end
+					
+					return environment
 				end
 			end
 		end

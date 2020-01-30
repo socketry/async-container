@@ -98,7 +98,9 @@ module Async
 					
 					self.sleep
 					
-					break if self.status?(:ready)
+					if self.status?(:ready)
+						return true
+					end
 				end
 			end
 			
@@ -131,7 +133,6 @@ module Async
 						
 						begin
 							status = @group.wait_for(child) do |message|
-								Async.logger.debug(self) {"State change: #{message}"}
 								state.update(message)
 							end
 						ensure

@@ -46,7 +46,9 @@ module Async
 			def initialize(notify: Notify.open!)
 				@container = nil
 				
-				@notify = notify
+				if @notify = notify
+					@notify.status!("Initializing...")
+				end
 				
 				@signals = {}
 				

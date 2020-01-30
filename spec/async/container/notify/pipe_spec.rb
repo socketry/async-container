@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-#
 # Copyright, 2020, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,42 +18,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-module Async
-	module Container
-		module Notify
-			class Client
-				def ready!(**message)
-					send(ready: true, **message)
-				end
-				
-				def reloading!(**message)
-					message[:ready] = false
-					message[:reloading] = true
-					message[:status] ||= "Reloading..."
-					
-					send(**message)
-				end
-				
-				def restarting!(**message)
-					message[:ready] = false
-					message[:reloading] = true
-					message[:status] ||= "Restarting..."
-					
-					send(**message)
-				end
-				
-				def stopping!(**message)
-					message[:stopping] = true
-				end
-				
-				def status!(text)
-					send(status: text)
-				end
-				
-				def error!(text, **message)
-					send(status: text, **message)
-				end
-			end
+require "async/container/controller"
+
+RSpec.describe Async::Container::Notify::Pipe do
+	let(:notify_script) {File.expand_path("notify.rb", __dir__)}
+	
+	it "receives notification of child status" do
+		container = Async::Container.new
+		
+		container.spawn(restart: false) do |instance|
+			instance.exec("bundle", "exec", notify_script, ready: false)
 		end
+		
+		container.wait
+		
+		expect(container.statistics).to have_attributes(failures: 0)
 	end
 end

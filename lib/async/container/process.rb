@@ -30,6 +30,9 @@ module Async
 				def self.for(process)
 					instance = self.new(process.out)
 					
+					# The child process won't be reading from the channel:
+					process.close_read
+					
 					instance.name = process.name
 					
 					return instance
@@ -55,7 +58,7 @@ module Async
 					if ready
 						self.ready!(status: "(exec)") if ready
 					else
-						arguments = self.before_spawn(arguments)
+						self.before_exec(arguments)
 					end
 					
 					::Process.exec(*arguments, **options)
@@ -81,15 +84,15 @@ module Async
 				end
 			end
 			
-			def self.spawn(*arguments, name: nil, **options)
-				self.new(name: name) do |process|
-					unless options.key?(:out)
-						options[:out] = process.out
-					end
-					
-					::Process.spawn(*arguments, **options)
-				end
-			end
+			# def self.spawn(*arguments, name: nil, **options)
+			# 	self.new(name: name) do |process|
+			# 		unless options.key?(:out)
+			# 			options[:out] = process.out
+			# 		end
+			# 
+			# 		::Process.spawn(*arguments, **options)
+			# 	end
+			# end
 			
 			def initialize(name: nil)
 				super()
@@ -100,7 +103,8 @@ module Async
 				
 				@pid = yield self
 				
-				@out.close
+				# The parent process won't be writing to the channel:
+				self.close_write
 			end
 			
 			def name= value
@@ -143,7 +147,13 @@ module Async
 			
 			def wait
 				unless @status
-					pid, @status = ::Process.wait2(@pid)
+					sleep(0.1)
+					pid, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
+					
+					if @status.nil?
+						Async.logger.warn(self) {"Process #{@pid} is blocking, has it exited?"}
+						pid, @status = ::Process.wait2(@pid)
+					end
 				end
 				
 				return @status
