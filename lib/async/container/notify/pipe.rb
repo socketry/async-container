@@ -59,9 +59,8 @@ module Async
 					environment = environment_for(arguments)
 					
 					notify_pipe = options.delete(:notify_pipe) || 3
-
-					options[notify_pipe] = @io
 					
+					options[notify_pipe] = @io
 					environment[NOTIFY_PIPE] = notify_pipe.to_s
 				end
 				
