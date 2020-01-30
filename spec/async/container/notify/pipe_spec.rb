@@ -27,7 +27,10 @@ RSpec.describe Async::Container::Notify::Pipe do
 		container = Async::Container.new
 		
 		container.spawn(restart: false) do |instance|
-			instance.exec("bundle", "exec", notify_script, ready: false)
+			instance.exec(
+				# "bundle", "exec", "--keep-file-descriptors",
+				notify_script, ready: false
+			)
 		end
 		
 		# Wait for the state to be updated by the child process:

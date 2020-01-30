@@ -101,7 +101,7 @@ module Async
 				@status = nil
 				@pid = nil
 				
-				@pid = yield self
+				@pid = yield(self)
 				
 				# The parent process won't be writing to the channel:
 				self.close_write

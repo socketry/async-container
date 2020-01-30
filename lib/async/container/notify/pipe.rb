@@ -71,7 +71,7 @@ module Async
 					# Use fileno 3 if it's available:
 					elsif !options.key?(3)
 						options[3] = @io
-						environment[NOTIFY_PIPE] = 3
+						environment[NOTIFY_PIPE] = "3"
 					
 					# Otherwise, give up!
 					else
