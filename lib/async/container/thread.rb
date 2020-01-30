@@ -25,6 +25,20 @@ require 'async/logger'
 module Async
 	module Container
 		class Thread < Channel
+			class Exit < Exception
+				def initialize(status)
+					@status = status
+				end
+				
+				attr :status
+				
+				def error
+					unless status.success?
+						status
+					end
+				end
+			end
+			
 			def self.fork(**options)
 				self.new(**options) do |thread|
 					::Thread.new do
@@ -45,6 +59,8 @@ module Async
 				@waiter = ::Thread.new do
 					begin
 						@thread.join
+					rescue Exit => exit
+						finished(exit.result)
 					rescue Interrupt
 						# Graceful shutdown.
 						finished
@@ -89,6 +105,20 @@ module Async
 				raise ArgumentError, "Cannot invoke from worker thread!" if @thread == ::Thread.current
 				
 				@thread.raise(Terminate)
+			end
+			
+			def exec(*arguments, ready: true, **options)
+				raise ArgumentError, "Can only invoke from worker thread!" if @thread == ::Thread.current
+				
+				self.ready!(status: "(spawn)") if ready
+				
+				begin
+					pid = ::Process.spawn(*arguments, **options)
+				ensure
+					_, status = ::Process.wait2(@pid)
+					
+					raise Exit, status
+				end
 			end
 			
 			def wait

@@ -111,6 +111,14 @@ module Async
 				end
 			end
 			
+			def exec(*arguments, ready: true, **options)
+				raise ArgumentError, "Can only invoke from child process!" if @pid
+				
+				self.ready!(status: "(exec)") if ready
+				
+				::Process.exec(*arguments, **options)
+			end
+			
 			def wait
 				raise ArgumentError, "Cannot invoke from child process!" unless @pid
 				
