@@ -44,15 +44,6 @@ module Async
 					@io = io
 				end
 				
-				def before_exec(arguments)
-					@io.close_on_exec = false
-					
-					# Insert or duplicate the environment hash which is the first argument:
-					environment = environment_for(arguments)
-					
-					environment[NOTIFY_PIPE] = @io.fileno.to_s
-				end
-				
 				# Inserts or duplicates the environment given an argument array.
 				# Sets or clears it in a way that is suitable for {::Process.spawn}.
 				def before_spawn(arguments, options)

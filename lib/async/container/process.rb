@@ -58,10 +58,10 @@ module Async
 					if ready
 						self.ready!(status: "(exec)") if ready
 					else
-						self.before_exec(arguments)
+						self.before_spawn(arguments, options)
 					end
 					
-					::Process.exec(*arguments, **options)
+					::Process.exec(*arguments, options)
 				end
 			end
 			
