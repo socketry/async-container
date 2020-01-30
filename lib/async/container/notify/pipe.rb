@@ -58,10 +58,25 @@ module Async
 				def before_spawn(arguments, options)
 					environment = environment_for(arguments)
 					
-					notify_pipe = options.delete(:notify_pipe) || 3
+					# Use `notify_pipe` option if specified:
+					if notify_pipe = options.delete(:notify_pipe)
+						options[notify_pipe] = @io
+						environment[NOTIFY_PIPE] = notify_pipe.to_s
 					
-					options[notify_pipe] = @io
-					environment[NOTIFY_PIPE] = notify_pipe.to_s
+					# Use stdout if it's not redirected:
+					elsif !options.key?(:out)
+						options[:out] = @io
+						environment[NOTIFY_PIPE] = "1"
+					
+					# Use fileno 3 if it's available:
+					elsif !options.key?(3)
+						options[3] = @io
+						environment[NOTIFY_PIPE] = 3
+					
+					# Otherwise, give up!
+					else
+						raise ArgumentError, "Please specify valid file descriptor for notify_pipe!"
+					end
 				end
 				
 				def send(**message)
