@@ -58,9 +58,11 @@ module Async
 				def before_spawn(arguments, options)
 					environment = environment_for(arguments)
 					
-					options[3] = @io
+					notify_pipe = options.delete(:notify_pipe) || 3
+
+					options[notify_pipe] = @io
 					
-					environment[NOTIFY_PIPE] = "3"
+					environment[NOTIFY_PIPE] = notify_pipe.to_s
 				end
 				
 				def send(**message)
