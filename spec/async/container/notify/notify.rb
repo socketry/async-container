@@ -5,11 +5,11 @@ require_relative '../../../../lib/async/container'
 class MyController < Async::Container::Controller
 	def setup(container)
 		container.run(restart: false) do |instance|
-			sleep(rand(1..8))
+			sleep(rand)
 			
 			instance.ready!
 			
-			sleep(1)
+			sleep(rand)
 		end
 	end
 end
