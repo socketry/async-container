@@ -14,7 +14,4 @@ end
 group :test do
 	gem 'benchmark-ips'
 	gem 'ruby-prof', platforms: :mri
-	
-	gem 'simplecov'
-	gem 'coveralls', require: false
 end
