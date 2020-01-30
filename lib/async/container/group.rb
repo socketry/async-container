@@ -20,6 +20,8 @@
 
 require 'fiber'
 
+require 'async/clock'
+
 require_relative 'error'
 
 module Async
@@ -78,8 +80,25 @@ module Async
 			
 			def stop(timeout = 1)
 				# Handle legacy `graceful = true` argument:
-				if timeout == true
-					timeout = 1
+				if timeout
+					start_time = Async::Clock.now
+					
+					# Use a default timeout if not specified:
+					timeout = 1 if timeout == true
+					
+					self.interrupt
+					
+					while self.any?
+						duration = Async::Clock.now - start_time
+						remaining = timeout - duration
+						
+						if remaining >= 0
+							self.wait_for_children(duration)
+						else
+							self.wait_for_children(0)
+							break
+						end
+					end
 				end
 				
 				# Timeout can also be `graceful = false`:
@@ -87,8 +106,14 @@ module Async
 					self.interrupt
 					self.sleep(timeout)
 				end
-			ensure
+				
+				self.wait_for_children(duration)
+				
+				# Terminate all children:
 				self.terminate
+				
+				# Wait for all children to exit:
+				self.wait
 			end
 			
 			def wait_for(channel)
