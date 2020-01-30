@@ -70,7 +70,8 @@ module Async
 					end
 					
 					begin
-						pid = ::Process.spawn(*arguments, **options)
+						# TODO prefer **options... but it doesn't support redirections on < 2.7
+						pid = ::Process.spawn(*arguments, options)
 					ensure
 						_, status = ::Process.wait2(pid)
 						
