@@ -121,7 +121,7 @@ module Async
 				
 				# Wait for all child processes to enter the ready state.
 				Async.logger.debug(self, "Waiting for startup...")
-				container.sleep(duration)
+				container.wait_until_ready
 				Async.logger.debug(self, "Finished startup.")
 				
 				if container.failed?
@@ -156,11 +156,12 @@ module Async
 				
 				# Wait for all child processes to enter the ready state.
 				Async.logger.debug(self, "Waiting for startup...")
-				@container.sleep(duration)
+				@container.wait_until_ready
 				Async.logger.debug(self, "Finished startup.")
 				
 				if @container.failed?
 					@notify.error!("Container failed!")
+					
 					raise ContainerError, @container
 				else
 					@notify&.ready!

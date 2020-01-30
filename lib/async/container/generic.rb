@@ -46,6 +46,8 @@ module Async
 				@group = Group.new
 				@running = true
 				
+				@state = {}
+				
 				@statistics = Statistics.new
 				@keyed = {}
 			end
@@ -69,13 +71,28 @@ module Async
 				@group.running?
 			end
 			
-			def sleep(duration)
+			# Sleep until some state change occurs.
+			# @param duration [Integer] the maximum amount of time to sleep for.
+			def sleep(duration = nil)
 				@group.sleep(duration)
 			end
 			
 			# Wait until all spawned tasks are completed.
 			def wait
 				@group.wait
+			end
+			
+			def status?(flag)
+				# This also returns true if all processes have exited/failed:
+				@state.all?{|_, state| state[flag]}
+			end
+			
+			def wait_until_ready
+				while true
+					self.sleep
+					
+					break if self.status?(:ready)
+				end
 			end
 			
 			def stop(timeout = true)
@@ -89,7 +106,7 @@ module Async
 				@running = true
 			end
 			
-			def spawn(name: nil, restart: false, key: nil)
+			def spawn(name: nil, restart: false, key: nil, &block)
 				name ||= UNNAMED
 				
 				if mark?(key)
@@ -101,20 +118,16 @@ module Async
 				
 				Fiber.new do
 					while @running
-						child = self.start(name) do |channel|
-							begin
-								yield channel
-							rescue Interrupt
-								# Graceful exit.
-							end
-						end
+						child = self.start(name, &block)
 						
-						insert(key, child)
+						state = insert(key, child)
 						
 						begin
-							status = @group.wait_for(child)
+							status = @group.wait_for(child) do |message|
+								state.update(message)
+							end
 						ensure
-							delete(key)
+							delete(key, child)
 						end
 						
 						if status.success?
@@ -130,6 +143,8 @@ module Async
 							break
 						end
 					end
+				# ensure
+				# 	Async.logger.error(self) {$!} if $!
 				end.resume
 				
 				return true
@@ -184,17 +199,25 @@ module Async
 			protected
 			
 			# Register the child (value) as running.
-			def insert(key, value)
+			def insert(key, child)
 				if key
-					@keyed[key] = Keyed.new(key, value)
+					@keyed[key] = Keyed.new(key, child)
 				end
+				
+				state = {}
+				
+				@state[child] = state
+				
+				return state
 			end
 			
 			# Clear the child (value) as running.
-			def delete(key)
+			def delete(key, child)
 				if key
 					@keyed.delete(key)
 				end
+				
+				@state.delete(child)
 			end
 		end
 	end

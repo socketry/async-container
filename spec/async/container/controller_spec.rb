@@ -28,16 +28,21 @@ RSpec.describe Async::Container::Controller do
 			subject.instance_variable_set(:@output, output)
 			
 			def subject.setup(container)
-				container.spawn(key: "test") do
+				container.spawn(key: "test") do |instance|
+					instance.ready!
+					
+					sleep(0.1)
+					
 					@output.write(".")
 					@output.flush
 					
-					sleep(0.1)
+					sleep(0.2)
 				end
 				
-				container.spawn do
-					# Introduce some "determinism"...
-					sleep(0.001)
+				container.spawn do |instance|
+					instance.ready!
+					
+					sleep(0.2)
 					
 					@output.write(",")
 					@output.flush

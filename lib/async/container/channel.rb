@@ -53,6 +53,10 @@ module Async
 				
 				@out.puts(data)
 			end
+			
+			def ready!(**message)
+				send(ready: true, **message)
+			end
 		end
 	end
 end

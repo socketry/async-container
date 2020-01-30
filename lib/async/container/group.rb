@@ -24,6 +24,7 @@ require_relative 'error'
 
 module Async
 	module Container
+		# Manages a group of running processes.
 		class Group
 			def initialize
 				@running = {}
@@ -32,6 +33,7 @@ module Async
 				@queue = nil
 			end
 			
+			# @attribute [Hash<IO, Fiber>] the running tasks, indexed by IO.
 			attr :running
 			
 			def running?
@@ -50,10 +52,6 @@ module Async
 			def sleep(duration)
 				self.resume
 				self.suspend
-				
-				if duration.nil?
-					Async.logger.warn(self) {"Waiting for children indefinitely, requires readiness notification!"}
-				end
 				
 				self.wait_for_children(duration)
 			end
