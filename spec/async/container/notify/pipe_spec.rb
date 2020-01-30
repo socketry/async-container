@@ -30,6 +30,12 @@ RSpec.describe Async::Container::Notify::Pipe do
 			instance.exec("bundle", "exec", notify_script, ready: false)
 		end
 		
+		# Wait for the state to be updated by the child process:
+		container.sleep
+		
+		child, state = container.state.first
+		expect(state).to be == {:status=>"Initializing..."}
+		
 		container.wait
 		
 		expect(container.statistics).to have_attributes(failures: 0)

@@ -52,6 +52,8 @@ module Async
 				@keyed = {}
 			end
 			
+			attr :state
+			
 			def to_s
 				"#{self.class} with #{@statistics.spawns} spawns and #{@statistics.failures} failures."
 			end
