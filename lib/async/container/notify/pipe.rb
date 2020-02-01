@@ -81,10 +81,10 @@ module Async
 					send(ready: true, **message)
 				end
 				
-				def reloading!(**message)
+				def restarting!(**message)
 					message[:ready] = false
 					message[:reloading] = true
-					message[:status] ||= "Reloading..."
+					message[:status] ||= "Restarting..."
 					
 					send(**message)
 				end
