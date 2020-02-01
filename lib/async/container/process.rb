@@ -119,13 +119,7 @@ module Async
 			attr :name
 			
 			def to_s
-				if @status
-					"\#<#{self.class} #{@name} -> #{@status}>"
-				elsif @pid
-					"\#<#{self.class} #{@name} -> #{@pid}>"
-				else
-					"\#<#{self.class} #{@name}>"
-				end
+				"\#<#{self.class} #{@name}>"
 			end
 			
 			def close

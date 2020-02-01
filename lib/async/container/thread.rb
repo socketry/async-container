@@ -124,11 +124,7 @@ module Async
 			end
 			
 			def to_s
-				if @status
-					"\#<#{self.class} #{@thread.name} -> #{@status}>"
-				else
-					"\#<#{self.class} #{@thread.name}>"
-				end
+				"\#<#{self.class} #{@thread.name}>"
 			end
 			
 			def close

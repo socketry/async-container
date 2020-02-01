@@ -144,7 +144,7 @@ module Async
 						end
 						
 						if status.success?
-							Async.logger.info(self) {"#{child} #{status}"}
+							Async.logger.info(self) {"#{child} exited with #{status}"}
 						else
 							@statistics.failure!
 							Async.logger.error(self) {status}
