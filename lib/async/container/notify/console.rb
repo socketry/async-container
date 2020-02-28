@@ -21,23 +21,49 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'notify/pipe'
-require_relative 'notify/socket'
-require_relative 'notify/console'
+require_relative 'client'
+
+require 'console/logger'
 
 module Async
 	module Container
 		module Notify
-			# We cache the client on a per-process basis. Because that's the relevant scope for process readiness protocols.
-			@@client = nil
-			
-			def self.open!
-				# Select the best available client:
-				@@client ||= (
-					Pipe.open! ||
-					Socket.open! ||
-					Console.open!
-				)
+			class Console < Client
+				def self.open!(logger = ::Console.logger)
+					self.new(logger)
+				end
+				
+				def initialize(logger)
+					@logger = logger
+				end
+				
+				def send(level: :debug, **message)
+					@logger.send(level, self) {message[:status]}
+				end
+				
+				def ready!(**message)
+					send(ready: true, **message)
+				end
+				
+				def restarting!(**message)
+					message[:ready] = false
+					message[:reloading] = true
+					message[:status] ||= "Restarting..."
+					
+					send(**message)
+				end
+				
+				def reloading!(**message)
+					message[:ready] = false
+					message[:reloading] = true
+					message[:status] ||= "Reloading..."
+					
+					send(**message)
+				end
+				
+				def error!(text, **message)
+					send(status: text, level: :error, **message)
+				end
 			end
 		end
 	end
