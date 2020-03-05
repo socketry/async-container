@@ -142,6 +142,8 @@ module Async
 			rescue
 				# If we are leaving this function with an exception, try to kill the container:
 				container&.stop(false)
+				
+				raise
 			end
 			
 			def reload
