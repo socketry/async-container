@@ -28,9 +28,10 @@ require_relative 'notify'
 
 module Async
 	module Container
-		class ContainerError < Error
+		class InitializationError < Error
 			def initialize(container)
 				super("Could not create container!")
+				
 				@container = container
 			end
 			
@@ -117,7 +118,7 @@ module Async
 				rescue
 					@notify&.error!($!.to_s)
 					
-					raise ContainerError, container
+					raise InitializationError, container
 				end
 				
 				# Wait for all child processes to enter the ready state.
@@ -130,7 +131,7 @@ module Async
 					
 					container.stop
 					
-					raise ContainerError, container
+					raise InitializationError, container
 				end
 				
 				# Make this swap as atomic as possible:
@@ -154,7 +155,7 @@ module Async
 				begin
 					self.setup(@container)
 				rescue
-					raise ContainerError, container
+					raise InitializationError, container
 				end
 				
 				# Wait for all child processes to enter the ready state.
@@ -165,7 +166,7 @@ module Async
 				if @container.failed?
 					@notify.error!("Container failed!")
 					
-					raise ContainerError, @container
+					raise InitializationError, @container
 				else
 					@notify&.ready!
 				end
@@ -190,7 +191,7 @@ module Async
 						if handler = @signals[exception.signo]
 							begin
 								handler.call
-							rescue ContainerError => error
+							rescue InitializationError => error
 								Async.logger.error(self) {error}
 							end
 						else

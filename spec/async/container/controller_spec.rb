@@ -91,5 +91,16 @@ RSpec.describe Async::Container::Controller do
 			
 			subject.stop
 		end
+		
+		it "propagates exceptions" do
+			def subject.setup(container)
+				raise "Boom!"
+			end
+			
+			expect do
+				subject.run
+			end.to raise_exception(Async::Container::InitializationError)
+		end
+		
 	end
 end
