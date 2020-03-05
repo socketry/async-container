@@ -190,8 +190,8 @@ module Async
 						if handler = @signals[exception.signo]
 							begin
 								handler.call
-							rescue ContainerError => failure
-								Async.logger.error(self) {failure}
+							rescue ContainerError => error
+								Async.logger.error(self) {error}
 							end
 						else
 							raise
@@ -202,9 +202,9 @@ module Async
 				self.stop(true)
 			rescue Terminate
 				self.stop(false)
-			else
-				self.stop(true)
 			ensure
+				self.stop(true)
+				
 				# Restore the interrupt handler:
 				Signal.trap(:INT, interrupt_action)
 				Signal.trap(:TERM, terminate_action)
