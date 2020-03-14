@@ -116,7 +116,7 @@ module Async
 			end
 			
 			def name= value
-				@thread.name = name
+				@thread.name = value
 			end
 			
 			def name
