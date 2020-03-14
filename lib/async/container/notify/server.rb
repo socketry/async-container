@@ -98,7 +98,7 @@ module Async
 					
 					def receive
 						while true
-							data, address, flags, *controls = @bound.recvmsg(MAXIMUM_MESSAGE_SIZE)
+							data, _address, _flags, *_controls = @bound.recvmsg(MAXIMUM_MESSAGE_SIZE)
 							
 							message = Server.load(data)
 							

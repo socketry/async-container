@@ -38,7 +38,7 @@ RSpec.describe Async::Container::Notify::Pipe do
 		# Wait for the state to be updated by the child process:
 		container.sleep
 		
-		child, state = container.state.first
+		_child, state = container.state.first
 		expect(state).to be == {status: "Initializing..."}
 		
 		container.wait
