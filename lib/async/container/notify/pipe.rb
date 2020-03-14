@@ -82,22 +82,6 @@ module Async
 					send(ready: true, **message)
 				end
 				
-				def restarting!(**message)
-					message[:ready] = false
-					message[:reloading] = true
-					message[:status] ||= "Restarting..."
-					
-					send(**message)
-				end
-				
-				def reloading!(**message)
-					message[:ready] = false
-					message[:reloading] = true
-					message[:status] ||= "Reloading..."
-					
-					send(**message)
-				end
-				
 				private
 				
 				def environment_for(arguments)
