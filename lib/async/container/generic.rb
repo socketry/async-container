@@ -160,7 +160,7 @@ module Async
 				# 	Async.logger.error(self) {$!} if $!
 				end.resume
 				
-				return true
+				true
 			end
 			
 			def async(**options, &block)
@@ -174,7 +174,7 @@ module Async
 					spawn(**options, &block)
 				end
 				
-				return self
+				self
 			end
 			
 			def reload
@@ -188,7 +188,7 @@ module Async
 					value.stop? && (dirty = true)
 				end
 				
-				return dirty
+				dirty
 			end
 			
 			def mark?(key)
@@ -200,7 +200,7 @@ module Async
 					end
 				end
 				
-				return false
+				false
 			end
 			
 			def key?(key)
@@ -221,7 +221,7 @@ module Async
 				
 				@state[child] = state
 				
-				return state
+				state
 			end
 			
 			# Clear the child (value) as running.

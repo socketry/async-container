@@ -59,7 +59,7 @@ module Async
 						buffer << "#{key.to_s.upcase}=#{value}\n"
 					end
 					
-					return buffer
+					buffer
 				end
 				
 				def send(**message)

@@ -52,7 +52,7 @@ module Async
 						next [key.downcase.to_sym, value]
 					end
 					
-					return Hash[pairs]
+					Hash[pairs]
 				end
 				
 				def self.generate_path

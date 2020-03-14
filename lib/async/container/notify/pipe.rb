@@ -108,7 +108,7 @@ module Async
 						arguments.unshift(environment = Hash.new)
 					end
 					
-					return environment
+					environment
 				end
 			end
 		end

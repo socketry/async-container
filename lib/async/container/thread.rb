@@ -44,9 +44,7 @@ module Async
 			
 			class Instance < Notify::Pipe
 				def self.for(thread)
-					instance = self.new(thread.out)
-					
-					return instance
+					self.new(thread.out)
 				end
 				
 				def initialize(io)
@@ -148,7 +146,7 @@ module Async
 					@waiter = nil
 				end
 				
-				return @status
+				@status
 			end
 			
 			class Status

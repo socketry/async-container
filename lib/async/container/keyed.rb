@@ -47,7 +47,7 @@ module Async
 			def stop?
 				unless @marked
 					@value.stop
-					return true
+					true
 				end
 			end
 		end

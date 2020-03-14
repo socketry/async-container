@@ -33,9 +33,9 @@ module Async
 		
 		def self.best_container_class
 			if fork?
-				return Forked
+				Forked
 			else
-				return Threaded
+				Threaded
 			end
 		end
 		

@@ -42,7 +42,7 @@ module Async
 					end
 				end
 				
-				return self
+				self
 			end
 		end
 	end

@@ -37,7 +37,7 @@ module Async
 					
 					instance.name = process.name
 					
-					return instance
+					instance
 				end
 				
 				def initialize(io)
@@ -156,7 +156,7 @@ module Async
 					end
 				end
 				
-				return @status
+				@status
 			end
 		end
 	end
