@@ -39,7 +39,7 @@ class Threaded
 			@waiter = nil
 		end
 		
-		return @status
+		@status
 	end
 	
 	protected
@@ -86,9 +86,9 @@ class Forked
 	
 	def wait
 		unless @status
-			pid, @status = ::Process.wait(@pid)
+			_pid, @status = ::Process.wait(@pid)
 		end
 		
-		return @status
+		@status
 	end
 end

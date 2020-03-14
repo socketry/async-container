@@ -11,13 +11,14 @@ require 'async/container'
 # 	end
 # 
 # 	def << object
-# 		return :object
+# 		:object
 # 	end
 # 
 # 	def [] key
 # 		return
+# 	end
 # end
-# 
+#
 # class Proxy < BasicObject
 # 	def initialize(bus, name)
 # 		@bus = bus
@@ -62,8 +63,6 @@ require 'async/container'
 # class Channel
 # 	def self.pipe
 # 		input, output = Async::IO.pipe
-# 
-# 
 # 	end
 # 
 # 	def initialize(input, output)
