@@ -13,7 +13,7 @@ class Channel
 	
 	def receive
 		if data = @in.gets
-			return JSON.parse(data, symbolize_names: true)
+			JSON.parse(data, symbolize_names: true)
 		end
 	end
 	
