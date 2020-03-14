@@ -45,7 +45,7 @@ RSpec.describe Async::Container::Forked, if: Async::Container.fork? do
 		
 		3.times do
 			trigger.last.puts "die"
-			child_pid = pids.first.gets
+			_child_pid = pids.first.gets
 		end
 		
 		thread.kill
