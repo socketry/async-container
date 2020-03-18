@@ -56,9 +56,10 @@ module Async
 						environment[NOTIFY_PIPE] = notify_pipe.to_s
 					
 					# Use stdout if it's not redirected:
-					elsif !options.key?(:out)
-						options[:out] = @io
-						environment[NOTIFY_PIPE] = "1"
+					# This can cause issues if the user expects stdout to be connected to a terminal.
+					# elsif !options.key?(:out)
+					# 	options[:out] = @io
+					# 	environment[NOTIFY_PIPE] = "1"
 					
 					# Use fileno 3 if it's available:
 					elsif !options.key?(3)
