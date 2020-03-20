@@ -51,11 +51,11 @@ RSpec.shared_examples_for Async::Container do
 	describe '#sleep' do
 		it "can sleep for a short time" do
 			subject.spawn do
-				sleep(0.2)
+				sleep(0.2 * QUANTUM)
 				raise "Boom"
 			end
 			
-			subject.sleep(0.1)
+			subject.sleep(0.1 * QUANTUM)
 			expect(subject.statistics).to have_attributes(failures: 0)
 			
 			subject.wait

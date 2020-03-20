@@ -33,18 +33,18 @@ RSpec.describe Async::Container::Controller do
 				container.spawn(key: "test") do |instance|
 					instance.ready!
 					
-					sleep(0.2)
+					sleep(0.2 * QUANTUM)
 					
 					@output.write(".")
 					@output.flush
 					
-					sleep(0.4)
+					sleep(0.4 * QUANTUM)
 				end
 				
 				container.spawn do |instance|
 					instance.ready!
 					
-					sleep(0.3)
+					sleep(0.3 * QUANTUM)
 					
 					@output.write(",")
 					@output.flush
