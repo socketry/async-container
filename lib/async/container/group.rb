@@ -81,12 +81,11 @@ module Async
 			end
 			
 			def stop(timeout = 1)
-				# Handle legacy `graceful = true` argument:
+				# Use a default timeout if not specified:
+				timeout = 1 if timeout == true
+				
 				if timeout
 					start_time = Async::Clock.now
-					
-					# Use a default timeout if not specified:
-					timeout = 1 if timeout == true
 					
 					self.interrupt
 					
@@ -102,14 +101,6 @@ module Async
 						end
 					end
 				end
-				
-				# Timeout can also be `graceful = false`:
-				if timeout
-					self.interrupt
-					self.sleep(timeout)
-				end
-				
-				self.wait_for_children(duration)
 				
 				# Terminate all children:
 				self.terminate
