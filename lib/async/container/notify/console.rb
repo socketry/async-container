@@ -38,7 +38,7 @@ module Async
 				end
 				
 				def send(level: :debug, **message)
-					@logger.send(level, self) {message[:status]}
+					@logger.send(level, self) {message}
 				end
 				
 				def ready!(**message)
