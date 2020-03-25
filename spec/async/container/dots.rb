@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require_relative '../../../lib/async/container/controller'
-require_relative '../../../lib/async/container/forked'
 
 Console.logger.debug!
 
@@ -27,8 +26,4 @@ end
 
 controller = Dots.new
 
-begin
-	controller.run
-ensure
-	$stderr.puts $!
-end
+controller.run
