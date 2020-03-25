@@ -29,7 +29,7 @@ RSpec.describe Async::Container::Controller do
 	let(:input) {pipe.first}
 	let(:output) {pipe.last}
 	
-	let(:pid) {Process.spawn(controller_path, out: output)}
+	let(:pid) {Process.spawn("bundle", "exec", controller_path, out: output)}
 	
 	before do
 		pid
