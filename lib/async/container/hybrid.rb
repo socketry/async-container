@@ -33,12 +33,21 @@ module Async
 				threads = (count / forks).ceil
 				
 				forks.times do
-					self.spawn(**options) do
-						container = Threaded::Container.new
+					self.spawn(**options) do |instance|
+						container = Threaded.new
 						
 						container.run(count: threads, **options, &block)
 						
+						container.wait_until_ready
+						instance.ready!
+						
 						container.wait
+					rescue Async::Container::Terminate
+						# Stop it immediately:
+						container.stop(false)
+					ensure
+						# Stop it gracefully (also code path for Interrupt):
+						container.stop
 					end
 				end
 				

@@ -102,4 +102,47 @@ RSpec.describe Async::Container::Controller do
 			end.to raise_exception(Async::Container::InitializationError)
 		end
 	end
+	
+	context 'with signals' do
+		let(:controller_path) {File.expand_path("dots.rb", __dir__)}
+		
+		let(:pipe) {IO.pipe}
+		let(:input) {pipe.first}
+		let(:output) {pipe.last}
+		
+		let(:pid) {Process.spawn("bundle", "exec", controller_path, out: output)}
+		
+		before do
+			pid
+			output.close
+		end
+		
+		after do
+			Process.kill(:KILL, pid)
+		end
+		
+		it "restarts children when receiving SIGHUP" do
+			expect(input.read(1)).to be == '.'
+			
+			Process.kill(:HUP, pid)
+			
+			expect(input.read(2)).to be == 'I.'
+		end
+		
+		it "exits gracefully when receiving SIGINT" do
+			expect(input.read(1)).to be == '.'
+			
+			Process.kill(:INT, pid)
+			
+			expect(input.read).to be == 'I'
+		end
+		
+		it "exits gracefully when receiving SIGTERM" do
+			expect(input.read(1)).to be == '.'
+			
+			Process.kill(:TERM, pid)
+			
+			expect(input.read).to be == 'T'
+		end
+	end
 end

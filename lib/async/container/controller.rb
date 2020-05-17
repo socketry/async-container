@@ -55,7 +55,9 @@ module Async
 				
 				@signals = {}
 				
-				trap(SIGHUP, &self.method(:restart))
+				trap(SIGHUP) do
+					self.restart
+				end
 			end
 			
 			def state_string
@@ -138,6 +140,7 @@ module Async
 				old_container = @container
 				@container = container
 				
+				Async.logger.debug(self, "Stopping old container...")
 				old_container&.stop
 				@notify&.ready!
 			rescue

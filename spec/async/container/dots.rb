@@ -3,7 +3,7 @@
 
 require_relative '../../../lib/async/container/controller'
 
-Console.logger.debug!
+# Console.logger.debug!
 
 class Dots < Async::Container::Controller
 	def setup(container)

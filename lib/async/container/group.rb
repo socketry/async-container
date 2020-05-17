@@ -69,12 +69,14 @@ module Async
 			end
 			
 			def interrupt
+				Async.logger.debug(self, "Sending interrupt to #{@running.size} running processes...")
 				@running.each_value do |fiber|
 					fiber.resume(Interrupt)
 				end
 			end
 			
 			def terminate
+				Async.logger.debug(self, "Sending terminate to #{@running.size} running processes...")
 				@running.each_value do |fiber|
 					fiber.resume(Terminate)
 				end

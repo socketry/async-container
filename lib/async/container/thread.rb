@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 require_relative 'channel'
+require_relative 'error'
 require_relative 'notify/pipe'
 
 require 'async/logger'
