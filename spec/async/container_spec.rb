@@ -23,8 +23,24 @@
 require "async/container"
 
 RSpec.describe Async::Container do
-	it "can get processor count" do
-		expect(Async::Container.processor_count).to be >= 1
+	describe '.processor_count' do
+		it "can get processor count" do
+			expect(Async::Container.processor_count).to be >= 1
+		end
+		
+		it "can override the processor count" do
+			env = {'ASYNC_CONTAINER_PROCESSOR_COUNT' => '8'}
+			
+			expect(Async::Container.processor_count(env)).to be == 8
+		end
+		
+		it "fails on invalid processor count" do
+			env = {'ASYNC_CONTAINER_PROCESSOR_COUNT' => '-1'}
+			
+			expect do
+				Async::Container.processor_count(env)
+			end.to raise_error(/Invalid processor count/)
+		end
 	end
 	
 	it "can get best container class" do

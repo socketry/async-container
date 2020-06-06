@@ -30,11 +30,20 @@ require_relative 'statistics'
 
 module Async
 	module Container
+		ASYNC_CONTAINER_PROCESSOR_COUNT = 'ASYNC_CONTAINER_PROCESSOR_COUNT'
+		
+		# The processor count which may be used for the default number of container threads/processes. You can override the value provided by the system by specifying the ASYNC_CONTAINER_PROCESSOR_COUNT environment variable.
 		# @return [Integer] the number of hardware processors which can run threads/processes simultaneously.
-		def self.processor_count
-			Etc.nprocessors
-		rescue
-			2
+		def self.processor_count(env = ENV)
+			count = env.fetch(ASYNC_CONTAINER_PROCESSOR_COUNT) do
+				Etc.nprocessors rescue 1
+			end.to_i
+			
+			if count < 1
+				raise RuntimeError, "Invalid processor count #{count}!"
+			end
+			
+			return count
 		end
 		
 		class Generic
