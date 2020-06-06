@@ -22,6 +22,6 @@
 
 module Async
 	module Container
-		VERSION = "0.16.5"
+		VERSION = "0.16.6"
 	end
 end
