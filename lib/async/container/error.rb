@@ -27,12 +27,25 @@ module Async
 		
 		Interrupt = ::Interrupt
 		
+		# Similar to {Interrupt}, but represents `SIGTERM`.
 		class Terminate < SignalException
 			SIGTERM = Signal.list['TERM']
 
 			def initialize
 				super(SIGTERM)
 			end
+		end
+		
+		# Represents the error which occured when a container failed to start up correctly.
+		class SetupError < Error
+			def initialize(container)
+				super("Could not create container!")
+				
+				@container = container
+			end
+			
+			# The container that failed.
+			attr :container
 		end
 	end
 end

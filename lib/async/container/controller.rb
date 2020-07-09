@@ -28,17 +28,8 @@ require_relative 'notify'
 
 module Async
 	module Container
-		class InitializationError < Error
-			def initialize(container)
-				super("Could not create container!")
-				
-				@container = container
-			end
-			
-			attr :container
-		end
-		
-		# Manages the life-cycle of a container.
+		# Manages the life-cycle of one or more containers in order to support a persistent system.
+		# e.g. a web server, job server or some other long running system.
 		class Controller
 			SIGHUP = Signal.list["HUP"]
 			SIGINT = Signal.list["INT"]
@@ -46,6 +37,8 @@ module Async
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
 			
+			# Initialize the controller.
+			# @parameter notify [Notify::Client] A client used for process readiness notifications.
 			def initialize(notify: Notify.open!)
 				@container = nil
 				
@@ -60,6 +53,8 @@ module Async
 				end
 			end
 			
+			# The state of the controller.
+			# @returns [String]
 			def state_string
 				if running?
 					"running"
@@ -68,42 +63,61 @@ module Async
 				end
 			end
 			
+			# A human readable representation of the controller.
+			# @returns [String]
 			def to_s
 				"#{self.class} #{state_string}"
 			end
 			
+			# Trap the specified signal.
+			# @parameters signal [Symbol] The signal to trap, e.g. `:INT`.
+			# @parameters block [Proc] The signal handler to invoke.
 			def trap(signal, &block)
 				@signals[signal] = block
 			end
 			
+			# The current container being managed by the controller.
 			attr :container
 			
+			# Create a container for the controller.
+			# Can be overridden by a sub-class.
+			# @returns [Generic] A specific container instance to use.
 			def create_container
 				Container.new
 			end
 			
+			# Whether the controller has a running container.
+			# @returns [Boolean]
 			def running?
 				!!@container
 			end
 			
+			# Wait for the underlying container to start.
 			def wait
 				@container&.wait
 			end
 			
+			# Spawn container instances into the given container.
+			# Should be overridden by a sub-class.
+			# @parameter container [Generic] The container, generally from {#create_container}.
 			def setup(container)
 				# Don't do this, otherwise calling super is risky for sub-classes:
 				# raise NotImplementedError, "Container setup is must be implemented in derived class!"
 			end
 			
+			# Start the container unless it's already running.
 			def start
 				self.restart unless @container
 			end
 			
+			# Stop the container if it's running.
+			# @parameter graceful [Boolean] Whether to give the children instances time to shut down or to kill them immediately.
 			def stop(graceful = true)
 				@container&.stop(graceful)
 				@container = nil
 			end
 			
+			# Restart the container. A new container is created, and if successful, any old container is terminated gracefully.
 			def restart
 				if @container
 					@notify&.restarting!
@@ -120,7 +134,7 @@ module Async
 				rescue
 					@notify&.error!($!.to_s)
 					
-					raise InitializationError, container
+					raise SetupError, container
 				end
 				
 				# Wait for all child processes to enter the ready state.
@@ -133,7 +147,7 @@ module Async
 					
 					container.stop
 					
-					raise InitializationError, container
+					raise SetupError, container
 				end
 				
 				# Make this swap as atomic as possible:
@@ -150,6 +164,7 @@ module Async
 				raise
 			end
 			
+			# Reload the existing container. Children instances will be reloaded using `SIGHUP`.
 			def reload
 				@notify&.reloading!
 				
@@ -158,7 +173,7 @@ module Async
 				begin
 					self.setup(@container)
 				rescue
-					raise InitializationError, container
+					raise SetupError, container
 				end
 				
 				# Wait for all child processes to enter the ready state.
@@ -169,12 +184,13 @@ module Async
 				if @container.failed?
 					@notify.error!("Container failed!")
 					
-					raise InitializationError, @container
+					raise SetupError, @container
 				else
 					@notify&.ready!
 				end
 			end
 			
+			# Enter the controller run loop, trapping `SIGINT` and `SIGTERM`.
 			def run
 				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
 				interrupt_action = Signal.trap(:INT) do
@@ -194,7 +210,7 @@ module Async
 						if handler = @signals[exception.signo]
 							begin
 								handler.call
-							rescue InitializationError => error
+							rescue SetupError => error
 								Async.logger.error(self) {error}
 							end
 						else

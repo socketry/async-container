@@ -28,14 +28,22 @@ require 'async/logger'
 
 module Async
 	module Container
+		# Represents a running child thread from the point of view of the parent container.
 		class Thread < Channel
+			# Used to propagate the exit status of a child process invoked by {Instance#exec}.
 			class Exit < Exception
+				# Initialize the exit status.
+				# @parameter status [::Process::Status] The process exit status.
 				def initialize(status)
 					@status = status
 				end
 				
+				# The process exit status.
+				# @attribute [::Process::Status]
 				attr :status
 				
+				# The process exit status if it was an error.
+				# @returns [::Process::Status | Nil]
 				def error
 					unless status.success?
 						status
@@ -43,7 +51,10 @@ module Async
 				end
 			end
 			
+			# Represents a running child thread from the point of view of the child thread.
 			class Instance < Notify::Pipe
+				# Wrap an instance around the {Thread} instance from within the threaded child.
+				# @parameter thread [Thread] The thread intance to wrap.
 				def self.for(thread)
 					instance = self.new(thread.out)
 					
@@ -57,14 +68,20 @@ module Async
 					super
 				end
 				
+				# Set the name of the thread.
+				# @parameter value [String] The name to set.
 				def name= value
 					@thread.name = value
 				end
 				
+				# Get the name of the thread.
+				# @returns [String]
 				def name
 					@thread.name
 				end
 				
+				# Execute a child process using {::Process.spawn}. In order to simulate {::Process.exec}, an {Exit} instance is raised to propagage exit status.
+				# This creates the illusion that this method does not return (normally).
 				def exec(*arguments, ready: true, **options)
 					if ready
 						self.ready!(status: "(spawn)") if ready
@@ -91,6 +108,8 @@ module Async
 				end
 			end
 			
+			# Initialize the thread.
+			# @parameter name [String] The name to use for the child thread.
 			def initialize(name: nil)
 				super()
 				
@@ -116,18 +135,25 @@ module Async
 				end
 			end
 			
+			# Set the name of the thread.
+			# @parameter value [String] The name to set.
 			def name= value
 				@thread.name = value
 			end
 			
+			# Get the name of the thread.
+			# @returns [String]
 			def name
 				@thread.name
 			end
 			
+			# A human readable representation of the thread.
+			# @returns [String]
 			def to_s
 				"\#<#{self.class} #{@thread.name}>"
 			end
 			
+			# Invoke {#terminate!} and then {#wait} for the child thread to exit.
 			def close
 				self.terminate!
 				self.wait
@@ -135,14 +161,18 @@ module Async
 				super
 			end
 			
+			# Raise {Interrupt} in the child thread.
 			def interrupt!
 				@thread.raise(Interrupt)
 			end
 			
+			# Raise {Terminate} in the child thread.
 			def terminate!
 				@thread.raise(Terminate)
 			end
 			
+			# Wait for the thread to exit and return he exit status.
+			# @returns [Status]
 			def wait
 				if @waiter
 					@waiter.join
@@ -152,15 +182,21 @@ module Async
 				return @status
 			end
 			
+			# A pseudo exit-status wrapper.
 			class Status
-				def initialize(result = nil)
-					@result = result
+				# Initialise the status.
+				# @parameter error [::Process::Status] The exit status of the child thread.
+				def initialize(error = nil)
+					@error = error
 				end
 				
+				# Whether the status represents a successful outcome.
+				# @returns [Boolean]
 				def success?
-					@result.nil?
+					@error.nil?
 				end
 				
+				# A human readable representation of the status.
 				def to_s
 					"\#<#{self.class} #{success? ? "success" : "failure"}>"
 				end
@@ -168,6 +204,7 @@ module Async
 			
 			protected
 			
+			# Invoked by the @waiter thread to indicate the outcome of the child thread.
 			def finished(error = nil)
 				if error
 					Async.logger.error(self) {error}

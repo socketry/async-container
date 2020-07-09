@@ -99,7 +99,7 @@ RSpec.describe Async::Container::Controller do
 			
 			expect do
 				subject.run
-			end.to raise_exception(Async::Container::InitializationError)
+			end.to raise_exception(Async::Container::SetupError)
 		end
 	end
 	
