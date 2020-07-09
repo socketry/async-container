@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		
+			<title>Async::Container::Thread</title>
+		
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		
+		<link rel="icon" type="image/png" href="../../../../_static/icon.png"/>
+		<link rel="stylesheet" href="../../../../_static/site.css" type="text/css" media="screen"/>
+		
+		<script src="../../../../_components/jquery/jquery.min.js"></script>
+		<script src="../../../../_components/jquery-syntax/jquery.syntax.min.js"></script>
+		
+		<script type="text/javascript">
+		//<![CDATA[
+			jQuery(function($) {
+				$.syntax();
+			});
+		//]]>
+		</script>
+	</head>
+
+	<body class="">
+		<nav> › <a class="link" href="../../../../index.html">Project</a> › <a class="link" href="../../../index.html">Source</a></nav>
+		
+		
+	<h1><code class="language-ruby">Async::Container::Thread</code></h1>
+	
+	<main>
+		<p>Represents a running child thread from the point of view of the parent container.</p>
+		
+		<h2>Nested</h2>
+		
+		<ul>
+			<li><a href="Exit/index.html"><code class="language-ruby">Async::Container::Thread::Exit</code></a></li>
+			<li><a href="Instance/index.html"><code class="language-ruby">Async::Container::Thread::Instance</code></a></li>
+			<li><a href="Status/index.html"><code class="language-ruby">Async::Container::Thread::Status</code></a></li>
+		</ul>
+		
+		<h2>Definitions</h2>
+		
+		<h3 id="Async::Container::Thread#initialize"><code class="language-ruby">def initialize(name: nil)</code></h3><p>Initialize the thread.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>parameter</strong>　<code class="syntax">name</code>　<code class="language-ruby">String</code></dt><dd><p>The name to use for the child thread.</p>
+</dd></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def initialize(name: nil)
+	super()
+	
+	@status = nil
+	
+	@thread = yield(self)
+	@thread.report_on_exception = false
+	@thread.name = name
+	
+	@waiter = ::Thread.new do
+		begin
+			@thread.join
+		rescue Exit =&gt; exit
+			finished(exit.error)
+		rescue Interrupt
+			# Graceful shutdown.
+			finished
+		rescue Exception =&gt; error
+			finished(error)
+		else
+			finished
+		end
+	end
+end</code></pre>
+						</details><h3 id="Async::Container::Thread#name="><code class="language-ruby">def name= value</code></h3><p>Set the name of the thread.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>parameter</strong>　<code class="syntax">value</code>　<code class="language-ruby">String</code></dt><dd><p>The name to set.</p>
+</dd></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def name= value
+	@thread.name = value
+end</code></pre>
+						</details><h3 id="Async::Container::Thread#name"><code class="language-ruby">def name</code></h3><p>Get the name of the thread.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>returns</strong>　<code class="language-ruby">String</code></dt></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def name
+	@thread.name
+end</code></pre>
+						</details><h3 id="Async::Container::Thread#to_s"><code class="language-ruby">def to_s</code></h3><p>A human readable representation of the thread.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>returns</strong>　<code class="language-ruby">String</code></dt></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def to_s
+	&quot;\#&lt;#{self.class} #{@thread.name}&gt;&quot;
+end</code></pre>
+						</details><h3 id="Async::Container::Thread#close"><code class="language-ruby">def close</code></h3><p>Invoke <code class="language-ruby">#terminate!</code> and then <code class="language-ruby">#wait</code> for the child thread to exit.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def close
+	self.terminate!
+	self.wait
+ensure
+	super
+end</code></pre>
+						</details><h3 id="Async::Container::Thread#interrupt!"><code class="language-ruby">def interrupt!</code></h3><p>Raise <a href="../index.html#Async%3A%3AContainer%3A%3AInterrupt" title="Interrupt"><code class="language-ruby">Interrupt = ::Interrupt</code></a> in the child thread.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def interrupt!
+	@thread.raise(Interrupt)
+end</code></pre>
+						</details><h3 id="Async::Container::Thread#terminate!"><code class="language-ruby">def terminate!</code></h3><p>Raise <a href="../Terminate/index.html" title="Terminate"><code class="language-ruby">class Async::Container::Terminate</code></a> in the child thread.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def terminate!
+	@thread.raise(Terminate)
+end</code></pre>
+						</details><h3 id="Async::Container::Thread#wait"><code class="language-ruby">def wait</code></h3><p>Wait for the thread to exit and return he exit status.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>returns</strong>　<code class="language-ruby"><a href="Status/index.html" title="Async::Container::Thread::Status">Status</a></code></dt></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def wait
+	if @waiter
+		@waiter.join
+		@waiter = nil
+	end
+	
+	return @status
+end</code></pre>
+						</details><h3 id="Async::Container::Thread#finished"><code class="language-ruby">def finished(error = nil)</code></h3><p>Invoked by the @waiter thread to indicate the outcome of the child thread.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def finished(error = nil)
+	if error
+		Async.logger.error(self) {error}
+	end
+	
+	@status = Status.new(error)
+	self.close_write
+end</code></pre>
+						</details>	</main>
+
+		
+		<footer>Documentation generated by <a href="https://github.com/socketry/utopia-project">Utopia::Project</a>.</footer>
+	</body>
+</html>
