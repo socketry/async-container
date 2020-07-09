@@ -27,8 +27,12 @@ require_relative 'notify/pipe'
 
 module Async
 	module Container
+		# Represents a running child process from the point of view of the parent container.
 		class Process < Channel
+			# Represents a running child process from the point of view of the child process.
 			class Instance < Notify::Pipe
+				# Wrap an instance around the {Process} instance from within the forked child.
+				# @parameter process [Process] The process intance to wrap.
 				def self.for(process)
 					instance = self.new(process.out)
 					
@@ -46,16 +50,22 @@ module Async
 					@name = nil
 				end
 				
+				# Set the process title to the specified value.
+				# @parameter value [String] The name of the process.
 				def name= value
 					if @name = value
 						::Process.setproctitle(@name)
 					end
 				end
 				
+				# The name of the process.
+				# @returns [String]
 				def name
 					@name
 				end
 				
+				# Replace the current child process with a different one. Forwards arguments and options to {::Process.exec}.
+				# This method replaces the child process with the new executable, thus this method never returns.
 				def exec(*arguments, ready: true, **options)
 					if ready
 						self.ready!(status: "(exec)") if ready
@@ -63,10 +73,13 @@ module Async
 						self.before_spawn(arguments, options)
 					end
 					
+					# TODO prefer **options... but it doesn't support redirections on < 2.7
 					::Process.exec(*arguments, options)
 				end
 			end
 			
+			# Fork a child process appropriate for a container.
+			# @returns [Process]
 			def self.fork(**options)
 				self.new(**options) do |process|
 					::Process.fork do
@@ -96,6 +109,8 @@ module Async
 			# 	end
 			# end
 			
+			# Initialize the process.
+			# @parameter name [String] The name to use for the child process.
 			def initialize(name: nil)
 				super()
 				
@@ -109,6 +124,8 @@ module Async
 				self.close_write
 			end
 			
+			# Set the name of the process.
+			# Invokes {::Process.setproctitle} if invoked in the child process.
 			def name= value
 				@name = value
 				
@@ -116,12 +133,17 @@ module Async
 				::Process.setproctitle(@name) if @pid.nil?
 			end
 			
+			# The name of the process.
+			# @attribute [String]
 			attr :name
 			
+			# A human readable representation of the process.
+			# @returns [String]
 			def to_s
 				"\#<#{self.class} #{@name}>"
 			end
 			
+			# Invoke {#terminate!} and then {#wait} for the child process to exit.
 			def close
 				self.terminate!
 				self.wait
@@ -129,18 +151,22 @@ module Async
 				super
 			end
 			
+			# Send `SIGINT` to the child process.
 			def interrupt!
 				unless @status
 					::Process.kill(:INT, @pid)
 				end
 			end
 			
+			# Send `SIGTERM` to the child process.
 			def terminate!
 				unless @status
 					::Process.kill(:TERM, @pid)
 				end
 			end
 			
+			# Wait for the child process to exit.
+			# @returns [::Process::Status] The process exit status.
 			def wait
 				if @pid && @status.nil?
 					_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)

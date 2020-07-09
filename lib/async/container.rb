@@ -23,7 +23,6 @@
 require_relative 'container/controller'
 
 module Async
-	# Containers execute one or more "instances" which typically contain a reactor. A container spawns "instances" using threads and/or processes. Because these are resources that must be cleaned up some how (either by `join` or `waitpid`), their creation is deferred until the user invokes `Container#wait`. When executed this way, the container guarantees that all "instances" will be complete once `Container#wait` returns. Containers are constructs for achieving parallelism, and are not designed to be used directly for concurrency. Typically, you'd create one or more container, add some tasks to it, and then wait for it to complete.
 	module Container
 	end
 end

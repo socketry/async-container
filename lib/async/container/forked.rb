@@ -24,13 +24,17 @@ require_relative 'generic'
 require_relative 'process'
 
 module Async
-	# Manages a reactor within one or more threads.
 	module Container
+		# A multi-process container which uses {Process.fork}.
 		class Forked < Generic
+			# Indicates that this is a multi-process container.
 			def self.multiprocess?
 				true
 			end
 			
+			# Start a named child process and execute the provided block in it.
+			# @parameter name [String] The name (title) of the child process.
+			# @parameter block [Proc] The block to execute in the child process.
 			def start(name, &block)
 				Process.fork(name: name, &block)
 			end

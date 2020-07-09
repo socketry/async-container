@@ -24,13 +24,17 @@ require_relative 'generic'
 require_relative 'thread'
 
 module Async
-	# Manages a reactor within one or more threads.
 	module Container
+		# A multi-thread container which uses {Thread.fork}.
 		class Threaded < Generic
+			# Indicates that this is not a multi-process container.
 			def self.multiprocess?
 				false
 			end
 			
+			# Start a named child thread and execute the provided block in it.
+			# @parameter name [String] The name (title) of the child process.
+			# @parameter block [Proc] The block to execute in the child process.
 			def start(name, &block)
 				Thread.fork(name: name, &block)
 			end

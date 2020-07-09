@@ -25,7 +25,12 @@ require_relative 'threaded'
 
 module Async
 	module Container
+		# Provides a hybrid multi-process multi-thread container.
 		class Hybrid < Forked
+			# Run multiple instances of the same block in the container.
+			# @parameter count [Integer] The number of instances to start.
+			# @parameter forks [Integer] The number of processes to fork.
+			# @parameter threads [Integer] the number of threads to start.
 			def run(count: nil, forks: nil, threads: nil, **options, &block)
 				processor_count = Container.processor_count
 				count ||= processor_count ** 2

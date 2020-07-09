@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-#
 # Copyright, 2020, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,12 +27,12 @@ require_relative 'notify/console'
 module Async
 	module Container
 		module Notify
-			# We cache the client on a per-process basis. Because that's the relevant scope for process readiness protocols.
-			@@client = nil
+			@client = nil
 			
+			# Select the best available notification client.
+			# We cache the client on a per-process basis. Because that's the relevant scope for process readiness protocols.
 			def self.open!
-				# Select the best available client:
-				@@client ||= (
+				@client ||= (
 					Pipe.open! ||
 					Socket.open! ||
 					Console.open!

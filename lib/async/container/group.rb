@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 
 require 'fiber'
-
 require 'async/clock'
 
 require_relative 'error'
@@ -30,6 +29,7 @@ module Async
 	module Container
 		# Manages a group of running processes.
 		class Group
+			# Initialize an empty group.
 			def initialize
 				@running = {}
 				
@@ -40,19 +40,25 @@ module Async
 			# @attribute [Hash<IO, Fiber>] the running tasks, indexed by IO.
 			attr :running
 			
+			# Whether the group contains any running processes.
+			# @returns [Boolean]
 			def running?
 				@running.any?
 			end
 			
+			# Whether the group contains any running processes.
+			# @returns [Boolean]
 			def any?
 				@running.any?
 			end
 			
+			# Whether the group is empty.
+			# @returns [Boolean]
 			def empty?
 				@running.empty?
 			end
 			
-			# This method sleeps for at most the specified duration.
+			# Sleep for at most the specified duration until some state change occurs.
 			def sleep(duration)
 				self.resume
 				self.suspend
@@ -60,6 +66,7 @@ module Async
 				self.wait_for_children(duration)
 			end
 			
+			# Begin any outstanding queued processes and wait for them indefinitely.
 			def wait
 				self.resume
 				
@@ -68,6 +75,8 @@ module Async
 				end
 			end
 			
+			# Interrupt all running processes.
+			# This resumes the controlling fiber with an instance of {Interrupt}.
 			def interrupt
 				Async.logger.debug(self, "Sending interrupt to #{@running.size} running processes...")
 				@running.each_value do |fiber|
@@ -75,6 +84,8 @@ module Async
 				end
 			end
 			
+			# Terminate all running processes.
+			# This resumes the controlling fiber with an instance of {Terminate}.
 			def terminate
 				Async.logger.debug(self, "Sending terminate to #{@running.size} running processes...")
 				@running.each_value do |fiber|
@@ -82,6 +93,8 @@ module Async
 				end
 			end
 			
+			# Stop all child processes using {#terminate}.
+			# @parameter timeout [Boolean | Numeric | Nil] If specified, invoke a graceful shutdown using {#interrupt} first.
 			def stop(timeout = 1)
 				# Use a default timeout if not specified:
 				timeout = 1 if timeout == true
@@ -111,6 +124,7 @@ module Async
 				self.wait
 			end
 			
+			# Wait for a message in the specified {Channel}.
 			def wait_for(channel)
 				io = channel.in
 				
@@ -137,6 +151,7 @@ module Async
 			
 			def wait_for_children(duration = nil)
 				if !@running.empty?
+					# Maybe consider using a proper event loop here:
 					readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)
 					
 					readable&.each do |io|
