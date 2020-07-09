@@ -2,25 +2,13 @@
 
 Provides containers which implement concurrency policy for high-level servers (and potentially clients).
 
-[![Actions Status](https://github.com/socketry/async-container/workflows/Development/badge.svg)](https://github.com/socketry/async-container/actions?workflow=Development)
-[![Code Climate](https://codeclimate.com/github/socketry/async-container.svg)](https://codeclimate.com/github/socketry/async-container)
-[![Coverage Status](https://coveralls.io/repos/socketry/async-container/badge.svg)](https://coveralls.io/r/socketry/async-container)
+[![Development Status](https://github.com/socketry/async-container/workflows/Development/badge.svg)](https://github.com/socketry/async-container/actions?workflow=Development)
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem "async-container"
+``` bash
+$ bundle add async-container
 ```
-
-And then execute:
-
-	$ bundle
-
-Or install it yourself as:
-
-	$ gem install async
 
 ## Usage
 
@@ -28,7 +16,7 @@ Or install it yourself as:
 
 A container represents a set of child processes (or threads) which are doing work for you.
 
-```ruby
+``` ruby
 require 'async/container'
 
 Async.logger.debug!
@@ -50,7 +38,7 @@ Async.logger.debug "Finished."
 
 The controller provides the life-cycle management for one or more containers of processes. It provides behaviour like starting, restarting, reloading and stopping. You can see some [example implementations in Falcon](https://github.com/socketry/falcon/blob/master/lib/falcon/controller/). If the process running the controller receives `SIGHUP` it will recreate the container gracefully.
 
-```ruby
+``` ruby
 require 'async/container'
 
 Async.logger.debug!
@@ -77,7 +65,7 @@ controller.run
 
 `SIGINT` is the interrupt signal. The terminal sends it to the foreground process when the user presses **ctrl-c**. The default behavior is to terminate the process, but it can be caught or ignored. The intention is to provide a mechanism for an orderly, graceful shutdown.
 
-`SIGQUIT` is the dump core signal. The terminal sends it to the foreground process when the user presses **ctrl-\**. The default behavior is to terminate the process and dump core, but it can be caught or ignored. The intention is to provide a mechanism for the user to abort the process. You can look at `SIGINT` as "user-initiated happy termination" and `SIGQUIT` as "user-initiated unhappy termination."
+`SIGQUIT` is the dump core signal. The terminal sends it to the foreground process when the user presses **ctrl-\\**. The default behavior is to terminate the process and dump core, but it can be caught or ignored. The intention is to provide a mechanism for the user to abort the process. You can look at `SIGINT` as "user-initiated happy termination" and `SIGQUIT` as "user-initiated unhappy termination."
 
 `SIGTERM` is the termination signal. The default behavior is to terminate the process, but it also can be caught or ignored. The intention is to kill the process, gracefully or not, but to first allow it a chance to cleanup.
 
@@ -109,11 +97,11 @@ WantedBy=multi-user.target
 
 ## Contributing
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+1.  Fork it
+2.  Create your feature branch (`git checkout -b my-new-feature`)
+3.  Commit your changes (`git commit -am 'Add some feature'`)
+4.  Push to the branch (`git push origin my-new-feature`)
+5.  Create new Pull Request
 
 ## License
 
