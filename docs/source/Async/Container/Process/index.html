@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		
+			<title>Async::Container::Process</title>
+		
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		
+		<link rel="icon" type="image/png" href="../../../../_static/icon.png"/>
+		<link rel="stylesheet" href="../../../../_static/site.css" type="text/css" media="screen"/>
+		
+		<script src="../../../../_components/jquery/jquery.min.js"></script>
+		<script src="../../../../_components/jquery-syntax/jquery.syntax.min.js"></script>
+		
+		<script type="text/javascript">
+		//<![CDATA[
+			jQuery(function($) {
+				$.syntax();
+			});
+		//]]>
+		</script>
+	</head>
+
+	<body class="">
+		<nav> › <a class="link" href="../../../../index.html">Project</a> › <a class="link" href="../../../index.html">Source</a></nav>
+		
+		
+	<h1><code class="language-ruby">Async::Container::Process</code></h1>
+	
+	<main>
+		<p>Represents a running child process from the point of view of the parent container.</p>
+		
+		<h2>Nested</h2>
+		
+		<ul>
+			<li><a href="Instance/index.html"><code class="language-ruby">Async::Container::Process::Instance</code></a></li>
+		</ul>
+		
+		<h2>Definitions</h2>
+		
+		<h3 id="Async::Container::Process.fork"><code class="language-ruby">def self.fork(**options)</code></h3><p>Fork a child process appropriate for a container.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>returns</strong>　<code class="language-ruby"><a href="index.html" title="Async::Container::Process">Process</a></code></dt></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def self.fork(**options)
+	self.new(**options) do |process|
+		::Process.fork do
+			Signal.trap(:INT) {raise Interrupt}
+			Signal.trap(:TERM) {raise Terminate}
+			
+			begin
+				yield Instance.for(process)
+			rescue Interrupt
+				# Graceful exit.
+			rescue Exception =&gt; error
+				Async.logger.error(self) {error}
+				
+				exit!(1)
+			end
+		end
+	end
+end</code></pre>
+						</details><h3 id="Async::Container::Process#initialize"><code class="language-ruby">def initialize(name: nil)</code></h3><p>Initialize the process.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>parameter</strong>　<code class="syntax">name</code>　<code class="language-ruby">String</code></dt><dd><p>The name to use for the child process.</p>
+</dd></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def initialize(name: nil)
+	super()
+	
+	@name = name
+	@status = nil
+	@pid = nil
+	
+	@pid = yield(self)
+	
+	# The parent process won't be writing to the channel:
+	self.close_write
+end</code></pre>
+						</details><h3 id="Async::Container::Process#name="><code class="language-ruby">def name= value</code></h3><p>Set the name of the process.
+Invokes <code class="language-ruby">::Process.setproctitle</code> if invoked in the child process.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def name= value
+	@name = value
+	
+	# If we are the child process:
+	::Process.setproctitle(@name) if @pid.nil?
+end</code></pre>
+						</details><h3 id="Async::Container::Process#name"><code class="language-ruby">attr :name</code></h3><p>The name of the process.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>attribute</strong>　<code class="language-ruby">String</code></dt></dl>
+</details>
+<h3 id="Async::Container::Process#to_s"><code class="language-ruby">def to_s</code></h3><p>A human readable representation of the process.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>returns</strong>　<code class="language-ruby">String</code></dt></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def to_s
+	&quot;\#&lt;#{self.class} #{@name}&gt;&quot;
+end</code></pre>
+						</details><h3 id="Async::Container::Process#close"><code class="language-ruby">def close</code></h3><p>Invoke <code class="language-ruby">#terminate!</code> and then <code class="language-ruby">#wait</code> for the child process to exit.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def close
+	self.terminate!
+	self.wait
+ensure
+	super
+end</code></pre>
+						</details><h3 id="Async::Container::Process#interrupt!"><code class="language-ruby">def interrupt!</code></h3><p>Send <code>SIGINT</code> to the child process.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def interrupt!
+	unless @status
+		::Process.kill(:INT, @pid)
+	end
+end</code></pre>
+						</details><h3 id="Async::Container::Process#terminate!"><code class="language-ruby">def terminate!</code></h3><p>Send <code>SIGTERM</code> to the child process.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def terminate!
+	unless @status
+		::Process.kill(:TERM, @pid)
+	end
+end</code></pre>
+						</details><h3 id="Async::Container::Process#wait"><code class="language-ruby">def wait</code></h3><p>Wait for the child process to exit.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>returns</strong>　<code class="language-ruby">::Process::Status</code></dt><dd><p>The process exit status.</p>
+</dd></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def wait
+	if @pid &amp;&amp; @status.nil?
+		_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
+		
+		if @status.nil?
+			sleep(0.01)
+			_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
+		end
+		
+		if @status.nil?
+			Async.logger.warn(self) {&quot;Process #{@pid} is blocking, has it exited?&quot;}
+			_, @status = ::Process.wait2(@pid)
+		end
+	end
+	
+	return @status
+end</code></pre>
+						</details>	</main>
+
+		
+		<footer>Documentation generated by <a href="https://github.com/socketry/utopia-project">Utopia::Project</a>.</footer>
+	</body>
+</html>

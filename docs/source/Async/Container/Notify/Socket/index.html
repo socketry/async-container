@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		
+			<title>Async::Container::Notify::Socket</title>
+		
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		
+		<link rel="icon" type="image/png" href="../../../../../_static/icon.png"/>
+		<link rel="stylesheet" href="../../../../../_static/site.css" type="text/css" media="screen"/>
+		
+		<script src="../../../../../_components/jquery/jquery.min.js"></script>
+		<script src="../../../../../_components/jquery-syntax/jquery.syntax.min.js"></script>
+		
+		<script type="text/javascript">
+		//<![CDATA[
+			jQuery(function($) {
+				$.syntax();
+			});
+		//]]>
+		</script>
+	</head>
+
+	<body class="">
+		<nav> › <a class="link" href="../../../../../index.html">Project</a> › <a class="link" href="../../../../index.html">Source</a></nav>
+		
+		
+	<h1><code class="language-ruby">Async::Container::Notify::Socket</code></h1>
+	
+	<main>
+		<p>Implements the systemd NOTIFY_SOCKET process readiness protocol.
+See <a href="https://www.freedesktop.org/software/systemd/man/sd_notify.html">https://www.freedesktop.org/software/systemd/man/sd_notify.html</a> for more details of the underlying protocol.</p>
+		
+		
+		<h2>Definitions</h2>
+		
+		<h3 id="Async::Container::Notify::Socket::NOTIFY_SOCKET"><code class="language-ruby">NOTIFY_SOCKET = 'NOTIFY_SOCKET'</code></h3><p>The name of the environment variable which contains the path to the notification socket.</p>
+<h3 id="Async::Container::Notify::Socket::MAXIMUM_MESSAGE_SIZE"><code class="language-ruby">MAXIMUM_MESSAGE_SIZE = 4096</code></h3><p>The maximum allowed size of the UDP message.</p>
+<h3 id="Async::Container::Notify::Socket.open!"><code class="language-ruby">def self.open!(environment = ENV)</code></h3><p>Open a notification client attached to the current <a href="index.html#Async%3A%3AContainer%3A%3ANotify%3A%3ASocket%3A%3ANOTIFY_SOCKET" title="NOTIFY_SOCKET"><code class="language-ruby">NOTIFY_SOCKET = 'NOTIFY_SOCKET'</code></a> if possible.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def self.open!(environment = ENV)
+	if path = environment.delete(NOTIFY_SOCKET)
+		self.new(path)
+	end
+end</code></pre>
+						</details><h3 id="Async::Container::Notify::Socket#initialize"><code class="language-ruby">def initialize(path)</code></h3><p>Initialize the notification client.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>parameter</strong>　<code class="syntax">path</code>　<code class="language-ruby">String</code></dt><dd><p>The path to the UNIX socket used for sending messages to the process manager.</p>
+</dd></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def initialize(path)
+	@path = path
+	@endpoint = IO::Endpoint.unix(path, ::Socket::SOCK_DGRAM)
+end</code></pre>
+						</details><h3 id="Async::Container::Notify::Socket#dump"><code class="language-ruby">def dump(message)</code></h3><p>Dump a message in the format requied by <code>sd_notify</code>.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>parameter</strong>　<code class="syntax">message</code>　<code class="language-ruby">Hash</code></dt><dd><p>Keys and values should be string convertible objects. Values which are <code>true</code>/<code>false</code> are converted to <code>1</code>/<code>0</code> respectively.</p>
+</dd></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def dump(message)
+	buffer = String.new
+	
+	message.each do |key, value|
+		# Conversions required by NOTIFY_SOCKET specifications:
+		if value == true
+			value = 1
+		elsif value == false
+			value = 0
+		end
+		
+		buffer &lt;&lt; &quot;#{key.to_s.upcase}=#{value}\n&quot;
+	end
+	
+	return buffer
+end</code></pre>
+						</details><h3 id="Async::Container::Notify::Socket#send"><code class="language-ruby">def send(**message)</code></h3><p>Send the given message.</p>
+<details open>
+	<summary><h4>Signature</h4></summary>
+	<dl><dt>
+					<strong>parameter</strong>　<code class="syntax">message</code>　<code class="language-ruby">Hash</code></dt></dl>
+</details>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def send(**message)
+	data = dump(message)
+	
+	if data.bytesize &gt; MAXIMUM_MESSAGE_SIZE
+		raise ArgumentError, &quot;Message length #{message.bytesize} exceeds #{MAXIMUM_MESSAGE_SIZE}: #{message.inspect}&quot;
+	end
+	
+	Sync do
+		@endpoint.connect do |peer|
+			peer.send(data)
+		end
+	end
+end</code></pre>
+						</details><h3 id="Async::Container::Notify::Socket#error!"><code class="language-ruby">def error!(text, **message)</code></h3><p>Send the specified error.
+<code>sd_notify</code> requires an <code>errno</code> key, which defaults to <code>-1</code> to indicate a generic error.</p>
+<details>
+							<summary><h4>Implementation</h4></summary>
+							<pre><code class="language-ruby">def error!(text, **message)
+	message[:errno] ||= -1
+	
+	send(status: text, **message)
+end</code></pre>
+						</details>	</main>
+
+		
+		<footer>Documentation generated by <a href="https://github.com/socketry/utopia-project">Utopia::Project</a>.</footer>
+	</body>
+</html>
