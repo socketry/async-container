@@ -201,6 +201,10 @@ module Async
 					raise Terminate
 				end
 				
+				hangup_action = Signal.trap(:HUP) do
+					raise Hangup
+				end
+				
 				self.start
 				
 				while @container&.running?
@@ -228,6 +232,7 @@ module Async
 				# Restore the interrupt handler:
 				Signal.trap(:INT, interrupt_action)
 				Signal.trap(:TERM, terminate_action)
+				Signal.trap(:HUP, hangup_action)
 			end
 		end
 	end

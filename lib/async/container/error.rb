@@ -36,6 +36,14 @@ module Async
 			end
 		end
 		
+		class Hangup < SignalException
+			SIGHUP = Signal.list['HUP']
+			
+			def initialize
+				super(SIGHUP)
+			end
+		end
+		
 		# Represents the error which occured when a container failed to start up correctly.
 		class SetupError < Error
 			def initialize(container)
