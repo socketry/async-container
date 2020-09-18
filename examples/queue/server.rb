@@ -35,7 +35,7 @@ end
 
 container.spawn do |instance|
 	Async do
-		queue = 8.times.to_a
+		queue = 500_000.times.to_a
 		Console.logger.info(self) {"Hosting the queue..."}
 		
 		instance.ready!
@@ -59,7 +59,7 @@ container.spawn do |instance|
 						break
 					end
 				when :status
-					Console.logger.info("Job Status") {arguments}
+					# Console.logger.info("Job Status") {arguments}
 				else
 					Console.logger.warn(self) {"Unhandled command: #{command}#{arguments.inspect}"}
 				end
@@ -84,7 +84,7 @@ container.run do |instance|
 				
 				case command
 				when :job
-					task.sleep(*arguments)
+					# task.sleep(*arguments)
 					packer.write([:status, *arguments])
 					packer.write([:ready])
 					packer.flush
@@ -97,3 +97,5 @@ container.run do |instance|
 end
 
 container.wait
+
+Console.logger.info(self) {"Done!"}
