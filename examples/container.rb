@@ -4,15 +4,15 @@
 require '../lib/async/container/controller'
 require '../lib/async/container/forked'
 
-Async.logger.debug!
+Console.logger.debug!
 
-Async.logger.debug(self, "Starting up...")
+Console.logger.debug(self, "Starting up...")
 
 controller = Async::Container::Controller.new do |container|
-	Async.logger.debug(self, "Setting up container...")
+	Console.logger.debug(self, "Setting up container...")
 	
 	container.run(count: 1, restart: true) do
-		Async.logger.debug(self, "Child process started.")
+		Console.logger.debug(self, "Child process started.")
 		
 		while true
 			sleep 1
@@ -22,12 +22,12 @@ controller = Async::Container::Controller.new do |container|
 			end
 		end
 	ensure
-		Async.logger.debug(self, "Child process exiting:", $!)
+		Console.logger.debug(self, "Child process exiting:", $!)
 	end
 end
 
 begin
 	controller.run
 ensure
-	Async.logger.debug(controller, "Parent process exiting:", $!)
+	Console.logger.debug(controller, "Parent process exiting:", $!)
 end

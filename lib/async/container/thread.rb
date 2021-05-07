@@ -24,8 +24,6 @@ require_relative 'channel'
 require_relative 'error'
 require_relative 'notify/pipe'
 
-require 'async/logger'
-
 module Async
 	module Container
 		# Represents a running child thread from the point of view of the parent container.
@@ -207,7 +205,7 @@ module Async
 			# Invoked by the @waiter thread to indicate the outcome of the child thread.
 			def finished(error = nil)
 				if error
-					Async.logger.error(self) {error}
+					Console.logger.error(self) {error}
 				end
 				
 				@status = Status.new(error)

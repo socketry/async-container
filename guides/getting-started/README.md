@@ -24,7 +24,7 @@ A container represents a set of child processes (or threads) which are doing wor
 ``` ruby
 require 'async/container'
 
-Async.logger.debug!
+Console.logger.debug!
 
 container = Async::Container.new
 
@@ -34,9 +34,9 @@ container.async do |task|
 	task.logger.debug "Waking up!"
 end
 
-Async.logger.debug "Waiting for container..."
+Console.logger.debug "Waiting for container..."
 container.wait
-Async.logger.debug "Finished."
+Console.logger.debug "Finished."
 ```
 
 ## Controllers
@@ -46,13 +46,13 @@ The controller provides the life-cycle management for one or more containers of 
 ``` ruby
 require 'async/container'
 
-Async.logger.debug!
+Console.logger.debug!
 
 class Controller < Async::Container::Controller
 	def setup(container)
 		container.async do |task|
 			while true
-				Async.logger.debug("Sleeping...")
+				Console.logger.debug("Sleeping...")
 				task.sleep(1)
 			end
 		end

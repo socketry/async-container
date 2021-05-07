@@ -122,9 +122,9 @@ module Async
 				if @container
 					@notify&.restarting!
 					
-					Async.logger.debug(self) {"Restarting container..."}
+					Console.logger.debug(self) {"Restarting container..."}
 				else
-					Async.logger.debug(self) {"Starting container..."}
+					Console.logger.debug(self) {"Starting container..."}
 				end
 				
 				container = self.create_container
@@ -138,9 +138,9 @@ module Async
 				end
 				
 				# Wait for all child processes to enter the ready state.
-				Async.logger.debug(self, "Waiting for startup...")
+				Console.logger.debug(self, "Waiting for startup...")
 				container.wait_until_ready
-				Async.logger.debug(self, "Finished startup.")
+				Console.logger.debug(self, "Finished startup.")
 				
 				if container.failed?
 					@notify&.error!($!.to_s)
@@ -154,7 +154,7 @@ module Async
 				old_container = @container
 				@container = container
 				
-				Async.logger.debug(self, "Stopping old container...")
+				Console.logger.debug(self, "Stopping old container...")
 				old_container&.stop
 				@notify&.ready!
 			rescue
@@ -168,7 +168,7 @@ module Async
 			def reload
 				@notify&.reloading!
 				
-				Async.logger.info(self) {"Reloading container: #{@container}..."}
+				Console.logger.info(self) {"Reloading container: #{@container}..."}
 				
 				begin
 					self.setup(@container)
@@ -177,9 +177,9 @@ module Async
 				end
 				
 				# Wait for all child processes to enter the ready state.
-				Async.logger.debug(self, "Waiting for startup...")
+				Console.logger.debug(self, "Waiting for startup...")
 				@container.wait_until_ready
-				Async.logger.debug(self, "Finished startup.")
+				Console.logger.debug(self, "Finished startup.")
 				
 				if @container.failed?
 					@notify.error!("Container failed!")
@@ -215,7 +215,7 @@ module Async
 							begin
 								handler.call
 							rescue SetupError => error
-								Async.logger.error(self) {error}
+								Console.logger.error(self) {error}
 							end
 						else
 							raise

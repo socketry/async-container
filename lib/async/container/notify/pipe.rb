@@ -38,7 +38,7 @@ module Async
 						self.new(::IO.for_fd(descriptor.to_i))
 					end
 				rescue Errno::EBADF => error
-					Async.logger.error(self) {error}
+					Console.logger.error(self) {error}
 					
 					return nil
 				end
