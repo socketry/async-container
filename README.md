@@ -6,11 +6,11 @@ Provides containers which implement parallelism for clients and servers.
 
 ## Features
 
-- Supports multi-process, multi-thread and hybrid containers.
-- Automatic scalability based on physical hardware.
-- Direct integration with [systemd](https://www.freedesktop.org/software/systemd/man/sd_notify.html) using `$NOTIFY_SOCKET`.
-- Internal process readiness protocol for handling state changes.
-- Automatic restart of failed processes.
+  - Supports multi-process, multi-thread and hybrid containers.
+  - Automatic scalability based on physical hardware.
+  - Direct integration with [systemd](https://www.freedesktop.org/software/systemd/man/sd_notify.html) using `$NOTIFY_SOCKET`.
+  - Internal process readiness protocol for handling state changes.
+  - Automatic restart of failed processes.
 
 ## Usage
 
