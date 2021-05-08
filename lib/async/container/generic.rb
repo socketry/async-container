@@ -273,7 +273,7 @@ module Async
 			
 			private
 			
-			if Fiber.respond_to?(:blocking)
+			if Fiber.respond_to?(:blocking?)
 				def fiber(&block)
 					Fiber.new(blocking: true, &block)
 				end

@@ -48,6 +48,19 @@ RSpec.shared_examples_for Async::Container do
 		subject.wait
 	end
 	
+	it "should be blocking", if: Fiber.respond_to?(:blocking?) do
+		input, output = IO.pipe
+		
+		subject.spawn do
+			output.write(Fiber.blocking? != false)
+		end
+		
+		subject.wait
+		
+		output.close
+		expect(input.read).to be == "true"
+	end
+	
 	describe '#sleep' do
 		it "can sleep for a short time" do
 			subject.spawn do
