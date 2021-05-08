@@ -161,7 +161,7 @@ module Async
 				
 				@statistics.spawn!
 				
-				Fiber.new do
+				fiber do
 					while @running
 						child = self.start(name, &block)
 						
@@ -269,6 +269,18 @@ module Async
 				end
 				
 				@state.delete(child)
+			end
+			
+			private
+			
+			if Fiber.respond_to?(:blocking)
+				def fiber(&block)
+					Fiber.new(blocking: true, &block)
+				end
+			else
+				def fiber(&block)
+					Fiber.new(&block)
+				end
 			end
 		end
 	end
