@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Copyright, 2019, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'forked'
-require_relative 'threaded'
-require_relative 'hybrid'
+require_relative 'generic'
+require_relative 'thread'
 
 module Async
 	module Container
-		# Whether the underlying process supports fork.
-		# @returns [Boolean]
-		def self.fork?
-			::Process.respond_to?(:fork) && ::Process.respond_to?(:setpgid)
-		end
-		
-		def self.ractor?
-			defined?(::Ractor)
-		end
-		
-		# Determins the best container class based on the underlying Ruby implementation.
-		# Some platforms, including JRuby, don't support fork. Applications which just want a reasonable default can use this method.
-		# @returns [Class]
-		def self.best_container_class
-			if fork?
-				return Forked
-			els
-				return Threaded
+		# A multi-thread container which uses {Ractor}.
+		class Ractored < Generic
+			# Indicates that this is not a multi-process container.
+			def self.multiprocess?
+				false
 			end
-		end
-		
-		# Create an instance of the best container class.
-		# @returns [Generic] Typically an instance of either {Forked} or {Threaded} containers.
-		def self.new(*arguments, **options)
-			best_container_class.new(*arguments, **options)
+			
+			# Start a named ractor and execute the provided block in it.
+			# @parameter name [String] The name (title) of the ractor.
+			# @parameter block [Proc] The block to execute in the ractor.
+			def start(name, &block)
+				Ractor.new(name: name, &block)
+			end
 		end
 	end
 end
