@@ -15,8 +15,8 @@ Gem::Specification.new do |spec|
 	
 	spec.required_ruby_version = ">= 2.5"
 	
-	spec.add_dependency "async", "~> 1.0"
-	spec.add_dependency "async-io", "~> 1.26"
+	spec.add_dependency "async"
+	spec.add_dependency "async-io"
 	
 	spec.add_development_dependency "async-rspec", "~> 1.1"
 	spec.add_development_dependency "bundler"
