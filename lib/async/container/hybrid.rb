@@ -35,7 +35,7 @@ module Async
 				processor_count = Container.processor_count
 				count ||= processor_count ** 2
 				forks ||= [processor_count, count].min
-				threads = (count / forks).ceil
+				threads ||= (count / forks).ceil
 				
 				forks.times do
 					self.spawn(**options) do |instance|
