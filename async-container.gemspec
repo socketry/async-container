@@ -12,12 +12,15 @@ Gem::Specification.new do |spec|
 	spec.homepage = "https://github.com/socketry/async-container"
 	
 	spec.files = Dir.glob('{lib}/**/*', File::FNM_DOTMATCH, base: __dir__)
-	
+	spec.bindir        = "exe"
+	spec.executables   = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+
 	spec.required_ruby_version = ">= 2.5"
 	
 	spec.add_dependency "async"
 	spec.add_dependency "async-io"
-	
+	spec.add_dependency "samovar", "~> 2.1"
+
 	spec.add_development_dependency "async-rspec", "~> 1.1"
 	spec.add_development_dependency "bundler"
 	spec.add_development_dependency "covered"
