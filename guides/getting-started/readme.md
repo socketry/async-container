@@ -28,10 +28,10 @@ Console.logger.debug!
 
 container = Async::Container.new
 
-container.async do |task|
-	task.logger.debug "Sleeping..."
-	task.sleep(1)
-	task.logger.debug "Waking up!"
+container.spawn do |task|
+	Console.logger.debug task, "Sleeping..."
+	sleep(1)
+	Console.logger.debug task, "Waking up!"
 end
 
 Console.logger.debug "Waiting for container..."
@@ -49,11 +49,17 @@ require 'async/container'
 Console.logger.debug!
 
 class Controller < Async::Container::Controller
+	def create_container
+		Async::Container::Forked.new
+		# or Async::Container::Threaded.new
+		# or Async::Container::Hybrid.new
+	end
+	 
 	def setup(container)
-		container.async do |task|
+		container.run count: 2, restart: true do |instance|
 			while true
-				Console.logger.debug("Sleeping...")
-				task.sleep(1)
+				Console.logger.debug(instance, "Sleeping...")
+				sleep(1)
 			end
 		end
 	end
