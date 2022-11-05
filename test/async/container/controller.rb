@@ -5,8 +5,6 @@
 
 require "async/container/controller"
 
-require "timer_quantum"
-
 describe Async::Container::Controller do
 	let(:controller) {subject.new}
 	
@@ -20,18 +18,18 @@ describe Async::Container::Controller do
 				container.spawn(key: "test") do |instance|
 					instance.ready!
 					
-					sleep(0.2 * QUANTUM)
+					sleep(0.2)
 					
 					@output.write(".")
 					@output.flush
 					
-					sleep(0.4 * QUANTUM)
+					sleep(0.4)
 				end
 				
 				container.spawn do |instance|
 					instance.ready!
 					
-					sleep(0.3 * QUANTUM)
+					sleep(0.3)
 					
 					@output.write(",")
 					@output.flush
