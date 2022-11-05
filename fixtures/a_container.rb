@@ -74,4 +74,22 @@ AContainer = Sus::Shared("a container") do
 			expect(container).not.to be(:running?)
 		end
 	end
+	
+	with '#ready' do
+		it "can notify the ready pipe in an asynchronous context" do
+			container.run do |instance|
+				Async do
+					instance.ready!
+				end
+			end
+			
+			expect(container).to be(:running?)
+			
+			container.wait
+			
+			container.stop
+			
+			expect(container).not.to be(:running?)
+		end
+	end
 end
