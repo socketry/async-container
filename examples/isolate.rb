@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-# We define end of life-cycle in terms of "Interrupt" (SIGINT), "Terminate" (SIGTERM) and "Kill" (SIGKILL, does not invoke user code).
+# Released under the MIT License.
+# Copyright, 2020, by Samuel Williams.
+
 class Terminate < Interrupt
 end
 
