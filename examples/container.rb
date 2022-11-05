@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Released under the MIT License.
+# Copyright, 2019-2022, by Samuel Williams.
+# Copyright, 2019, by Yuji Yaginuma.
+
 require '../lib/async/container/controller'
 require '../lib/async/container/forked'
 

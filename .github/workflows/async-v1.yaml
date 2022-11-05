@@ -1,4 +1,4 @@
-name: Async head
+name: Async v1
 
 on: [push, pull_request]
 
@@ -12,10 +12,10 @@ jobs:
           - ubuntu
         
         ruby:
-          - head
+          - 2.7
     
     env:
-      BUNDLE_GEMFILE: gems/async-head.rb
+      BUNDLE_GEMFILE: gems/async-v1.rb
     
     steps:
     - uses: actions/checkout@v2
@@ -26,4 +26,4 @@ jobs:
     
     - name: Run tests
       timeout-minutes: 5
-      run: bundle exec rspec
+      run: bundle exec sus

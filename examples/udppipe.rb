@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Released under the MIT License.
+# Copyright, 2020-2022, by Samuel Williams.
+
 require 'async/io'
 require 'async/io/endpoint'
 require 'async/io/unix_endpoint'

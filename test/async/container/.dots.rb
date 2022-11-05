@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Released under the MIT License.
+# Copyright, 2020-2022, by Samuel Williams.
+
 require_relative '../../../lib/async/container/controller'
 
 # Console.logger.debug!

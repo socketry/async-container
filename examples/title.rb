@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Released under the MIT License.
+# Copyright, 2018-2022, by Samuel Williams.
+
 Process.setproctitle "Preparing for sleep..."
 
 10.times do |i|
