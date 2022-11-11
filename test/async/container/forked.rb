@@ -9,8 +9,6 @@ require "async/container/forked"
 
 require 'a_container'
 
-return unless Async::Container.fork?
-
 describe Async::Container::Forked do
 	let(:container) {subject.new}
 	
@@ -44,4 +42,4 @@ describe Async::Container::Forked do
 	it "should be multiprocess" do
 		expect(subject).to be(:multiprocess?)
 	end
-end
+end if Async::Container.fork?

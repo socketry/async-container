@@ -8,12 +8,10 @@ require 'async/container/best'
 
 require 'a_container'
 
-return unless Async::Container.fork?
-
 describe Async::Container::Hybrid do
 	it_behaves_like AContainer
 	
 	it "should be multiprocess" do
 		expect(subject).to be(:multiprocess?)
 	end
-end
+end if Async::Container.fork?

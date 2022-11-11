@@ -6,8 +6,6 @@
 require "async/container/controller"
 require "async/container/notify/server"
 
-return unless Async::Container.fork?
-
 describe Async::Container::Notify do
 	let(:server) {subject::Server.open}
 	let(:notify_socket) {server.path}
@@ -38,4 +36,4 @@ describe Async::Container::Notify do
 			end
 		end
 	end
-end
+end if Async::Container.fork?
