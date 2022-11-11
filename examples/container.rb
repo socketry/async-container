@@ -4,34 +4,24 @@
 # Released under the MIT License.
 # Copyright, 2019-2022, by Samuel Williams.
 # Copyright, 2019, by Yuji Yaginuma.
+# Copyright, 2022, by Anton Sozontov.
 
-require '../lib/async/container/controller'
-require '../lib/async/container/forked'
+require '../lib/async/container'
 
 Console.logger.debug!
 
-Console.logger.debug(self, "Starting up...")
+container = Async::Container.new
 
-controller = Async::Container::Controller.new do |container|
-	Console.logger.debug(self, "Setting up container...")
-	
-	container.run(count: 1, restart: true) do
-		Console.logger.debug(self, "Child process started.")
-		
-		while true
-			sleep 1
-			
-			if rand < 0.1
-				exit(1)
-			end
-		end
-	ensure
-		Console.logger.debug(self, "Child process exiting:", $!)
-	end
+Console.logger.debug "Spawning 2 containers..."
+
+2.times do
+  container.spawn do |task|
+    Console.logger.debug task, "Sleeping..."
+    sleep(2)
+    Console.logger.debug task, "Waking up!"
+  end
 end
 
-begin
-	controller.run
-ensure
-	Console.logger.debug(controller, "Parent process exiting:", $!)
-end
+Console.logger.debug "Waiting for container..."
+container.wait
+Console.logger.debug "Finished."
