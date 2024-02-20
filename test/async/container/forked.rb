@@ -39,6 +39,33 @@ describe Async::Container::Forked do
 		expect(container.statistics.restarts).to be == 2
 	end
 	
+	it "can handle interrupts" do
+		finished = IO.pipe
+		interrupted = IO.pipe
+		
+		container.spawn(restart: true) do |instance|
+			Thread.handle_interrupt(Interrupt => :never) do
+				instance.ready!
+				
+				finished.first.gets
+			rescue ::Interrupt
+				interrupted.last.puts "incorrectly interrupted"
+			end
+		rescue ::Interrupt
+			interrupted.last.puts "correctly interrupted"
+		end
+		
+		container.wait_until_ready
+		
+		container.group.interrupt
+		sleep(0.001)
+		finished.last.puts "finished"
+		
+		expect(interrupted.first.gets).to be == "correctly interrupted\n"
+		
+		container.stop
+	end
+	
 	it "should be multiprocess" do
 		expect(subject).to be(:multiprocess?)
 	end

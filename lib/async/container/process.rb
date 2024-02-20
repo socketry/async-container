@@ -66,8 +66,9 @@ module Async
 			def self.fork(**options)
 				self.new(**options) do |process|
 					::Process.fork do
-						Signal.trap(:INT) {raise Interrupt}
-						Signal.trap(:TERM) {raise Terminate}
+						# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
+						Signal.trap(:INT) {::Thread.current.raise(Interrupt)}
+						Signal.trap(:TERM) {::Thread.current.raise(Terminate)}
 						
 						begin
 							yield Instance.for(process)

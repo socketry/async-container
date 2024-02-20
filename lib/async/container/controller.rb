@@ -176,16 +176,17 @@ module Async
 			# Enter the controller run loop, trapping `SIGINT` and `SIGTERM`.
 			def run
 				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
+				# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 				interrupt_action = Signal.trap(:INT) do
-					raise Interrupt
+					::Thread.current.raise(Interrupt)
 				end
 				
 				terminate_action = Signal.trap(:TERM) do
-					raise Terminate
+					::Thread.current.raise(Terminate)
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
-					raise Hangup
+					::Thread.current.raise(Hangup)
 				end
 				
 				self.start
