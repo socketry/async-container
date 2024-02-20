@@ -49,6 +49,8 @@ module Async
 				@keyed = {}
 			end
 			
+			attr :group
+			
 			attr :state
 			
 			# A human readable representation of the container.
