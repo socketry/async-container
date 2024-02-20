@@ -3,6 +3,7 @@
 
 # Released under the MIT License.
 # Copyright, 2022, by Anton Sozontov.
+# Copyright, 2024, by Samuel Williams.
 
 require '../lib/async/container/controller'
 
