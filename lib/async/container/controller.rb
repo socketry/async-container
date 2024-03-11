@@ -102,6 +102,7 @@ module Async
 			end
 			
 			# Restart the container. A new container is created, and if successful, any old container is terminated gracefully.
+			# This is equivalent to a blue-green deployment.
 			def restart
 				if @container
 					@notify&.restarting!
