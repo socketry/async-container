@@ -22,8 +22,9 @@ module Async
 			
 			# Initialize the controller.
 			# @parameter notify [Notify::Client] A client used for process readiness notifications.
-			def initialize(notify: Notify.open!)
+			def initialize(notify: Notify.open!, container_class: Container)
 				@container = nil
+				@container_class = container_class
 				
 				if @notify = notify
 					@notify.status!("Initializing...")
@@ -66,7 +67,7 @@ module Async
 			# Can be overridden by a sub-class.
 			# @returns [Generic] A specific container instance to use.
 			def create_container
-				Container.new
+				@container_class.new
 			end
 			
 			# Whether the controller has a running container.
