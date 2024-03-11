@@ -115,8 +115,8 @@ module Async
 				
 				begin
 					self.setup(container)
-				rescue
-					@notify&.error!($!.to_s)
+				rescue => error
+					@notify&.error!(error.to_s)
 					
 					raise SetupError, container
 				end
@@ -127,7 +127,7 @@ module Async
 				Console.logger.debug(self, "Finished startup.")
 				
 				if container.failed?
-					@notify&.error!($!.to_s)
+					@notify&.error!("Container failed to start!")
 					
 					container.stop
 					
@@ -166,7 +166,7 @@ module Async
 				Console.logger.debug(self, "Finished startup.")
 				
 				if @container.failed?
-					@notify.error!("Container failed!")
+					@notify.error!("Container failed to reload!")
 					
 					raise SetupError, @container
 				else
