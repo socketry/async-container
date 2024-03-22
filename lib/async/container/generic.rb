@@ -161,7 +161,7 @@ module Async
 						end
 						
 						if status.success?
-							Console.logger.info(self) {"#{child} exited with #{status}"}
+							Console.logger.debug(self) {"#{child} exited with #{status}"}
 						else
 							@statistics.failure!
 							Console.logger.error(self) {status}
