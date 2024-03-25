@@ -135,18 +135,20 @@ module Async
 					raise SetupError, container
 				end
 				
-				# Make this swap as atomic as possible:
+				# The following swap should be atomic:
 				old_container = @container
 				@container = container
+				container = nil
 				
-				Console.logger.debug(self, "Stopping old container...")
-				old_container&.stop
+				if old_container
+					Console.logger.debug(self, "Stopping old container...")
+					old_container&.stop
+				end
+				
 				@notify&.ready!
-			rescue
+			ensure
 				# If we are leaving this function with an exception, try to kill the container:
 				container&.stop(false)
-				
-				raise
 			end
 			
 			# Reload the existing container. Children instances will be reloaded using `SIGHUP`.
