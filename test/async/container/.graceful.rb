@@ -9,20 +9,27 @@ require_relative '../../../lib/async/container/controller'
 class Graceful < Async::Container::Controller
 	def setup(container)
 		container.run(name: "graceful", count: 1, restart: true) do |instance|
-			# Deliberately missing call to `instance.ready!`:
 			instance.ready!
+			clock = Async::Clock.start
 			
-			$stdout.puts "Ready..."
+			original_action = Signal.trap(:INT) do
+				$stdout.puts "Graceful shutdown...", clock.total
+				$stdout.flush
+				
+				Signal.trap(:INT, original_action)
+			end
+			
+			$stdout.puts "Ready...", clock.total
 			$stdout.flush
 			
 			sleep
 		ensure
-			$stdout.puts "Exiting..."
+			$stdout.puts "Exiting...", clock.total
 			$stdout.flush
 		end
 	end
 end
 
-controller = Graceful.new(graceful: 5)
+controller = Graceful.new(graceful: 1)
 
 controller.run
