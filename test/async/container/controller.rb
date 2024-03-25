@@ -88,6 +88,38 @@ describe Async::Container::Controller do
 		end
 	end
 	
+	with 'bad controller' do
+		let(:controller_path) {File.expand_path(".bad.rb", __dir__)}
+		
+		let(:pipe) {IO.pipe}
+		let(:input) {pipe.first}
+		let(:output) {pipe.last}
+		
+		let(:pid) {@pid}
+		
+		def before
+			@pid = Process.spawn("bundle", "exec", controller_path, out: output)
+			output.close
+			
+			super
+		end
+		
+		def after
+			Process.kill(:TERM, @pid)
+			Process.wait(@pid)
+			
+			super
+		end
+		
+		it "fails to start" do
+			expect(input.gets).to be == "Ready...\n"
+			
+			Process.kill(:INT, @pid)
+			
+			expect(input.gets).to be == "Exiting...\n"
+		end
+	end
+	
 	with 'signals' do
 		let(:controller_path) {File.expand_path(".dots.rb", __dir__)}
 		
