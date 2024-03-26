@@ -15,6 +15,7 @@ class Graceful < Async::Container::Controller
 			clock = Async::Clock.start
 			
 			original_action = Signal.trap(:INT) do
+				# We ignore the int, but in practical applications you would want start a graceful shutdown.
 				$stdout.puts "Graceful shutdown...", clock.total
 				
 				Signal.trap(:INT, original_action)
