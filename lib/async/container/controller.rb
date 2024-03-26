@@ -22,7 +22,7 @@ module Async
 			
 			# Initialize the controller.
 			# @parameter notify [Notify::Client] A client used for process readiness notifications.
-			def initialize(notify: Notify.open!, container_class: Container)
+			def initialize(notify: Notify.open!, container_class: Container, graceful_stop: true)
 				@container = nil
 				@container_class = container_class
 				
@@ -35,6 +35,8 @@ module Async
 				trap(SIGHUP) do
 					self.restart
 				end
+				
+				@graceful_stop = graceful_stop
 			end
 			
 			# The state of the controller.
@@ -96,7 +98,7 @@ module Async
 			
 			# Stop the container if it's running.
 			# @parameter graceful [Boolean] Whether to give the children instances time to shut down or to kill them immediately.
-			def stop(graceful = true)
+			def stop(graceful = @graceful_stop)
 				@container&.stop(graceful)
 				@container = nil
 			end
@@ -130,7 +132,7 @@ module Async
 				if container.failed?
 					@notify&.error!("Container failed to start!")
 					
-					container.stop
+					container.stop(false)
 					
 					raise SetupError, container
 				end
@@ -142,7 +144,7 @@ module Async
 				
 				if old_container
 					Console.logger.debug(self, "Stopping old container...")
-					old_container&.stop
+					old_container&.stop(@graceful_stop)
 				end
 				
 				@notify&.ready!
@@ -165,7 +167,9 @@ module Async
 				
 				# Wait for all child processes to enter the ready state.
 				Console.logger.debug(self, "Waiting for startup...")
+				
 				@container.wait_until_ready
+				
 				Console.logger.debug(self, "Finished startup.")
 				
 				if @container.failed?
@@ -182,14 +186,17 @@ module Async
 				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
 				# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 				interrupt_action = Signal.trap(:INT) do
+					# $stderr.puts "Received INT signal, terminating...", caller
 					::Thread.current.raise(Interrupt)
 				end
 				
 				terminate_action = Signal.trap(:TERM) do
+					# $stderr.puts "Received TERM signal, terminating...", caller
 					::Thread.current.raise(Terminate)
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
+					# $stderr.puts "Received HUP signal, restarting...", caller
 					::Thread.current.raise(Hangup)
 				end
 				
@@ -211,11 +218,11 @@ module Async
 					end
 				end
 			rescue Interrupt
-				self.stop(true)
+				self.stop
 			rescue Terminate
 				self.stop(false)
 			ensure
-				self.stop(true)
+				self.stop(false)
 				
 				# Restore the interrupt handler:
 				Signal.trap(:INT, interrupt_action)

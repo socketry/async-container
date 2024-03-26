@@ -13,7 +13,7 @@ module Async
 			# Implements a general process readiness protocol with output to the local console.
 			class Console < Client
 				# Open a notification client attached to the current console.
-				def self.open!(logger = ::Console.logger)
+				def self.open!(logger = ::Console)
 					self.new(logger)
 				end
 				

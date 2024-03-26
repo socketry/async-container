@@ -6,6 +6,8 @@
 
 require_relative '../../../lib/async/container/controller'
 
+$stdout.sync = true
+
 class Bad < Async::Container::Controller
 	def setup(container)
 		container.run(name: "bad", count: 1, restart: true) do |instance|
@@ -13,12 +15,10 @@ class Bad < Async::Container::Controller
 			# instance.ready!
 			
 			$stdout.puts "Ready..."
-			$stdout.flush
 			
 			sleep
 		ensure
 			$stdout.puts "Exiting..."
-			$stdout.flush
 		end
 	end
 end

@@ -20,6 +20,10 @@ module Async
 				@queue = nil
 			end
 			
+			def inspect
+				"#<#{self.class} running=#{@running.size}>"
+			end
+			
 			# @attribute [Hash(IO, Fiber)] the running tasks, indexed by IO.
 			attr :running
 			
@@ -133,6 +137,7 @@ module Async
 			protected
 			
 			def wait_for_children(duration = nil)
+				Console.debug(self, "Waiting for children...", duration: duration)
 				if !@running.empty?
 					# Maybe consider using a proper event loop here:
 					readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)
