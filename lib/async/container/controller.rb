@@ -22,7 +22,7 @@ module Async
 			
 			# Initialize the controller.
 			# @parameter notify [Notify::Client] A client used for process readiness notifications.
-			def initialize(notify: Notify.open!, container_class: Container, graceful: true)
+			def initialize(notify: Notify.open!, container_class: Container, graceful_stop: true)
 				@container = nil
 				@container_class = container_class
 				
@@ -36,7 +36,7 @@ module Async
 					self.restart
 				end
 				
-				@graceful = graceful
+				@graceful_stop = graceful_stop
 			end
 			
 			# The state of the controller.
@@ -98,7 +98,7 @@ module Async
 			
 			# Stop the container if it's running.
 			# @parameter graceful [Boolean] Whether to give the children instances time to shut down or to kill them immediately.
-			def stop(graceful = @graceful)
+			def stop(graceful = @graceful_stop)
 				@container&.stop(graceful)
 				@container = nil
 			end
@@ -144,7 +144,7 @@ module Async
 				
 				if old_container
 					Console.logger.debug(self, "Stopping old container...")
-					old_container&.stop(@graceful)
+					old_container&.stop(@graceful_stop)
 				end
 				
 				@notify&.ready!
