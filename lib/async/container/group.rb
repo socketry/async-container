@@ -20,6 +20,10 @@ module Async
 				@queue = nil
 			end
 			
+			def inspect
+				"#<#{self.class} running=#{@running.size}>"
+			end
+			
 			# @attribute [Hash(IO, Fiber)] the running tasks, indexed by IO.
 			attr :running
 			

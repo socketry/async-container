@@ -12,6 +12,10 @@ class Graceful < Async::Container::Controller
 	def setup(container)
 		container.run(name: "graceful", count: 1, restart: true) do |instance|
 			instance.ready!
+			
+			# This is to avoid race conditions in the controller in test conditions.
+			sleep 0.1
+			
 			clock = Async::Clock.start
 			
 			original_action = Signal.trap(:INT) do

@@ -11,17 +11,9 @@ require_relative 'notify'
 
 module Async
 	module Container
-		module Atomic
-			def atomic(&block)
-				::Thread.handle_interrupt(Exception => :never, &block)
-			end
-		end
-		
 		# Manages the life-cycle of one or more containers in order to support a persistent system.
 		# e.g. a web server, job server or some other long running system.
 		class Controller
-			include Atomic
-			
 			SIGHUP = Signal.list["HUP"]
 			SIGINT = Signal.list["INT"]
 			SIGTERM = Signal.list["TERM"]
@@ -194,14 +186,17 @@ module Async
 				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
 				# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 				interrupt_action = Signal.trap(:INT) do
+					# $stderr.puts "Received INT signal, terminating...", caller
 					::Thread.current.raise(Interrupt)
 				end
 				
 				terminate_action = Signal.trap(:TERM) do
+					# $stderr.puts "Received TERM signal, terminating...", caller
 					::Thread.current.raise(Terminate)
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
+					# $stderr.puts "Received HUP signal, restarting...", caller
 					::Thread.current.raise(Hangup)
 				end
 				
