@@ -11,9 +11,17 @@ require_relative 'notify'
 
 module Async
 	module Container
+		module Atomic
+			def atomic(&block)
+				::Thread.handle_interrupt(Exception => :never, &block)
+			end
+		end
+		
 		# Manages the life-cycle of one or more containers in order to support a persistent system.
 		# e.g. a web server, job server or some other long running system.
 		class Controller
+			include Atomic
+			
 			SIGHUP = Signal.list["HUP"]
 			SIGINT = Signal.list["INT"]
 			SIGTERM = Signal.list["TERM"]
@@ -167,7 +175,9 @@ module Async
 				
 				# Wait for all child processes to enter the ready state.
 				Console.logger.debug(self, "Waiting for startup...")
+				
 				@container.wait_until_ready
+				
 				Console.logger.debug(self, "Finished startup.")
 				
 				if @container.failed?
