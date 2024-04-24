@@ -8,7 +8,6 @@ require 'async/container'
 
 require 'async/http/endpoint'
 require 'async/http/server'
-require 'async/io/shared_endpoint'
 
 container = Async::Container::Forked.new
 

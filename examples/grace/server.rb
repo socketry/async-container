@@ -5,7 +5,7 @@
 # Copyright, 2024, by Samuel Williams.
 
 require '../../lib/async/container'
-require 'async/io/host_endpoint'
+require 'io/endpoint/host_endpoint'
 
 Console.logger.debug!
 

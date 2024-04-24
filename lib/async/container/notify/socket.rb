@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2022, by Samuel Williams.
+# Copyright, 2020-2024, by Samuel Williams.
 
 require_relative 'client'
 
-require 'async/io'
-require 'async/io/unix_endpoint'
+require 'io/endpoint/unix_endpoint'
 require 'kernel/sync'
 
 module Async
@@ -32,7 +31,7 @@ module Async
 				# @parameter path [String] The path to the UNIX socket used for sending messages to the process manager.
 				def initialize(path)
 					@path = path
-					@endpoint = IO::Endpoint.unix(path, ::Socket::SOCK_DGRAM)
+					@endpoint = ::IO::Endpoint.unix(path, ::Socket::SOCK_DGRAM)
 				end
 				
 				# Dump a message in the format requied by `sd_notify`.
@@ -65,7 +64,7 @@ module Async
 					
 					Sync do
 						@endpoint.connect do |peer|
-							peer.send(data)
+							peer.sendmsg(data)
 						end
 					end
 				end

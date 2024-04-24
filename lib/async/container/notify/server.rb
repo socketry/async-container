@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2022, by Samuel Williams.
+# Copyright, 2020-2024, by Samuel Williams.
 # Copyright, 2020, by Olle Jonsson.
 
-require 'async/io'
-require 'async/io/unix_endpoint'
 require 'kernel/sync'
 
 require 'tmpdir'
@@ -62,19 +60,13 @@ module Async
 				class Context
 					def initialize(path)
 						@path = path
-						@endpoint = IO::Endpoint.unix(@path, ::Socket::SOCK_DGRAM)
-						
-						Sync do
-							@bound = @endpoint.bind
-						end
+						@bound = Addrinfo.unix(@path, ::Socket::SOCK_DGRAM).bind
 						
 						@state = {}
 					end
 					
 					def close
-						Sync do
-							@bound.close
-						end
+						@bound.close
 						
 						File.unlink(@path)
 					end
