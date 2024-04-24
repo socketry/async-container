@@ -31,7 +31,7 @@ module Async
 				# @parameter path [String] The path to the UNIX socket used for sending messages to the process manager.
 				def initialize(path)
 					@path = path
-					@endpoint = ::IO::Endpoint.unix(path, ::Socket::SOCK_DGRAM)
+					@address = Addrinfo.unix(path, ::Socket::SOCK_DGRAM)
 				end
 				
 				# Dump a message in the format requied by `sd_notify`.
@@ -62,10 +62,8 @@ module Async
 						raise ArgumentError, "Message length #{message.bytesize} exceeds #{MAXIMUM_MESSAGE_SIZE}: #{message.inspect}"
 					end
 					
-					Sync do
-						@endpoint.connect do |peer|
-							peer.sendmsg(data)
-						end
+					@address.connect do |peer|
+						peer.sendmsg(data)
 					end
 				end
 				
