@@ -15,10 +15,14 @@ Gem::Specification.new do |spec|
 	
 	spec.homepage = "https://github.com/socketry/async-container"
 	
+	spec.metadata = {
+		"documentation_uri" => "https://socketry.github.io/async-container/",
+		"source_code_uri" => "https://github.com/socketry/async-container.git",
+	}
+	
 	spec.files = Dir.glob(['{lib}/**/*', '*.md'], File::FNM_DOTMATCH, base: __dir__)
 	
-	spec.required_ruby_version = ">= 3.0"
+	spec.required_ruby_version = ">= 3.1"
 	
-	spec.add_dependency "async"
-	spec.add_dependency "async-io"
+	spec.add_dependency "async", "~> 2.10"
 end

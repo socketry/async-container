@@ -24,7 +24,7 @@ class Controller < Async::Container::Controller
 	def initialize(...)
 		super
 		
-		@endpoint = Async::IO::Endpoint.tcp("localhost", 8080)
+		@endpoint = ::IO::Endpoint.tcp("localhost", 8080)
 		@bound_endpoint = nil
 	end
 	

@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 # Released under the MIT License.
@@ -5,8 +6,8 @@
 
 require 'async'
 require 'async/container'
-require 'async/io/unix_endpoint'
-require 'async/io/shared_endpoint'
+require 'io/endpoint'
+require 'io/endpoint/unix_endpoint'
 require 'msgpack'
 
 class Wrapper < MessagePack::Factory
@@ -28,24 +29,22 @@ class Wrapper < MessagePack::Factory
 	end
 end
 
-endpoint = Async::IO::Endpoint.unix('test.ipc')
+endpoint = IO::Endpoint.unix('test.ipc')
+bound_endpoint = endpoint.bound
+
 wrapper = Wrapper.new
 
 container = Async::Container.new
 
-bound_endpoint = Sync do
-	Async::IO::SharedEndpoint.bound(endpoint)
-end
-
 container.spawn do |instance|
 	Async do
 		queue = 500_000.times.to_a
-		Console.logger.info(self) {"Hosting the queue..."}
+		Console.info(self) {"Hosting the queue..."}
 		
 		instance.ready!
 		
 		bound_endpoint.accept do |peer|
-			Console.logger.info(self) {"Incoming connection from #{peer}..."}
+			Console.info(self) {"Incoming connection from #{peer}..."}
 			
 			packer = wrapper.packer(peer)
 			unpacker = wrapper.unpacker(peer)
@@ -63,9 +62,9 @@ container.spawn do |instance|
 						break
 					end
 				when :status
-					# Console.logger.info("Job Status") {arguments}
+					Console.info("Job Status") {arguments}
 				else
-					Console.logger.warn(self) {"Unhandled command: #{command}#{arguments.inspect}"}
+					Console.warn(self) {"Unhandled command: #{command}#{arguments.inspect}"}
 				end
 			end
 		end
@@ -93,7 +92,7 @@ container.run do |instance|
 					packer.write([:ready])
 					packer.flush
 				else
-					Console.logger.warn(self) {"Unhandled command: #{command}#{arguments.inspect}"}
+					Console.warn(self) {"Unhandled command: #{command}#{arguments.inspect}"}
 				end
 			end
 		end
@@ -102,4 +101,4 @@ end
 
 container.wait
 
-Console.logger.info(self) {"Done!"}
+Console.info(self) {"Done!"}
