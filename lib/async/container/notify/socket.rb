@@ -5,9 +5,6 @@
 
 require_relative 'client'
 
-require 'io/endpoint/unix_endpoint'
-require 'kernel/sync'
-
 module Async
 	module Container
 		module Notify

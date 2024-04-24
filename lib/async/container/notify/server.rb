@@ -4,8 +4,6 @@
 # Copyright, 2020-2024, by Samuel Williams.
 # Copyright, 2020, by Olle Jonsson.
 
-require 'kernel/sync'
-
 require 'tmpdir'
 require 'securerandom'
 
