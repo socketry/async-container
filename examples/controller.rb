@@ -8,29 +8,29 @@
 require '../lib/async/container/controller'
 
 class Controller < Async::Container::Controller
-  def setup(container)
-    container.run(count: 1, restart: true) do |instance|
-      if container.statistics.failed?
-        Console.logger.debug(self, "Child process restarted #{container.statistics.restarts} times.")
-      else
-        Console.logger.debug(self, "Child process started.")
-      end
+	def setup(container)
+		container.run(count: 1, restart: true) do |instance|
+			if container.statistics.failed?
+				Console.logger.debug(self, "Child process restarted #{container.statistics.restarts} times.")
+			else
+				Console.logger.debug(self, "Child process started.")
+			end
 
-      instance.ready!
+			instance.ready!
 
-      while true
-        sleep 1
+			while true
+				sleep 1
 
-        Console.logger.debug(self, "Work")
+				Console.logger.debug(self, "Work")
 
-        if rand < 0.5
-          Console.logger.debug(self, "Should exit...")
-          sleep 0.5
-          exit(1)
-        end
-      end
-    end
-  end
+				if rand < 0.5
+					Console.logger.debug(self, "Should exit...")
+					sleep 0.5
+					exit(1)
+				end
+			end
+		end
+	end
 end
 
 Console.logger.debug!

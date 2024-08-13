@@ -173,8 +173,6 @@ module Async
 							break
 						end
 					end
-				# ensure
-				# 	Console.logger.error(self) {$!} if $!
 				end.resume
 				
 				return true

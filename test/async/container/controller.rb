@@ -104,7 +104,7 @@ describe Async::Container::Controller do
 			super
 		end
 		
-		def after
+		def after(error = nil)
 			Process.kill(:TERM, @pid)
 			Process.wait(@pid)
 			
@@ -143,7 +143,7 @@ describe Async::Container::Controller do
 			super
 		end
 		
-		def after
+		def after(error = nil)
 			Process.kill(:TERM, @pid)
 			Process.wait(@pid)
 			
@@ -175,7 +175,7 @@ describe Async::Container::Controller do
 			super
 		end
 		
-		def after
+		def after(error = nil)
 			Process.kill(:TERM, @pid)
 			Process.wait(@pid)
 			

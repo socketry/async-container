@@ -56,8 +56,7 @@ module Async
 						self.before_spawn(arguments, options)
 					end
 					
-					# TODO prefer **options... but it doesn't support redirections on < 2.7
-					::Process.exec(*arguments, options)
+					::Process.exec(*arguments, **options)
 				end
 			end
 			
