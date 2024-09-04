@@ -66,7 +66,7 @@ module Async
 				# This creates the illusion that this method does not return (normally).
 				def exec(*arguments, ready: true, **options)
 					if ready
-						self.ready!(status: "(spawn)") if ready
+						self.ready!(status: "(spawn)")
 					else
 						self.before_spawn(arguments, options)
 					end

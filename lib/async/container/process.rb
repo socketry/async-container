@@ -51,7 +51,7 @@ module Async
 				# This method replaces the child process with the new executable, thus this method never returns.
 				def exec(*arguments, ready: true, **options)
 					if ready
-						self.ready!(status: "(exec)") if ready
+						self.ready!(status: "(exec)")
 					else
 						self.before_spawn(arguments, options)
 					end
