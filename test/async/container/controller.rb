@@ -206,4 +206,19 @@ describe Async::Container::Controller do
 			expect(input.read).to be == 'T'
 		end
 	end
+	
+	with 'working directory' do
+		let(:controller_path) {File.expand_path(".cwd.rb", __dir__)}
+		
+		it "can change working directory" do
+			pipe = IO.pipe
+			
+			pid = Process.spawn("bundle", "exec", controller_path, out: pipe.last)
+			pipe.last.close
+			
+			expect(pipe.first.gets(chomp: true)).to be == "/"
+		ensure
+			Process.kill(:INT, pid) if pid
+		end
+	end
 end
