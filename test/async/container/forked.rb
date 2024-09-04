@@ -4,15 +4,13 @@
 # Copyright, 2018-2024, by Samuel Williams.
 # Copyright, 2020, by Olle Jonsson.
 
-require "async/container"
 require "async/container/forked"
-
-require 'a_container'
+require "async/container/a_container"
 
 describe Async::Container::Forked do
 	let(:container) {subject.new}
 	
-	it_behaves_like AContainer
+	it_behaves_like Async::Container::AContainer
 	
 	it "can restart child" do
 		trigger = IO.pipe
