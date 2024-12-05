@@ -6,8 +6,8 @@
 # gem install async-container
 gem "async-container"
 
-require 'async/clock'
-require_relative '../../lib/async/container'
+require "async/clock"
+require_relative "../../lib/async/container"
 
 def fibonacci(n)
 	if n < 2
@@ -17,7 +17,7 @@ def fibonacci(n)
 	end
 end
 
-require 'sqlite3'
+require "sqlite3"
 
 def work(*)
 	512.times do

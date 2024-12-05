@@ -4,10 +4,10 @@
 # Released under the MIT License.
 # Copyright, 2022-2024, by Samuel Williams.
 
-require 'async/container'
+require "async/container"
 
-require 'async/http/endpoint'
-require 'async/http/server'
+require "async/http/endpoint"
+require "async/http/server"
 
 container = Async::Container::Forked.new
 

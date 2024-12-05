@@ -3,10 +3,10 @@
 # Released under the MIT License.
 # Copyright, 2018-2024, by Samuel Williams.
 
-require 'fiber'
-require 'async/clock'
+require "fiber"
+require "async/clock"
 
-require_relative 'error'
+require_relative "error"
 
 module Async
 	module Container

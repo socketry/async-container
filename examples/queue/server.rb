@@ -4,11 +4,11 @@
 # Released under the MIT License.
 # Copyright, 2020-2024, by Samuel Williams.
 
-require 'async'
-require 'async/container'
-require 'io/endpoint'
-require 'io/endpoint/unix_endpoint'
-require 'msgpack'
+require "async"
+require "async/container"
+require "io/endpoint"
+require "io/endpoint/unix_endpoint"
+require "msgpack"
 
 class Wrapper < MessagePack::Factory
 	def initialize
@@ -29,7 +29,7 @@ class Wrapper < MessagePack::Factory
 	end
 end
 
-endpoint = IO::Endpoint.unix('test.ipc')
+endpoint = IO::Endpoint.unix("test.ipc")
 bound_endpoint = endpoint.bound
 
 wrapper = Wrapper.new

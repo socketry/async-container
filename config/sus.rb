@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2022, by Samuel Williams.
 
-require 'covered/sus'
+require "covered/sus"
 include Covered::Sus
 
-ENV['CONSOLE_LEVEL'] ||= 'fatal'
+ENV["CONSOLE_LEVEL"] ||= "fatal"

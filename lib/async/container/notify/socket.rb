@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2020-2024, by Samuel Williams.
 
-require_relative 'client'
+require_relative "client"
 
 module Async
 	module Container
@@ -12,7 +12,7 @@ module Async
 			# See <https://www.freedesktop.org/software/systemd/man/sd_notify.html> for more details of the underlying protocol.
 			class Socket < Client
 				# The name of the environment variable which contains the path to the notification socket.
-				NOTIFY_SOCKET = 'NOTIFY_SOCKET'
+				NOTIFY_SOCKET = "NOTIFY_SOCKET"
 				
 				# The maximum allowed size of the UDP message.
 				MAXIMUM_MESSAGE_SIZE = 4096

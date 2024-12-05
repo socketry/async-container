@@ -3,9 +3,9 @@
 # Released under the MIT License.
 # Copyright, 2020-2022, by Samuel Williams.
 
-require_relative 'notify/pipe'
-require_relative 'notify/socket'
-require_relative 'notify/console'
+require_relative "notify/pipe"
+require_relative "notify/socket"
+require_relative "notify/console"
 
 module Async
 	module Container

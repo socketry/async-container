@@ -3,10 +3,10 @@
 # Released under the MIT License.
 # Copyright, 2020-2024, by Samuel Williams.
 
-require_relative 'channel'
-require_relative 'error'
+require_relative "channel"
+require_relative "error"
 
-require_relative 'notify/pipe'
+require_relative "notify/pipe"
 
 module Async
 	module Container

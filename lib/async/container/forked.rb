@@ -3,8 +3,8 @@
 # Released under the MIT License.
 # Copyright, 2017-2022, by Samuel Williams.
 
-require_relative 'generic'
-require_relative 'process'
+require_relative "generic"
+require_relative "process"
 
 module Async
 	module Container

@@ -4,7 +4,7 @@
 # Released under the MIT License.
 # Copyright, 2020-2024, by Samuel Williams.
 
-require 'async/container'
+require "async/container"
 
 container = Async::Container.new
 input, output = IO.pipe

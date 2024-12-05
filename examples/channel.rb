@@ -4,7 +4,7 @@
 # Copyright, 2020-2022, by Samuel Williams.
 # Copyright, 2020, by Olle Jonsson.
 
-require 'json'
+require "json"
 
 class Channel
 	def initialize

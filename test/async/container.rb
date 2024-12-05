@@ -6,19 +6,19 @@
 require "async/container"
 
 describe Async::Container do
-	with '.processor_count' do
+	with ".processor_count" do
 		it "can get processor count" do
 			expect(Async::Container.processor_count).to be >= 1
 		end
 		
 		it "can override the processor count" do
-			env = {'ASYNC_CONTAINER_PROCESSOR_COUNT' => '8'}
+			env = {"ASYNC_CONTAINER_PROCESSOR_COUNT" => "8"}
 			
 			expect(Async::Container.processor_count(env)).to be == 8
 		end
 		
 		it "fails on invalid processor count" do
-			env = {'ASYNC_CONTAINER_PROCESSOR_COUNT' => '-1'}
+			env = {"ASYNC_CONTAINER_PROCESSOR_COUNT" => "-1"}
 			
 			expect do
 				Async::Container.processor_count(env)
@@ -30,7 +30,7 @@ describe Async::Container do
 		expect(Async::Container.best_container_class).not.to be_nil
 	end
 	
-	with '.new' do
+	with ".new" do
 		let(:container) {Async::Container.new}
 		
 		it "can get best container class" do

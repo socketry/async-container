@@ -11,7 +11,7 @@ describe Async::Container::Notify do
 	let(:notify_socket) {server.path}
 	let(:client) {subject::Socket.new(notify_socket)}
 	
-	with '#ready!' do
+	with "#ready!" do
 		it "should send message" do
 			begin
 				context = server.bind

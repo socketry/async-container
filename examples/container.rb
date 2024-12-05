@@ -6,7 +6,7 @@
 # Copyright, 2019, by Yuji Yaginuma.
 # Copyright, 2022, by Anton Sozontov.
 
-require '../lib/async/container'
+require "../lib/async/container"
 
 Console.logger.debug!
 

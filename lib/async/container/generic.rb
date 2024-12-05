@@ -3,18 +3,18 @@
 # Released under the MIT License.
 # Copyright, 2019-2024, by Samuel Williams.
 
-require 'async'
+require "async"
 
-require 'etc'
+require "etc"
 
-require_relative 'group'
-require_relative 'keyed'
-require_relative 'statistics'
+require_relative "group"
+require_relative "keyed"
+require_relative "statistics"
 
 module Async
 	module Container
 		# An environment variable key to override {.processor_count}.
-		ASYNC_CONTAINER_PROCESSOR_COUNT = 'ASYNC_CONTAINER_PROCESSOR_COUNT'
+		ASYNC_CONTAINER_PROCESSOR_COUNT = "ASYNC_CONTAINER_PROCESSOR_COUNT"
 		
 		# The processor count which may be used for the default number of container threads/processes. You can override the value provided by the system by specifying the `ASYNC_CONTAINER_PROCESSOR_COUNT` environment variable.
 		# @returns [Integer] The number of hardware processors which can run threads/processes simultaneously.

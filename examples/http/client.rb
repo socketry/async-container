@@ -4,9 +4,9 @@
 # Released under the MIT License.
 # Copyright, 2022-2024, by Samuel Williams.
 
-require 'async'
-require 'async/http/endpoint'
-require 'async/http/client'
+require "async"
+require "async/http/endpoint"
+require "async/http/client"
 
 endpoint = Async::HTTP::Endpoint.parse("http://localhost:9292")
 

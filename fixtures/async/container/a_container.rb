@@ -48,7 +48,7 @@ module Async
 				expect(input.read).to be == "true"
 			end
 			
-			with '#sleep' do
+			with "#sleep" do
 				it "can sleep for a short time" do
 					container.spawn do
 						sleep(0.01)
@@ -63,8 +63,8 @@ module Async
 				end
 			end
 			
-			with '#stop' do
-				it 'can stop the child process' do
+			with "#stop" do
+				it "can stop the child process" do
 					container.spawn do
 						sleep(1)
 					end
@@ -77,7 +77,7 @@ module Async
 				end
 			end
 			
-			with '#ready' do
+			with "#ready" do
 				it "can notify the ready pipe in an asynchronous context" do
 					container.run do |instance|
 						Async do

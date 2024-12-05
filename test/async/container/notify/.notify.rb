@@ -4,7 +4,7 @@
 # Released under the MIT License.
 # Copyright, 2020-2022, by Samuel Williams.
 
-require_relative '../../../../lib/async/container'
+require_relative "../../../../lib/async/container"
 
 class MyController < Async::Container::Controller
 	def setup(container)

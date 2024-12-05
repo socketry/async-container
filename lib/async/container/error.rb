@@ -12,7 +12,7 @@ module Async
 		
 		# Similar to {Interrupt}, but represents `SIGTERM`.
 		class Terminate < SignalException
-			SIGTERM = Signal.list['TERM']
+			SIGTERM = Signal.list["TERM"]
 
 			def initialize
 				super(SIGTERM)
@@ -20,7 +20,7 @@ module Async
 		end
 		
 		class Hangup < SignalException
-			SIGHUP = Signal.list['HUP']
+			SIGHUP = Signal.list["HUP"]
 			
 			def initialize
 				super(SIGHUP)

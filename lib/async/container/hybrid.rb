@@ -4,8 +4,8 @@
 # Copyright, 2019-2022, by Samuel Williams.
 # Copyright, 2022, by Anton Sozontov.
 
-require_relative 'forked'
-require_relative 'threaded'
+require_relative "forked"
+require_relative "threaded"
 
 module Async
 	module Container

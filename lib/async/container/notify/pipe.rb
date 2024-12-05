@@ -4,9 +4,9 @@
 # Copyright, 2020-2022, by Samuel Williams.
 # Copyright, 2020, by Juan Antonio Martín Lucas.
 
-require_relative 'client'
+require_relative "client"
 
-require 'json'
+require "json"
 
 module Async
 	module Container
@@ -14,7 +14,7 @@ module Async
 			# Implements a process readiness protocol using an inherited pipe file descriptor.
 			class Pipe < Client
 				# The environment variable key which contains the pipe file descriptor.
-				NOTIFY_PIPE = 'NOTIFY_PIPE'
+				NOTIFY_PIPE = "NOTIFY_PIPE"
 				
 				# Open a notification client attached to the current {NOTIFY_PIPE} if possible.
 				def self.open!(environment = ENV)

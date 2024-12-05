@@ -3,9 +3,9 @@
 # Released under the MIT License.
 # Copyright, 2020-2024, by Samuel Williams.
 
-require_relative 'client'
+require_relative "client"
 
-require 'console/logger'
+require "console/logger"
 
 module Async
 	module Container

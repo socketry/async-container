@@ -3,9 +3,9 @@
 # Released under the MIT License.
 # Copyright, 2019-2022, by Samuel Williams.
 
-require_relative 'forked'
-require_relative 'threaded'
-require_relative 'hybrid'
+require_relative "forked"
+require_relative "threaded"
+require_relative "hybrid"
 
 module Async
 	module Container

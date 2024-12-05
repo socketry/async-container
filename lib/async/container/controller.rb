@@ -3,11 +3,11 @@
 # Released under the MIT License.
 # Copyright, 2018-2024, by Samuel Williams.
 
-require_relative 'error'
-require_relative 'best'
+require_relative "error"
+require_relative "best"
 
-require_relative 'statistics'
-require_relative 'notify'
+require_relative "statistics"
+require_relative "notify"
 
 module Async
 	module Container

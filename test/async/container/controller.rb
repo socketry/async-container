@@ -8,7 +8,7 @@ require "async/container/controller"
 describe Async::Container::Controller do
 	let(:controller) {subject.new}
 	
-	with '#reload' do
+	with "#reload" do
 		it "can reuse keyed child" do
 			input, output = IO.pipe
 			
@@ -46,7 +46,7 @@ describe Async::Container::Controller do
 		end
 	end
 	
-	with '#start' do
+	with "#start" do
 		it "can start up a container" do
 			expect(controller).to receive(:setup)
 			
@@ -88,7 +88,7 @@ describe Async::Container::Controller do
 		end
 	end
 	
-	with 'graceful controller' do
+	with "graceful controller" do
 		let(:controller_path) {File.expand_path(".graceful.rb", __dir__)}
 		
 		let(:pipe) {IO.pipe}
@@ -127,7 +127,7 @@ describe Async::Container::Controller do
 		end
 	end
 	
-	with 'bad controller' do
+	with "bad controller" do
 		let(:controller_path) {File.expand_path(".bad.rb", __dir__)}
 		
 		let(:pipe) {IO.pipe}
@@ -159,7 +159,7 @@ describe Async::Container::Controller do
 		end
 	end
 	
-	with 'signals' do
+	with "signals" do
 		let(:controller_path) {File.expand_path(".dots.rb", __dir__)}
 		
 		let(:pipe) {IO.pipe}
@@ -183,31 +183,31 @@ describe Async::Container::Controller do
 		end
 		
 		it "restarts children when receiving SIGHUP" do
-			expect(input.read(1)).to be == '.'
+			expect(input.read(1)).to be == "."
 			
 			Process.kill(:HUP, pid)
 			
-			expect(input.read(2)).to be == 'I.'
+			expect(input.read(2)).to be == "I."
 		end
 		
 		it "exits gracefully when receiving SIGINT" do
-			expect(input.read(1)).to be == '.'
+			expect(input.read(1)).to be == "."
 			
 			Process.kill(:INT, pid)
 			
-			expect(input.read).to be == 'I'
+			expect(input.read).to be == "I"
 		end
 		
 		it "exits gracefully when receiving SIGTERM" do
-			expect(input.read(1)).to be == '.'
+			expect(input.read(1)).to be == "."
 			
 			Process.kill(:TERM, pid)
 			
-			expect(input.read).to be == 'T'
+			expect(input.read).to be == "T"
 		end
 	end
 	
-	with 'working directory' do
+	with "working directory" do
 		let(:controller_path) {File.expand_path(".cwd.rb", __dir__)}
 		
 		it "can change working directory" do

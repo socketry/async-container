@@ -5,7 +5,7 @@
 # Copyright, 2022, by Anton Sozontov.
 # Copyright, 2024, by Samuel Williams.
 
-require '../lib/async/container/controller'
+require "../lib/async/container/controller"
 
 class Controller < Async::Container::Controller
 	def setup(container)

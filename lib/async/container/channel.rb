@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2020-2022, by Samuel Williams.
 
-require 'json'
+require "json"
 
 module Async
 	module Container

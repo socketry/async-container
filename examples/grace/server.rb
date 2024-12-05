@@ -4,8 +4,8 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require '../../lib/async/container'
-require 'io/endpoint/host_endpoint'
+require "../../lib/async/container"
+require "io/endpoint/host_endpoint"
 
 Console.logger.debug!
 

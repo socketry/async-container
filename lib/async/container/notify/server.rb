@@ -4,14 +4,14 @@
 # Copyright, 2020-2024, by Samuel Williams.
 # Copyright, 2020, by Olle Jonsson.
 
-require 'tmpdir'
-require 'securerandom'
+require "tmpdir"
+require "securerandom"
 
 module Async
 	module Container
 		module Notify
 			class Server
-				NOTIFY_SOCKET = 'NOTIFY_SOCKET'
+				NOTIFY_SOCKET = "NOTIFY_SOCKET"
 				MAXIMUM_MESSAGE_SIZE = 4096
 				
 				def self.load(message)
@@ -22,9 +22,9 @@ module Async
 					pairs = lines.map do |line|
 						key, value = line.split("=", 2)
 						
-						if value == '0'
+						if value == "0"
 							value = false
-						elsif value == '1'
+						elsif value == "1"
 							value = true
 						end
 						

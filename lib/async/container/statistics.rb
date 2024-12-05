@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2019-2022, by Samuel Williams.
 
-require 'async/reactor'
+require "async/reactor"
 
 module Async
 	module Container
