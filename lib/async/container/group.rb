@@ -137,7 +137,8 @@ module Async
 			protected
 			
 			def wait_for_children(duration = nil)
-				Console.debug(self, "Waiting for children...", duration: duration)
+				Console.debug(self, "Waiting for children...", duration: duration, running: @running)
+				
 				if !@running.empty?
 					# Maybe consider using a proper event loop here:
 					readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)

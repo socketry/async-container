@@ -186,17 +186,17 @@ module Async
 				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
 				# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 				interrupt_action = Signal.trap(:INT) do
-					# $stderr.puts "Received INT signal, terminating...", caller
+					$stderr.puts "Received INT signal, terminating...", caller
 					::Thread.current.raise(Interrupt)
 				end
 				
 				terminate_action = Signal.trap(:TERM) do
-					# $stderr.puts "Received TERM signal, terminating...", caller
+					$stderr.puts "Received TERM signal, terminating...", caller
 					::Thread.current.raise(Terminate)
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
-					# $stderr.puts "Received HUP signal, restarting...", caller
+					$stderr.puts "Received HUP signal, restarting...", caller
 					::Thread.current.raise(Hangup)
 				end
 				
@@ -208,6 +208,7 @@ module Async
 					rescue SignalException => exception
 						if handler = @signals[exception.signo]
 							begin
+								Console.debug(self, "Invoking signal handler for #{exception.signo}...", handler: handler)
 								handler.call
 							rescue SetupError => error
 								Console.error(self) {error}

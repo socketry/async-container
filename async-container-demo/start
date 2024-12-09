@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "async/container"
+require "console"
+require "debug"
+
+# container = Async::Container.new
+
+# container.spawn(name: "Web") do |task|
+#   task.exec("bundle", "exec", "web")
+# end
+
+# container.spawn(name: "Jobs") do |task|
+#   task.exec("bundle", "exec", "jobs")
+# end
+
+Console.logger.debug!
+
+class WebController < Async::Container::Controller
+	def setup(container)
+		container.spawn(name: "Web") do |instance|
+			instance.exec("bundle", "exec", "web")
+		end
+
+		# container.spawn(name: "Jobs") do |instance|
+		#   instance.exec("bundle", "exec", "jobs")
+		# end
+	end
+end
+
+class App
+	def self.start = self.new.start
+
+	def start
+		Console.debug(self, "Starting container...")
+
+		web_controller = WebController.new
+		web_controller.run
+	end
+end
+
+pid = Process.pid
+pgid = Process.getpgid(pid)
+
+Thread.new do
+	sleep 5
+	Console.debug(self, "Sending HUP signal to restart container...")
+	Process.kill("HUP", -pgid)
+		
+	# sleep 5
+	# Console.debug(self, "Sending INT signal to stop container...")
+	# Process.kill("INT", Process.pid)
+end
+
+App.start

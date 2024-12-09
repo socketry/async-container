@@ -1,0 +1,50 @@
+PATH
+  remote: ..
+  specs:
+    async-container (0.18.3)
+      async (~> 2.10)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    async (2.21.1)
+      console (~> 1.29)
+      fiber-annotation
+      io-event (~> 1.6, >= 1.6.5)
+    console (1.29.0)
+      fiber-annotation
+      fiber-local (~> 1.1)
+      json
+    date (3.4.1)
+    debug (1.9.2)
+      irb (~> 1.10)
+      reline (>= 0.3.8)
+    fiber-annotation (0.2.0)
+    fiber-local (1.1.0)
+      fiber-storage
+    fiber-storage (1.0.0)
+    io-console (0.8.0)
+    io-event (1.7.4)
+    irb (1.14.1)
+      rdoc (>= 4.0.0)
+      reline (>= 0.4.2)
+    json (2.9.0)
+    psych (5.2.1)
+      date
+      stringio
+    rdoc (6.8.1)
+      psych (>= 4.0.0)
+    reline (0.5.12)
+      io-console (~> 0.5)
+    stringio (3.1.2)
+
+PLATFORMS
+  arm64-darwin-22
+  ruby
+
+DEPENDENCIES
+  async-container!
+  debug
+
+BUNDLED WITH
+   2.5.22

@@ -122,9 +122,11 @@ module Async
 			
 			# A human readable representation of the process.
 			# @returns [String]
-			def to_s
-				"\#<#{self.class} #{@name}>"
+			def inspect
+				"\#<#{self.class} name=#{@name.inspect} status=#{@status.inspect} pid=#{@pid.inspect}>"
 			end
+			
+			alias to_s inspect
 			
 			# Invoke {#terminate!} and then {#wait} for the child process to exit.
 			def close
@@ -151,6 +153,8 @@ module Async
 			# Wait for the child process to exit.
 			# @returns [::Process::Status] The process exit status.
 			def wait
+				$stderr.puts "Waiting for #{@pid}...", caller
+				
 				if @pid && @status.nil?
 					_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 					

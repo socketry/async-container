@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "console"
+
+Console.logger.debug!
+
+class Web
+	LOG_FILE = File.join(Dir.pwd, "web.log")
+
+	def self.start = self.new.start
+
+	def start
+		Console.debug(self, "Starting web...")
+
+		loop do
+			Console.info(self, "Web running...")
+
+			sleep 1
+		end
+		rescue Interrupt
+			Console.debug(self, "Exiting web...")
+			exit
+	end
+end
+
+Web.start
