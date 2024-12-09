@@ -188,7 +188,7 @@ module Async
 			# Invoked by the @waiter thread to indicate the outcome of the child thread.
 			def finished(error = nil)
 				if error
-					Console.logger.error(self) {error}
+					Console.error(self) {error}
 				end
 				
 				@status = Status.new(error)

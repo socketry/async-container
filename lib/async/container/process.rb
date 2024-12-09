@@ -74,7 +74,7 @@ module Async
 						rescue Interrupt
 							# Graceful exit.
 						rescue Exception => error
-							Console.logger.error(self) {error}
+							Console.error(self) {error}
 							
 							exit!(1)
 						end
@@ -160,7 +160,7 @@ module Async
 					end
 					
 					if @status.nil?
-						Console.logger.warn(self) {"Process #{@pid} is blocking, has it exited?"}
+						Console.warn(self) {"Process #{@pid} is blocking, has it exited?"}
 						_, @status = ::Process.wait2(@pid)
 					end
 				end

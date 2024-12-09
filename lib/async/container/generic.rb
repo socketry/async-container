@@ -104,7 +104,7 @@ module Async
 			# @returns [Boolean] The children all became ready.
 			def wait_until_ready
 				while true
-					Console.logger.debug(self) do |buffer|
+					Console.debug(self) do |buffer|
 						buffer.puts "Waiting for ready:"
 						@state.each do |child, state|
 							buffer.puts "\t#{child.class}: #{state.inspect}"
@@ -126,7 +126,7 @@ module Async
 				@group.stop(timeout)
 				
 				if @group.running?
-					Console.logger.warn(self) {"Group is still running after stopping it!"}
+					Console.warn(self) {"Group is still running after stopping it!"}
 				end
 			ensure
 				@running = true
@@ -140,7 +140,7 @@ module Async
 				name ||= UNNAMED
 				
 				if mark?(key)
-					Console.logger.debug(self) {"Reusing existing child for #{key}: #{name}"}
+					Console.debug(self) {"Reusing existing child for #{key}: #{name}"}
 					return false
 				end
 				
@@ -161,10 +161,10 @@ module Async
 						end
 						
 						if status.success?
-							Console.logger.debug(self) {"#{child} exited with #{status}"}
+							Console.debug(self) {"#{child} exited with #{status}"}
 						else
 							@statistics.failure!
-							Console.logger.error(self) {status}
+							Console.error(self) {status}
 						end
 						
 						if restart

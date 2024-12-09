@@ -11,9 +11,9 @@ class Controller < Async::Container::Controller
 	def setup(container)
 		container.run(count: 1, restart: true) do |instance|
 			if container.statistics.failed?
-				Console.logger.debug(self, "Child process restarted #{container.statistics.restarts} times.")
+				Console.debug(self, "Child process restarted #{container.statistics.restarts} times.")
 			else
-				Console.logger.debug(self, "Child process started.")
+				Console.debug(self, "Child process started.")
 			end
 
 			instance.ready!
@@ -21,10 +21,10 @@ class Controller < Async::Container::Controller
 			while true
 				sleep 1
 
-				Console.logger.debug(self, "Work")
+				Console.debug(self, "Work")
 
 				if rand < 0.5
-					Console.logger.debug(self, "Should exit...")
+					Console.debug(self, "Should exit...")
 					sleep 0.5
 					exit(1)
 				end
@@ -35,7 +35,7 @@ end
 
 Console.logger.debug!
 
-Console.logger.debug(self, "Starting up...")
+Console.debug(self, "Starting up...")
 
 controller = Controller.new
 

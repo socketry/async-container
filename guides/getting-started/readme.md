@@ -29,14 +29,14 @@ Console.logger.debug!
 container = Async::Container.new
 
 container.spawn do |task|
-	Console.logger.debug task, "Sleeping..."
+	Console.debug task, "Sleeping..."
 	sleep(1)
-	Console.logger.debug task, "Waking up!"
+	Console.debug task, "Waking up!"
 end
 
-Console.logger.debug "Waiting for container..."
+Console.debug "Waiting for container..."
 container.wait
-Console.logger.debug "Finished."
+Console.debug "Finished."
 ```
 
 ## Controllers
@@ -58,7 +58,7 @@ class Controller < Async::Container::Controller
 	def setup(container)
 		container.run count: 2, restart: true do |instance|
 			while true
-				Console.logger.debug(instance, "Sleeping...")
+				Console.debug(instance, "Sleeping...")
 				sleep(1)
 			end
 		end

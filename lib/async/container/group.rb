@@ -65,7 +65,7 @@ module Async
 			# Interrupt all running processes.
 			# This resumes the controlling fiber with an instance of {Interrupt}.
 			def interrupt
-				Console.logger.debug(self, "Sending interrupt to #{@running.size} running processes...")
+				Console.debug(self, "Sending interrupt to #{@running.size} running processes...")
 				@running.each_value do |fiber|
 					fiber.resume(Interrupt)
 				end
@@ -74,7 +74,7 @@ module Async
 			# Terminate all running processes.
 			# This resumes the controlling fiber with an instance of {Terminate}.
 			def terminate
-				Console.logger.debug(self, "Sending terminate to #{@running.size} running processes...")
+				Console.debug(self, "Sending terminate to #{@running.size} running processes...")
 				@running.each_value do |fiber|
 					fiber.resume(Terminate)
 				end

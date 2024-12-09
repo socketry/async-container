@@ -12,16 +12,16 @@ Console.logger.debug!
 
 container = Async::Container.new
 
-Console.logger.debug "Spawning 2 containers..."
+Console.debug "Spawning 2 containers..."
 
 2.times do
 	container.spawn do |task|
-		Console.logger.debug task, "Sleeping..."
+		Console.debug task, "Sleeping..."
 		sleep(2)
-		Console.logger.debug task, "Waking up!"
+		Console.debug task, "Waking up!"
 	end
 end
 
-Console.logger.debug "Waiting for container..."
+Console.debug "Waiting for container..."
 container.wait
-Console.logger.debug "Finished."
+Console.debug "Finished."
