@@ -26,13 +26,10 @@ module Async
 				@container = nil
 				@container_class = container_class
 				
-				if @notify = notify
-					@notify.status!("Initializing...")
-				end
-				
+				@notify = notify
 				@signals = {}
 				
-				trap(SIGHUP) do
+				self.trap(SIGHUP) do
 					self.restart
 				end
 				
@@ -93,7 +90,12 @@ module Async
 			
 			# Start the container unless it's already running.
 			def start
-				self.restart unless @container
+				unless @container
+					Console.info(self) {"Controller starting..."}
+					self.restart
+				end
+				
+				Console.info(self) {"Controller started..."}
 			end
 			
 			# Stop the container if it's running.
@@ -183,6 +185,8 @@ module Async
 			
 			# Enter the controller run loop, trapping `SIGINT` and `SIGTERM`.
 			def run
+				@notify&.status!("Initializing...")
+				
 				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
 				# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 				interrupt_action = Signal.trap(:INT) do

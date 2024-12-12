@@ -24,8 +24,8 @@ module Async
 				end
 				
 				# Send a message to the console.
-				def send(level: :debug, **message)
-					@logger.send(level, self) {message}
+				def send(level: :info, **message)
+					@logger.public_send(level, self) {message}
 				end
 				
 				# Send an error message to the console.

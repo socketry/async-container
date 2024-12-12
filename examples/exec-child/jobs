@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "console"
+require "async/container/notify"
+
+# Console.logger.debug!
+
+class Jobs
+	def self.start = self.new.start
+		
+	def start
+		Console.info(self, "Starting jobs...")
+		
+		if notify = Async::Container::Notify.open!
+			Console.info(self, "Notifying container ready...")
+			notify.ready!
+		end
+		
+		loop do
+			Console.info(self, "Jobs running...")
+			
+			sleep 10
+		end
+	rescue Interrupt
+		Console.info(self, "Exiting jobs...")
+	end
+end
+
+Jobs.start

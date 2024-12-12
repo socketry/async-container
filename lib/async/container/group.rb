@@ -65,7 +65,7 @@ module Async
 			# Interrupt all running processes.
 			# This resumes the controlling fiber with an instance of {Interrupt}.
 			def interrupt
-				Console.debug(self, "Sending interrupt to #{@running.size} running processes...")
+				Console.info(self, "Sending interrupt to #{@running.size} running processes...")
 				@running.each_value do |fiber|
 					fiber.resume(Interrupt)
 				end
@@ -74,7 +74,7 @@ module Async
 			# Terminate all running processes.
 			# This resumes the controlling fiber with an instance of {Terminate}.
 			def terminate
-				Console.debug(self, "Sending terminate to #{@running.size} running processes...")
+				Console.info(self, "Sending terminate to #{@running.size} running processes...")
 				@running.each_value do |fiber|
 					fiber.resume(Terminate)
 				end
@@ -83,6 +83,7 @@ module Async
 			# Stop all child processes using {#terminate}.
 			# @parameter timeout [Boolean | Numeric | Nil] If specified, invoke a graceful shutdown using {#interrupt} first.
 			def stop(timeout = 1)
+				Console.info(self, "Stopping all processes...", timeout: timeout)
 				# Use a default timeout if not specified:
 				timeout = 1 if timeout == true
 				
@@ -105,7 +106,7 @@ module Async
 				end
 				
 				# Terminate all children:
-				self.terminate
+				self.terminate if any?
 				
 				# Wait for all children to exit:
 				self.wait
@@ -137,7 +138,8 @@ module Async
 			protected
 			
 			def wait_for_children(duration = nil)
-				Console.debug(self, "Waiting for children...", duration: duration)
+				Console.debug(self, "Waiting for children...", duration: duration, running: @running)
+				
 				if !@running.empty?
 					# Maybe consider using a proper event loop here:
 					readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)
