@@ -161,11 +161,13 @@ module Async
 					_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 
 					while @status.nil?
-						Console.warn(self) {"Process #{@pid} is blocking, has it exited?"}
-						
 						sleep(0.1)
 						
 						_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
+						
+						if @status.nil?
+							Console.warn(self) {"Process #{@pid} is blocking, has it exited?"}
+						end
 					end
 				end
 				

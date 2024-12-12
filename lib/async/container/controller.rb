@@ -93,7 +93,12 @@ module Async
 			
 			# Start the container unless it's already running.
 			def start
-				self.restart unless @container
+				unless @container
+					Console.info(self) {"Controller starting..."}
+					self.restart
+				end
+				
+				Console.info(self) {"Controller started..."}
 			end
 			
 			# Stop the container if it's running.
