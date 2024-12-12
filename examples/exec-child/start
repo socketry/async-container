@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "async/container"
+require "console"
+
+# Console.logger.debug!
+
+class AppController < Async::Container::Controller
+	def setup(container)
+		container.spawn(name: "Web") do |instance|
+			# Specify ready: false here as the child process is expected to take care of the readiness notification:
+			instance.exec("bundle", "exec", "web", ready: false)
+		end
+		
+		container.spawn(name: "Jobs") do |instance|
+			instance.exec("bundle", "exec", "jobs", ready: false)
+		end
+	end
+end
+
+controller = AppController.new
+
+controller.run

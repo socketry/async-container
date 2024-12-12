@@ -122,9 +122,11 @@ module Async
 			
 			# A human readable representation of the process.
 			# @returns [String]
-			def to_s
-				"\#<#{self.class} #{@name}>"
+			def inspect
+				"\#<#{self.class} name=#{@name.inspect} status=#{@status.inspect} pid=#{@pid.inspect}>"
 			end
+			
+			alias to_s inspect
 			
 			# Invoke {#terminate!} and then {#wait} for the child process to exit.
 			def close
@@ -149,21 +151,27 @@ module Async
 			end
 			
 			# Wait for the child process to exit.
+			# @asynchronous This method may block.
+			#
 			# @returns [::Process::Status] The process exit status.
 			def wait
 				if @pid && @status.nil?
+					Console.debug(self, "Waiting for process to exit...", pid: @pid)
+					
 					_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
-					
-					if @status.nil?
-						sleep(0.01)
+
+					while @status.nil?
+						sleep(0.1)
+						
 						_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
-					end
-					
-					if @status.nil?
-						Console.warn(self) {"Process #{@pid} is blocking, has it exited?"}
-						_, @status = ::Process.wait2(@pid)
+						
+						if @status.nil?
+							Console.warn(self) {"Process #{@pid} is blocking, has it exited?"}
+						end
 					end
 				end
+				
+				Console.debug(self, "Process exited.", pid: @pid, status: @status)
 				
 				return @status
 			end

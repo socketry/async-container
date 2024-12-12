@@ -107,13 +107,20 @@ module Async
 					Console.debug(self) do |buffer|
 						buffer.puts "Waiting for ready:"
 						@state.each do |child, state|
-							buffer.puts "\t#{child.class}: #{state.inspect}"
+							buffer.puts "\t#{child.inspect}: #{state}"
 						end
 					end
 					
 					self.sleep
 					
 					if self.status?(:ready)
+						Console.logger.debug(self) do |buffer|
+							buffer.puts "All ready:"
+							@state.each do |child, state|
+								buffer.puts "\t#{child.inspect}: #{state}"
+							end
+						end
+						
 						return true
 					end
 				end
