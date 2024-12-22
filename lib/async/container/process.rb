@@ -69,7 +69,8 @@ module Async
 						Signal.trap(:INT) {::Thread.current.raise(Interrupt)}
 						Signal.trap(:TERM) {::Thread.current.raise(Terminate)}
 						
-						begin
+						# This could be a configuration option:
+						::Thread.handle_interrupt(SignalException => :immediate) do
 							yield Instance.for(process)
 						rescue Interrupt
 							# Graceful exit.

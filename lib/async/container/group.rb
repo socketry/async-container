@@ -142,11 +142,19 @@ module Async
 				
 				if !@running.empty?
 					# Maybe consider using a proper event loop here:
+					if ready = self.select(duration)
+						ready.each do |io|
+							@running[io].resume
+						end
+					end
+				end
+			end
+			
+			def select(duration)
+				::Thread.handle_interrupt(SignalException => :immediate) do
 					readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)
 					
-					readable&.each do |io|
-						@running[io].resume
-					end
+					return readable
 				end
 			end
 			

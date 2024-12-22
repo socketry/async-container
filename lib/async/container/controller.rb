@@ -187,47 +187,56 @@ module Async
 			def run
 				@notify&.status!("Initializing...")
 				
+				with_signal_handlers do
+					self.start
+					
+					while @container&.running?
+						begin
+							@container.wait
+						rescue SignalException => exception
+							if handler = @signals[exception.signo]
+								begin
+									handler.call
+								rescue SetupError => error
+									Console.error(self) {error}
+								end
+							else
+								raise
+							end
+						end
+					end
+				rescue Interrupt
+					self.stop
+				rescue Terminate
+					self.stop(false)
+				ensure
+					self.stop(false)
+				end
+			end
+			
+			private def with_signal_handlers
 				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
-				# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
+				
 				interrupt_action = Signal.trap(:INT) do
-					# $stderr.puts "Received INT signal, terminating...", caller
+					# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
+					# $stderr.puts "Received Interrupt signal, terminating...", caller
 					::Thread.current.raise(Interrupt)
 				end
 				
 				terminate_action = Signal.trap(:TERM) do
-					# $stderr.puts "Received TERM signal, terminating...", caller
+					# $stderr.puts "Received Terminate signal, terminating...", caller
 					::Thread.current.raise(Terminate)
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
-					# $stderr.puts "Received HUP signal, restarting...", caller
+					# $stderr.puts "Received Hangup signal, restarting...", caller
 					::Thread.current.raise(Hangup)
 				end
 				
-				self.start
-				
-				while @container&.running?
-					begin
-						@container.wait
-					rescue SignalException => exception
-						if handler = @signals[exception.signo]
-							begin
-								handler.call
-							rescue SetupError => error
-								Console.error(self) {error}
-							end
-						else
-							raise
-						end
-					end
+				::Thread.handle_interrupt(SignalException => :on_blocking) do
+					yield
 				end
-			rescue Interrupt
-				self.stop
-			rescue Terminate
-				self.stop(false)
 			ensure
-				self.stop(false)
-				
 				# Restore the interrupt handler:
 				Signal.trap(:INT, interrupt_action)
 				Signal.trap(:TERM, terminate_action)
