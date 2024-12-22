@@ -1,0 +1,39 @@
+PATH
+  remote: ../..
+  specs:
+    async-container (0.18.3)
+      async (~> 2.10)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    async (2.21.1)
+      console (~> 1.29)
+      fiber-annotation
+      io-event (~> 1.6, >= 1.6.5)
+    console (1.29.2)
+      fiber-annotation
+      fiber-local (~> 1.1)
+      json
+    fiber-annotation (0.2.0)
+    fiber-local (1.1.0)
+      fiber-storage
+    fiber-storage (1.0.0)
+    io-event (1.7.5)
+    json (2.9.1)
+    nio4r (2.7.4)
+    puma (6.5.0)
+      nio4r (~> 2.0)
+    rack (3.1.8)
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  async-container!
+  puma
+  rack (~> 3)
+
+BUNDLED WITH
+   2.5.22
