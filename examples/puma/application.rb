@@ -4,30 +4,40 @@
 require "async/container"
 require "console"
 
+require "io/endpoint/host_endpoint"
+require "io/endpoint/bound_endpoint"
+
 # Console.logger.debug!
 
 class Application < Async::Container::Controller
+	def endpoint
+		IO::Endpoint.tcp("0.0.0.0", 9292)
+	end
+	
+	def bound_socket
+		bound = endpoint.bound
+		
+		bound.sockets.each do |socket|
+			socket.listen(Socket::SOMAXCONN)
+		end
+		
+		return bound
+	end
+	
 	def setup(container)
+		@bound = bound_socket
+		
 		container.spawn(name: "Web", restart: true) do |instance|
-			# Replace the current process with Puma:
-			# instance.exec("bundle", "exec", "puma", "-C", "puma.rb", ready: false)
+			env = ENV.to_h
 			
-			# Manage a child process of puma / puma workers:
-			pid = ::Process.spawn("puma", "-C", "puma.rb")
-			
-			instance.ready!
-			
-			begin
-				status = ::Process.wait2(pid)
-			rescue Async::Container::Hangup
-				Console.warn(self, "Restarting puma...")
-				::Process.kill("USR1", pid)
-				retry
-			ensure
-				::Process.kill("TERM", pid)
+			@bound.sockets.each_with_index do |socket, index|
+				env["PUMA_INHERIT_#{index}"] = "#{socket.fileno}:tcp://0.0.0.0:9292"
 			end
+			
+			instance.exec(env, "bundle", "exec", "puma", "-C", "puma.rb", ready: false)
 		end
 	end
 end
 
-Application.new.run
+application = Application.new
+application.run
