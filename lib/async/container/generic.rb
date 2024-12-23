@@ -171,7 +171,7 @@ module Async
 							Console.debug(self) {"#{child} exited with #{status}"}
 						else
 							@statistics.failure!
-							Console.error(self) {status}
+							Console.error(self, status: status)
 						end
 						
 						if restart

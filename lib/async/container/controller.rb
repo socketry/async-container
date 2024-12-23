@@ -198,7 +198,7 @@ module Async
 								begin
 									handler.call
 								rescue SetupError => error
-									Console.error(self) {error}
+									Console.error(self, error)
 								end
 							else
 								raise

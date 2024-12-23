@@ -75,7 +75,7 @@ module Async
 						rescue Interrupt
 							# Graceful exit.
 						rescue Exception => error
-							Console.error(self) {error}
+							Console.error(self, error)
 							
 							exit!(1)
 						end
