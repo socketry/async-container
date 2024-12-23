@@ -13,7 +13,7 @@ class Application < Async::Container::Controller
 			# instance.exec("bundle", "exec", "puma", "-C", "puma.rb", ready: false)
 			
 			# Manage a child process of puma / puma workers:
-			pid = ::Process.spawn("puma")
+			pid = ::Process.spawn("puma", "-C", "puma.rb")
 			
 			instance.ready!
 			

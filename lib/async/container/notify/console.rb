@@ -5,7 +5,7 @@
 
 require_relative "client"
 
-require "console/logger"
+require "console"
 
 module Async
 	module Container
