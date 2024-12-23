@@ -61,7 +61,7 @@ class Forked
 		
 		@pid = Process.fork do
 			Signal.trap(:INT) {::Thread.current.raise(Interrupt)}
-			Signal.trap(:INT) {::Thread.current.raise(Terminate)}
+			Signal.trap(:TERM) {::Thread.current.raise(Terminate)}
 			
 			@channel.in.close
 			
