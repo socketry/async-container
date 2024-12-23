@@ -9,6 +9,10 @@ require "console"
 class Application < Async::Container::Controller
 	def setup(container)
 		container.spawn(name: "Web", restart: true) do |instance|
+			# Replace the current process with Puma:
+			# instance.exec("bundle", "exec", "puma", "-C", "puma.rb", ready: false)
+			
+			# Manage a child process of puma / puma workers:
 			pid = ::Process.spawn("puma")
 			
 			instance.ready!
