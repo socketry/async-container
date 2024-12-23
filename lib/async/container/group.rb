@@ -150,6 +150,7 @@ module Async
 				end
 			end
 			
+			# Wait for a child process to exit OR a signal to be received.
 			def select(duration)
 				::Thread.handle_interrupt(SignalException => :immediate) do
 					readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)

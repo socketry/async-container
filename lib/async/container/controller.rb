@@ -205,13 +205,13 @@ module Async
 							end
 						end
 					end
-				rescue Interrupt
-					self.stop
-				rescue Terminate
-					self.stop(false)
-				ensure
-					self.stop(false)
 				end
+			rescue Interrupt
+				self.stop
+			rescue Terminate
+				self.stop(false)
+			ensure
+				self.stop(false)
 			end
 			
 			private def with_signal_handlers
@@ -233,7 +233,7 @@ module Async
 					::Thread.current.raise(Hangup)
 				end
 				
-				::Thread.handle_interrupt(SignalException => :on_blocking) do
+				::Thread.handle_interrupt(SignalException => :never) do
 					yield
 				end
 			ensure
