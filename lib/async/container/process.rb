@@ -84,15 +84,13 @@ module Async
 				end
 			end
 			
-			# def self.spawn(*arguments, name: nil, **options)
-			# 	self.new(name: name) do |process|
-			# 		unless options.key?(:out)
-			# 			options[:out] = process.out
-			# 		end
-			# 
-			# 		::Process.spawn(*arguments, **options)
-			# 	end
-			# end
+			def self.spawn(*arguments, name: nil, **options)
+				self.new(name: name) do |process|
+					Notify::Pipe.new(process.out).before_spawn(arguments, options)
+					
+					::Process.spawn(*arguments, **options)
+				end
+			end
 			
 			# Initialize the process.
 			# @parameter name [String] The name to use for the child process.
@@ -121,6 +119,9 @@ module Async
 			# The name of the process.
 			# @attribute [String]
 			attr :name
+			
+			# @attribute [Integer] The process identifier.
+			attr :pid
 			
 			# A human readable representation of the process.
 			# @returns [String]

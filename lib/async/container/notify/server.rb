@@ -11,7 +11,6 @@ module Async
 	module Container
 		module Notify
 			class Server
-				NOTIFY_SOCKET = "NOTIFY_SOCKET"
 				MAXIMUM_MESSAGE_SIZE = 4096
 				
 				def self.load(message)
