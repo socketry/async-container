@@ -68,7 +68,7 @@ module Async
 						# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 						Signal.trap(:INT) {::Thread.current.raise(Interrupt)}
 						Signal.trap(:TERM) {::Thread.current.raise(Terminate)}
-						Signal.trap(:HUP) {::Thread.current.raise(Hangup)}
+						Signal.trap(:HUP) {::Thread.current.raise(Restart)}
 						
 						# This could be a configuration option:
 						::Thread.handle_interrupt(SignalException => :immediate) do
@@ -150,6 +150,13 @@ module Async
 			def terminate!
 				unless @status
 					::Process.kill(:TERM, @pid)
+				end
+			end
+			
+			# Send `SIGHUP` to the child process.
+			def restart!
+				unless @status
+					::Process.kill(:HUP, @pid)
 				end
 			end
 			

@@ -152,6 +152,11 @@ module Async
 				@thread.raise(Terminate)
 			end
 			
+			# Raise {Restart} in the child thread.
+			def restart!
+				@thread.raise(Restart)
+			end
+			
 			# Wait for the thread to exit and return he exit status.
 			# @returns [Status]
 			def wait

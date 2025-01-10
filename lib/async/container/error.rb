@@ -19,7 +19,7 @@ module Async
 			end
 		end
 		
-		class Hangup < SignalException
+		class Restart < SignalException
 			SIGHUP = Signal.list["HUP"]
 			
 			def initialize

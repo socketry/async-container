@@ -219,18 +219,18 @@ module Async
 				
 				interrupt_action = Signal.trap(:INT) do
 					# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
-					# $stderr.puts "Received Interrupt signal, terminating...", caller
+					# $stderr.puts "Received INT signal, interrupting...", caller
 					::Thread.current.raise(Interrupt)
 				end
 				
 				terminate_action = Signal.trap(:TERM) do
-					# $stderr.puts "Received Terminate signal, terminating...", caller
+					# $stderr.puts "Received TERM signal, terminating...", caller
 					::Thread.current.raise(Terminate)
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
-					# $stderr.puts "Received Hangup signal, restarting...", caller
-					::Thread.current.raise(Hangup)
+					# $stderr.puts "Received HUP signal, restarting...", caller
+					::Thread.current.raise(Restart)
 				end
 				
 				::Thread.handle_interrupt(SignalException => :never) do
