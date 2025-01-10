@@ -14,7 +14,7 @@ class Graceful < Async::Container::Controller
 			instance.ready!
 			
 			# This is to avoid race conditions in the controller in test conditions.
-			sleep 0.1
+			sleep 0.001
 			
 			clock = Async::Clock.start
 			
@@ -34,7 +34,7 @@ class Graceful < Async::Container::Controller
 	end
 end
 
-controller = Graceful.new(graceful_stop: 1)
+controller = Graceful.new(graceful_stop: 0.01)
 
 begin
 	controller.run

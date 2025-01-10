@@ -18,18 +18,18 @@ describe Async::Container::Controller do
 				container.spawn(key: "test") do |instance|
 					instance.ready!
 					
-					sleep(0.2)
+					sleep(0.02)
 					
 					@output.write(".")
 					@output.flush
 					
-					sleep(0.4)
+					sleep(0.04)
 				end
 				
 				container.spawn do |instance|
 					instance.ready!
 					
-					sleep(0.3)
+					sleep(0.03)
 					
 					@output.write(",")
 					@output.flush
@@ -64,7 +64,7 @@ describe Async::Container::Controller do
 		it "can spawn a reactor" do
 			def controller.setup(container)
 				container.async do |task|
-					task.sleep 1
+					task.sleep 0.001
 				end
 			end
 			
@@ -123,7 +123,7 @@ describe Async::Container::Controller do
 			expect(input.gets).to be == "Exiting...\n"
 			exit_time = input.gets.to_f
 			
-			expect(exit_time - graceful_shutdown_time).to be >= 1.0
+			expect(exit_time - graceful_shutdown_time).to be >= 0.01
 		end
 	end
 	

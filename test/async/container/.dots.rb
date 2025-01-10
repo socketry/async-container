@@ -14,7 +14,7 @@ class Dots < Async::Container::Controller
 			instance.ready!
 			
 			# This is to avoid race conditions in the controller in test conditions.
-			sleep 0.1
+			sleep 0.001
 			
 			$stdout.write "."
 			
