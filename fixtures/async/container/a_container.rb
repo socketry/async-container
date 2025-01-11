@@ -3,6 +3,8 @@
 # Released under the MIT License.
 # Copyright, 2019-2024, by Samuel Williams.
 
+require "async"
+
 module Async
 	module Container
 		AContainer = Sus::Shared("a container") do
@@ -67,9 +69,14 @@ module Async
 				it "can stop the child process" do
 					container.spawn do
 						sleep(1)
+					rescue Interrupt
+						# Ignore.
 					end
 					
 					expect(container).to be(:running?)
+					
+					# TODO Investigate why without this, the interrupt can occur before the process is sleeping...
+					sleep 0.001
 					
 					container.stop
 					

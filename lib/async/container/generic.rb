@@ -3,8 +3,6 @@
 # Released under the MIT License.
 # Copyright, 2019-2024, by Samuel Williams.
 
-require "async"
-
 require "etc"
 
 require_relative "group"
@@ -197,8 +195,12 @@ module Async
 			
 			# @deprecated Please use {spawn} or {run} instead.
 			def async(**options, &block)
+				# warn "#{self.class}##{__method__} is deprecated, please use `spawn` or `run` instead.", uplevel: 1
+				
+				require "async"
+				
 				spawn(**options) do |instance|
-					Async::Reactor.run(instance, &block)
+					Async(instance, &block)
 				end
 			end
 			

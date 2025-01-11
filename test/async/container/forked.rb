@@ -4,6 +4,7 @@
 # Copyright, 2018-2024, by Samuel Williams.
 # Copyright, 2020, by Olle Jonsson.
 
+require "async/container/best"
 require "async/container/forked"
 require "async/container/a_container"
 

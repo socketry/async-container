@@ -6,6 +6,8 @@
 require "async/container/controller"
 require "async/container/notify/server"
 
+require "async"
+
 describe Async::Container::Notify do
 	let(:server) {subject::Server.open}
 	let(:notify_socket) {server.path}
