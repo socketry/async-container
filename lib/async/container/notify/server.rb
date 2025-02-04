@@ -21,15 +21,17 @@ module Async
 					pairs = lines.map do |line|
 						key, value = line.split("=", 2)
 						
+						key = key.downcase.to_sym
+						
 						if value == "0"
 							value = false
 						elsif value == "1"
 							value = true
-						elsif key == "errno" and value =~ /\A\-?\d+\z/
+						elsif key == :errno and value =~ /\A\-?\d+\z/
 							value = Integer(value)
 						end
 						
-						next [key.downcase.to_sym, value]
+						next [key, value]
 					end
 					
 					return Hash[pairs]
