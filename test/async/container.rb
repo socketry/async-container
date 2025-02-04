@@ -26,16 +26,24 @@ describe Async::Container do
 		end
 	end
 	
-	it "can get best container class" do
-		expect(Async::Container.best_container_class).not.to be_nil
-	end
-	
 	with ".new" do
 		let(:container) {Async::Container.new}
 		
 		it "can get best container class" do
 			expect(container).not.to be_nil
 			container.stop
+		end
+	end
+	
+	with ".best" do
+		it "can get the best container class" do
+			expect(Async::Container.best_container_class).not.to be_nil
+		end
+		
+		it "can get the best container class if fork is not available" do
+			expect(subject).to receive(:fork?).and_return(false)
+			
+			expect(Async::Container.best_container_class).to be == Async::Container::Threaded
 		end
 	end
 end
