@@ -4,9 +4,16 @@
 # Copyright, 2018-2025, by Samuel Williams.
 
 require "async/container/controller"
+require "async/container/controllers"
 
 describe Async::Container::Controller do
 	let(:controller) {subject.new}
+	
+	with "#to_s" do
+		it "can generate string representation" do
+			expect(controller.to_s).to be == "Async::Container::Controller stopped"
+		end
+	end
 	
 	with "#reload" do
 		it "can reuse keyed child" do
@@ -37,6 +44,9 @@ describe Async::Container::Controller do
 			end
 			
 			controller.start
+			
+			expect(controller.state_string).to be == "running"
+			
 			expect(input.read(2)).to be == ".,"
 			
 			controller.reload
@@ -89,7 +99,7 @@ describe Async::Container::Controller do
 	end
 	
 	with "graceful controller" do
-		let(:controller_path) {File.expand_path(".graceful.rb", __dir__)}
+		let(:controller_path) {Async::Container::Controllers.path_for("graceful")}
 		
 		let(:pipe) {IO.pipe}
 		let(:input) {pipe.first}
@@ -128,7 +138,7 @@ describe Async::Container::Controller do
 	end
 	
 	with "bad controller" do
-		let(:controller_path) {File.expand_path(".bad.rb", __dir__)}
+		let(:controller_path) {Async::Container::Controllers.path_for("bad")}
 		
 		let(:pipe) {IO.pipe}
 		let(:input) {pipe.first}
@@ -160,7 +170,7 @@ describe Async::Container::Controller do
 	end
 	
 	with "signals" do
-		let(:controller_path) {File.expand_path(".dots.rb", __dir__)}
+		let(:controller_path) {Async::Container::Controllers.path_for("dots")}
 		
 		let(:pipe) {IO.pipe}
 		let(:input) {pipe.first}
@@ -208,7 +218,7 @@ describe Async::Container::Controller do
 	end
 	
 	with "working directory" do
-		let(:controller_path) {File.expand_path(".cwd.rb", __dir__)}
+		let(:controller_path) {Async::Container::Controllers.path_for("working_directory")}
 		
 		it "can change working directory" do
 			pipe = IO.pipe

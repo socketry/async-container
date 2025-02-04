@@ -4,7 +4,7 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require_relative "../../../lib/async/container/controller"
+require_relative "../../../../lib/async/container/controller"
 
 $stdout.sync = true
 
