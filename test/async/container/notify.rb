@@ -13,6 +13,16 @@ describe Async::Container::Notify do
 	let(:notify_socket) {server.path}
 	let(:client) {subject::Socket.new(notify_socket)}
 	
+	it "can send and receive messages" do
+		context = server.bind
+		
+		client.send(true: true, false: false, hello: "world")
+		
+		message = context.receive
+		
+		expect(message).to be == {true: true, false: false, hello: "world"}
+	end
+	
 	with "#ready!" do
 		it "should send message" do
 			begin
@@ -31,11 +41,42 @@ describe Async::Container::Notify do
 					end
 				end
 				
-				expect(messages.last).to have_keys(ready: be == true)
+				expect(messages.last).to have_keys(
+					ready: be == true
+				)
 			ensure
 				context&.close
 				Process.wait(pid) if pid
 			end
 		end
 	end
+	
+	with "#stopping!" do
+		it "sends stopping message" do
+			context = server.bind
+			
+			client.stopping!
+			
+			message = context.receive
+			
+			expect(message).to have_keys(
+				stopping: be == true
+			)
+		end
+	end
+	
+	with "#error!" do
+		it "sends error message" do
+			context = server.bind
+			
+			client.error!("Boom!")
+			
+			message = context.receive
+			
+			expect(message).to have_keys(
+				status: be == "Boom!",
+				errno: be == -1,
+			)
+		end
+	end	
 end if Async::Container.fork?

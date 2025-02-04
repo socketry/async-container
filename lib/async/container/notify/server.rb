@@ -25,6 +25,8 @@ module Async
 							value = false
 						elsif value == "1"
 							value = true
+						elsif key == "errno" and value =~ /\A\-?\d+\z/
+							value = Integer(value)
 						end
 						
 						next [key.downcase.to_sym, value]
@@ -74,7 +76,11 @@ module Async
 							
 							message = Server.load(data)
 							
-							yield message
+							if block_given?
+								yield message
+							else
+								return message
+							end
 						end
 					end
 				end
