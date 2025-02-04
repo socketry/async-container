@@ -10,29 +10,66 @@ module Async
 		AContainer = Sus::Shared("a container") do
 			let(:container) {subject.new}
 			
-			it "can run concurrently" do
-				input, output = IO.pipe
-				
-				container.async do
-					output.write "Hello World"
+			with "#run" do
+				it "can run several instances concurrently" do
+					container.run do
+						sleep(1)
+					end
+					
+					expect(container).to be(:running?)
+					
+					container.stop(true)
+					
+					expect(container).not.to be(:running?)
 				end
 				
-				container.wait
-				
-				output.close
-				expect(input.read).to be == "Hello World"
+				it "can stop an uncooperative child process" do
+					container.run do
+						while true
+							begin
+								sleep(1)
+							rescue Interrupt
+								# Ignore.
+							end
+						end
+					end
+					
+					expect(container).to be(:running?)
+					
+					# TODO Investigate why without this, the interrupt can occur before the process is sleeping...
+					sleep 0.001
+					
+					container.stop(true)
+					
+					expect(container).not.to be(:running?)
+				end
 			end
 			
-			it "can run concurrently" do
-				container.async(name: "Sleepy Jerry") do |task, instance|
-					3.times do |i|
-						instance.name = "Counting Sheep #{i}"
-						
-						sleep 0.01
+			with "#async" do
+				it "can run concurrently" do
+					input, output = IO.pipe
+					
+					container.async do
+						output.write "Hello World"
 					end
+					
+					container.wait
+					
+					output.close
+					expect(input.read).to be == "Hello World"
 				end
 				
-				container.wait
+				it "can run concurrently" do
+					container.async(name: "Sleepy Jerry") do |task, instance|
+						3.times do |i|
+							instance.name = "Counting Sheep #{i}"
+							
+							sleep 0.01
+						end
+					end
+					
+					container.wait
+				end
 			end
 			
 			it "should be blocking" do
@@ -66,7 +103,7 @@ module Async
 			end
 			
 			with "#stop" do
-				it "can stop the child process" do
+				it "can gracefully stop the child process" do
 					container.spawn do
 						sleep(1)
 					rescue Interrupt
@@ -75,10 +112,48 @@ module Async
 					
 					expect(container).to be(:running?)
 					
-					# TODO Investigate why without this, the interrupt can occur before the process is sleeping...
+					# See above.
 					sleep 0.001
 					
-					container.stop
+					container.stop(true)
+					
+					expect(container).not.to be(:running?)
+				end
+				
+				it "can forcefully stop the child process" do
+					container.spawn do
+						sleep(1)
+					rescue Interrupt
+						# Ignore.
+					end
+					
+					expect(container).to be(:running?)
+					
+					# See above.
+					sleep 0.001
+					
+					container.stop(false)
+					
+					expect(container).not.to be(:running?)
+				end
+				
+				it "can stop an uncooperative child process" do
+					container.spawn do
+						while true
+							begin
+								sleep(1)
+							rescue Interrupt
+								# Ignore.
+							end
+						end
+					end
+					
+					expect(container).to be(:running?)
+					
+					# See above.
+					sleep 0.001
+					
+					container.stop(true)
 					
 					expect(container).not.to be(:running?)
 				end
