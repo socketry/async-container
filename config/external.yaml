@@ -1,3 +1,6 @@
 falcon:
   url: https://github.com/socketry/falcon.git
   command: bundle exec bake test
+async-service:
+  url: https://github.com/socketry/async-service.git
+  command: bundle exec bake test
