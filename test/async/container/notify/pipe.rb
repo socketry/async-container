@@ -5,9 +5,10 @@
 # Copyright, 2020, by Olle Jonsson.
 
 require "async/container/controller"
+require "async/container/controllers"
 
 describe Async::Container::Notify::Pipe do
-	let(:notify_script) {File.expand_path(".notify.rb", __dir__)}
+	let(:notify_script) {Async::Container::Controllers.path_for("notify")}
 	
 	it "receives notification of child status" do
 		container = Async::Container.new

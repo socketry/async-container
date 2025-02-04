@@ -4,6 +4,7 @@
 # Copyright, 2020-2024, by Samuel Williams.
 
 require_relative "client"
+require "socket"
 
 module Async
 	module Container
@@ -30,6 +31,9 @@ module Async
 					@path = path
 					@address = Addrinfo.unix(path, ::Socket::SOCK_DGRAM)
 				end
+				
+				# @attribute [String] The path to the UNIX socket used for sending messages to the controller.
+				attr :path
 				
 				# Dump a message in the format requied by `sd_notify`.
 				# @parameter message [Hash] Keys and values should be string convertible objects. Values which are `true`/`false` are converted to `1`/`0` respectively.
@@ -69,7 +73,7 @@ module Async
 				def error!(text, **message)
 					message[:errno] ||= -1
 					
-					send(status: text, **message)
+					super
 				end
 			end
 		end

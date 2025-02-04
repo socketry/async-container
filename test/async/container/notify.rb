@@ -51,6 +51,26 @@ describe Async::Container::Notify do
 		end
 	end
 	
+	with "#send" do
+		it "sends message" do
+			context = server.bind
+			
+			client.send(hello: "world")
+			
+			message = context.receive
+			
+			expect(message).to be == {hello: "world"}
+		end
+		
+		it "fails if the message is too big" do
+			context = server.bind
+			
+			expect do
+				client.send("x" * (subject::Socket::MAXIMUM_MESSAGE_SIZE+1))
+			end.to raise_exception(ArgumentError)
+		end
+	end
+	
 	with "#stopping!" do
 		it "sends stopping message" do
 			context = server.bind
