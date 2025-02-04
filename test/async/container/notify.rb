@@ -66,8 +66,8 @@ describe Async::Container::Notify do
 			context = server.bind
 			
 			expect do
-				client.send("x" * (subject::Socket::MAXIMUM_MESSAGE_SIZE+1))
-			end.to raise_exception(ArgumentError)
+				client.send(test: "x" * (subject::Socket::MAXIMUM_MESSAGE_SIZE+1))
+			end.to raise_exception(ArgumentError, message: be =~ /Message length \d+ exceeds \d+/)
 		end
 	end
 	

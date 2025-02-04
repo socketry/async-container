@@ -60,7 +60,7 @@ module Async
 					data = dump(message)
 					
 					if data.bytesize > MAXIMUM_MESSAGE_SIZE
-						raise ArgumentError, "Message length #{message.bytesize} exceeds #{MAXIMUM_MESSAGE_SIZE}: #{message.inspect}"
+						raise ArgumentError, "Message length #{data.bytesize} exceeds #{MAXIMUM_MESSAGE_SIZE}: #{message.inspect}"
 					end
 					
 					@address.connect do |peer|
