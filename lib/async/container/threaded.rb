@@ -125,6 +125,23 @@ module Async
 					end
 				end
 				
+				# Convert the child process to a hash, suitable for serialization.
+				#
+				# @returns [Hash] The request as a hash.
+				def as_json(...)
+					{
+						name: @thread.name,
+						status: @status&.as_json,
+					}
+				end
+				
+				# Convert the request to JSON.
+				#
+				# @returns [String] The request as JSON.
+				def to_json(...)
+					as_json.to_json(...)
+				end
+				
 				# Set the name of the thread.
 				# @parameter value [String] The name to set.
 				def name= value
@@ -189,6 +206,14 @@ module Async
 					# @returns [Boolean]
 					def success?
 						@error.nil?
+					end
+					
+					def as_json(...)
+						if @error
+							@error.inspect
+						else
+							true
+						end
 					end
 					
 					# A human readable representation of the status.

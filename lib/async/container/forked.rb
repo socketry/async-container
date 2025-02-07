@@ -116,6 +116,24 @@ module Async
 					self.close_write
 				end
 				
+				# Convert the child process to a hash, suitable for serialization.
+				#
+				# @returns [Hash] The request as a hash.
+				def as_json(...)
+					{
+						name: @name,
+						pid: @pid,
+						status: @status&.to_i,
+					}
+				end
+				
+				# Convert the request to JSON.
+				#
+				# @returns [String] The request as JSON.
+				def to_json(...)
+					as_json.to_json(...)
+				end
+				
 				# Set the name of the process.
 				# Invokes {::Process.setproctitle} if invoked in the child process.
 				def name= value

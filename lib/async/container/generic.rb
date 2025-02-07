@@ -4,6 +4,7 @@
 # Copyright, 2019-2024, by Samuel Williams.
 
 require "etc"
+require "async/clock"
 
 require_relative "group"
 require_relative "keyed"
@@ -141,7 +142,8 @@ module Async
 			# @parameter name [String] The name of the child instance.
 			# @parameter restart [Boolean] Whether to restart the child instance if it fails.
 			# @parameter key [Symbol] A key used for reloading child instances.
-			def spawn(name: nil, restart: false, key: nil, &block)
+			# @parameter health_check_timeout [Numeric | Nil] The maximum time a child instance can run without updating its state, before it is terminated as unhealthy.
+			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, &block)
 				name ||= UNNAMED
 				
 				if mark?(key)
@@ -157,9 +159,24 @@ module Async
 						
 						state = insert(key, child)
 						
+						# If a health check is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
+						if health_check_timeout
+							age_clock = state[:age] = Clock.start
+						end
+						
 						begin
 							status = @group.wait_for(child) do |message|
-								state.update(message)
+								case message
+								when :health_check!
+									if health_check_timeout&.<(age_clock.total)
+										Console.warn(self, "Child failed health check!", child: child, age: age_clock.total, health_check_timeout: health_check_timeout)
+										# If the child has failed the health check, we assume the worst and terminate it (SIGTERM).
+										child.terminate!
+									end
+								else
+									state.update(message)
+									age_clock&.reset!
+								end
 							end
 						ensure
 							delete(key, child)

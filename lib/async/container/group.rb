@@ -13,7 +13,12 @@ module Async
 		# Manages a group of running processes.
 		class Group
 			# Initialize an empty group.
-			def initialize
+			#
+			# @parameter health_check_interval [Numeric | Nil] The (biggest) interval at which health checks are performed.
+			def initialize(health_check_interval: 1.0)
+				@health_check_interval = health_check_interval
+				
+				# The running fibers, indexed by IO:
 				@running = {}
 				
 				# This queue allows us to wait for processes to complete, without spawning new processes as a result.
@@ -57,8 +62,36 @@ module Async
 			def wait
 				self.resume
 				
-				while self.running?
-					self.wait_for_children
+				with_health_checks do |duration|
+					self.wait_for_children(duration)
+				end
+			end
+			
+			private def with_health_checks
+				if @health_check_interval
+					health_check_clock = Clock.start
+					
+					while self.running?
+						duration = [@health_check_interval - health_check_clock.total, 0].max
+						
+						yield duration
+						
+						if health_check_clock.total > @health_check_interval
+							self.health_check!
+							health_check_clock.reset!
+						end
+					end
+				else
+					while self.running?
+						yield nil
+					end
+				end
+			end
+			
+			# Perform a health check on all running processes.
+			def health_check!
+				@running.each_value do |fiber|
+					fiber.resume(:health_check!)
 				end
 			end
 			
@@ -119,15 +152,19 @@ module Async
 				@running[io] = Fiber.current
 				
 				while @running.key?(io)
+					# Wait for some event on the channel:
 					result = Fiber.yield
 					
 					if result == Interrupt
 						channel.interrupt!
 					elsif result == Terminate
 						channel.terminate!
+					elsif result
+						yield result
 					elsif message = channel.receive
 						yield message
 					else
+						# Wait for the channel to exit:
 						return channel.wait
 					end
 				end
