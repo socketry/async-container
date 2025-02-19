@@ -25,18 +25,18 @@ describe Async::Container::Controller do
 				container.spawn(key: "test") do |instance|
 					instance.ready!
 					
-					sleep(0.02)
+					sleep(0.2)
 					
 					@output.write(".")
 					@output.flush
 					
-					sleep(0.04)
+					sleep(0.4)
 				end
 				
 				container.spawn do |instance|
 					instance.ready!
 					
-					sleep(0.03)
+					sleep(0.3)
 					
 					@output.write(",")
 					@output.flush
