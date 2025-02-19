@@ -176,6 +176,39 @@ module Async
 					expect(container).not.to be(:running?)
 				end
 			end
+			
+			with "health_check_timeout:" do
+				let(:container) {subject.new(health_check_interval: 0.01)}
+				
+				it "should not terminate a child process if it updates its state within the specified time" do
+					# We use #run here to hit the Hybrid container code path:
+					container.run(count: 1, health_check_timeout: 0.02) do |instance|
+						instance.ready!
+						
+						10.times do
+							instance.ready!
+							sleep(0.01)
+						end
+					end
+					
+					container.wait
+					
+					expect(container.statistics).to have_attributes(failures: be == 0)
+				end
+				
+				it "can terminate a child process if it does not update its state within the specified time" do
+					container.spawn(health_check_timeout: 0.01) do |instance|
+						instance.ready!
+						
+						# This should trigger the health check - since restart is false, the process will be terminated:
+						sleep(1)
+					end
+					
+					container.wait
+					
+					expect(container.statistics).to have_attributes(failures: be > 0)
+				end
+			end
 		end
 	end
 end
