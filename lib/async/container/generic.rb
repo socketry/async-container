@@ -39,7 +39,7 @@ module Async
 			UNNAMED = "Unnamed"
 			
 			def initialize(**options)
-				@group = Group.new
+				@group = Group.new(**options)
 				@running = true
 				
 				@state = {}
@@ -48,8 +48,10 @@ module Async
 				@keyed = {}
 			end
 			
+			# @attribute [Group] The group of running children instances.
 			attr :group
 			
+			# @attribute [Hash(Child, Hash)] The state of each child instance.
 			attr :state
 			
 			# A human readable representation of the container.
