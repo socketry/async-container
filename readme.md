@@ -22,6 +22,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.21.0
+
+  - Use `SIGKILL`/`Thread#kill` when the health check fails. In some cases, `SIGTERM` may not be sufficient to terminate a process because the signal can be ignored or the process may be in an uninterruptible state.
+
 ### v0.20.1
 
   - Fix compatibility between <code class="language-ruby">Async::Container::Hybrid</code> and the health check.

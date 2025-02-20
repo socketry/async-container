@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.21.0
 
   - Use `SIGKILL`/`Thread#kill` when the health check fails. In some cases, `SIGTERM` may not be sufficient to terminate a process because the signal can be ignored or the process may be in an uninterruptible state.
 
