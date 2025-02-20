@@ -25,18 +25,16 @@ describe Async::Container::Controller do
 				container.spawn(key: "test") do |instance|
 					instance.ready!
 					
-					sleep(0.2)
-					
 					@output.write(".")
 					@output.flush
 					
-					sleep(0.4)
+					sleep(0.2)
 				end
 				
 				container.spawn do |instance|
 					instance.ready!
 					
-					sleep(0.3)
+					sleep(0.1)
 					
 					@output.write(",")
 					@output.flush
@@ -52,6 +50,7 @@ describe Async::Container::Controller do
 			controller.reload
 			
 			expect(input.read(1)).to be == ","
+			
 			controller.wait
 		end
 	end
