@@ -11,6 +11,9 @@ module Async
 	module Container
 		# A multi-thread container which uses {Thread.fork}.
 		class Threaded < Generic
+			class Kill < Exception
+			end
+			
 			# Indicates that this is not a multi-process container.
 			def self.multiprocess?
 				false
@@ -178,6 +181,14 @@ module Async
 					@thread.raise(Terminate)
 				end
 				
+				# Invoke {Thread#kill} on the child thread.
+				def kill!
+					# Killing a thread does not raise an exception in the thread, so we need to handle the status here:
+					@status = Status.new(:killed)
+					
+					@thread.kill
+				end
+				
 				# Raise {Restart} in the child thread.
 				def restart!
 					@thread.raise(Restart)
@@ -230,7 +241,7 @@ module Async
 						Console.error(self) {error}
 					end
 					
-					@status = Status.new(error)
+					@status ||= Status.new(error)
 					self.close_write
 				end
 			end

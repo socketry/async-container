@@ -180,6 +180,13 @@ module Async
 					end
 				end
 				
+				# Send `SIGKILL` to the child process.
+				def kill!
+					unless @status
+						::Process.kill(:KILL, @pid)
+					end
+				end
+				
 				# Send `SIGHUP` to the child process.
 				def restart!
 					unless @status

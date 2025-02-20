@@ -172,8 +172,8 @@ module Async
 								when :health_check!
 									if health_check_timeout&.<(age_clock.total)
 										Console.warn(self, "Child failed health check!", child: child, age: age_clock.total, health_check_timeout: health_check_timeout)
-										# If the child has failed the health check, we assume the worst and terminate it (SIGTERM).
-										child.terminate!
+										# If the child has failed the health check, we assume the worst and kill it immediately:
+										child.kill!
 									end
 								else
 									state.update(message)

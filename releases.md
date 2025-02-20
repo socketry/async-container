@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Use `SIGKILL`/`Thread#kill` when the health check fails. In some cases, `SIGTERM` may not be sufficient to terminate a process because the signal can be ignored or the process may be in an uninterruptible state.
+
 ## v0.20.1
 
   - Fix compatibility between {ruby Async::Container::Hybrid} and the health check.

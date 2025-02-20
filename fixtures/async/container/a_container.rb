@@ -201,7 +201,23 @@ module Async
 						instance.ready!
 						
 						# This should trigger the health check - since restart is false, the process will be terminated:
-						sleep(2.0)
+						sleep
+					end
+					
+					container.wait
+					
+					expect(container.statistics).to have_attributes(failures: be > 0)
+				end
+				
+				it "can kill a child process even if it ignores exceptions/signals" do
+					container.spawn(health_check_timeout: 1.0) do |instance|
+						while true
+							begin
+								sleep 1
+							rescue Exception => error
+								# Ignore.
+							end
+						end
 					end
 					
 					container.wait
