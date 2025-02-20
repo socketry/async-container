@@ -16,6 +16,8 @@ Provides containers which implement parallelism for clients and servers.
 
 Please see the [project documentation](https://socketry.github.io/async-container/).
 
+## Releases
+
 ## Contributing
 
 We welcome contributions to this project.
