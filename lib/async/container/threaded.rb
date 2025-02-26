@@ -53,7 +53,6 @@ module Async
 					end
 					
 					def initialize(io)
-						@name = nil
 						@thread = ::Thread.current
 						
 						super

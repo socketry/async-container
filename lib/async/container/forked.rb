@@ -55,9 +55,10 @@ module Async
 					# Set the process title to the specified value.
 					# @parameter value [String] The name of the process.
 					def name= value
-						if @name = value
-							::Process.setproctitle(@name)
-						end
+						@name = value
+						
+						# This sets the process title to an empty string if the name is nil:
+						::Process.setproctitle(@name.to_s)
 					end
 					
 					# The name of the process.
