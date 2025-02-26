@@ -41,6 +41,17 @@ module Async
 						@name = nil
 					end
 					
+					def as_json(...)
+						{
+							process_id: ::Process.pid,
+							name: @name,
+						}
+					end
+					
+					def to_json(...)
+						as_json.to_json(...)
+					end
+					
 					# Set the process title to the specified value.
 					# @parameter value [String] The name of the process.
 					def name= value

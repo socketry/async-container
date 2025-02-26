@@ -59,6 +59,18 @@ module Async
 						super
 					end
 					
+					def as_json(...)
+						{
+							process_id: ::Process.pid,
+							thread_id: @thread.object_id,
+							name: @thread.name,
+						}
+					end
+					
+					def to_json(...)
+						as_json.to_json(...)
+					end
+					
 					# Set the name of the thread.
 					# @parameter value [String] The name to set.
 					def name= value

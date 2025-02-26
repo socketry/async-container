@@ -87,6 +87,27 @@ module Async
 				expect(input.read).to be == "true"
 			end
 			
+			with "instance" do
+				it "can generate JSON representation" do
+					IO.pipe do |input, output|
+						container.spawn do |instance|
+							output.write(instance.to_json)
+						end
+						
+						container.wait
+					
+						expect(container.statistics).to have_attributes(failures: be == 0)
+						
+						output.close
+						instance = JSON.parse(input.read, symbolize_names: true)
+						expect(instance).to have_keys(
+							process_id: be_a(Integer),
+							name: be_a(String),
+						)
+					end
+				end
+			end
+			
 			with "#sleep" do
 				it "can sleep for a short time" do
 					container.spawn do
