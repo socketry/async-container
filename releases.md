@@ -6,7 +6,7 @@
 
 You may specify a `NOTIFY_LOG` environment variable to enable readiness logging to a log file. This can be used for Kubernetes readiness probes, e.g.
 
-```yaml
+``` yaml
 containers:
 	- name: falcon
 		env:
