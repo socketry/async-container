@@ -32,6 +32,11 @@ module Async
 			# @attribute [Hash(IO, Fiber)] the running tasks, indexed by IO.
 			attr :running
 			
+			# @returns [Integer] The number of running processes.
+			def size
+				@running.size
+			end
+			
 			# Whether the group contains any running processes.
 			# @returns [Boolean]
 			def running?

@@ -24,7 +24,7 @@ describe Async::Container::Notify::Pipe do
 		container.sleep
 		
 		_child, state = container.state.first
-		expect(state).to be == {status: "Initializing..."}
+		expect(state).to be == {status: "Initializing controller..."}
 		
 		container.wait
 		

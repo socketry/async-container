@@ -149,7 +149,7 @@ module Async
 					old_container&.stop(@graceful_stop)
 				end
 				
-				@notify&.ready!
+				@notify&.ready!(size: @container.size)
 			ensure
 				# If we are leaving this function with an exception, try to kill the container:
 				container&.stop(false)
@@ -185,7 +185,7 @@ module Async
 			
 			# Enter the controller run loop, trapping `SIGINT` and `SIGTERM`.
 			def run
-				@notify&.status!("Initializing...")
+				@notify&.status!("Initializing controller...")
 				
 				with_signal_handlers do
 					self.start

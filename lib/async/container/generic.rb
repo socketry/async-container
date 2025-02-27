@@ -51,6 +51,11 @@ module Async
 			# @attribute [Group] The group of running children instances.
 			attr :group
 			
+			# @returns [Integer] The number of running children instances.
+			def size
+				@group.size
+			end
+			
 			# @attribute [Hash(Child, Hash)] The state of each child instance.
 			attr :state
 			

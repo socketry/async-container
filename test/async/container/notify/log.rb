@@ -18,6 +18,9 @@ describe Async::Container::Notify::Pipe do
 		
 		lines = File.readlines(notify_log).map{|line| JSON.parse(line)}
 		
-		expect(lines.last).to be == {"ready" => true}
+		expect(lines.last).to have_keys(
+			"ready" => be == true,
+			"size" => be > 0,
+		)
 	end
 end
