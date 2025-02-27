@@ -1,5 +1,26 @@
 # Releases
 
+## v0.23.0
+
+### Add support for `NOTIFY_LOG` for Kubernetes readiness probes.
+
+You may specify a `NOTIFY_LOG` environment variable to enable readiness logging to a log file. This can be used for Kubernetes readiness probes, e.g.
+
+```yaml
+containers:
+	- name: falcon
+		env:
+			- name: NOTIFY_LOG
+				value: "/tmp/notify.log"
+		command: ["falcon", "host"]
+		readinessProbe:
+			exec:
+				command: ["sh", "-c", "grep -q '\"ready\":true' /tmp/notify.log"]
+			initialDelaySeconds: 5
+			periodSeconds: 5
+			failureThreshold: 12
+```
+
 ## v0.21.0
 
   - Use `SIGKILL`/`Thread#kill` when the health check fails. In some cases, `SIGTERM` may not be sufficient to terminate a process because the signal can be ignored or the process may be in an uninterruptible state.
