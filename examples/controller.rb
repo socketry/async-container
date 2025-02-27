@@ -15,14 +15,14 @@ class Controller < Async::Container::Controller
 			else
 				Console.debug(self, "Child process started.")
 			end
-
+			
 			instance.ready!
-
+			
 			while true
 				sleep 1
-
+				
 				Console.debug(self, "Work")
-
+				
 				if rand < 0.5
 					Console.debug(self, "Should exit...")
 					sleep 0.5
