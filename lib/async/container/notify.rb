@@ -6,6 +6,7 @@
 require_relative "notify/pipe"
 require_relative "notify/socket"
 require_relative "notify/console"
+require_relative "notify/log"
 
 module Async
 	module Container
@@ -18,6 +19,7 @@ module Async
 				@client ||= (
 					Pipe.open! ||
 					Socket.open! ||
+					Log.open! ||
 					Console.open!
 				)
 			end
