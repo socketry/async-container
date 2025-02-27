@@ -5,6 +5,7 @@
 # Copyright, 2020, by Olle Jonsson.
 
 require "tmpdir"
+require "socket"
 require "securerandom"
 
 module Async
