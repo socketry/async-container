@@ -180,7 +180,8 @@ module Async
 			protected
 			
 			def wait_for_children(duration = nil)
-				Console.debug(self, "Waiting for children...", duration: duration, running: @running)
+				# This log is a big noisy and doesn't really provide a lot of useful information.
+				# Console.debug(self, "Waiting for children...", duration: duration, running: @running)
 				
 				if !@running.empty?
 					# Maybe consider using a proper event loop here:
