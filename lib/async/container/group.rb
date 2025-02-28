@@ -121,7 +121,7 @@ module Async
 			# Stop all child processes using {#terminate}.
 			# @parameter timeout [Boolean | Numeric | Nil] If specified, invoke a graceful shutdown using {#interrupt} first.
 			def stop(timeout = 1)
-				Console.info(self, "Stopping all processes...", timeout: timeout)
+				Console.debug(self, "Stopping all processes...", timeout: timeout)
 				# Use a default timeout if not specified:
 				timeout = 1 if timeout == true
 				
