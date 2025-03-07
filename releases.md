@@ -1,5 +1,9 @@
 # Releases
 
+## v0.24.0
+
+  - Add support for health check failure metrics.
+
 ## v0.23.0
 
 ### Add support for `NOTIFY_LOG` for Kubernetes readiness probes.

@@ -22,6 +22,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.24.0
+
+  - Add support for health check failure metrics.
+
 ### v0.23.0
 
   - [Add support for `NOTIFY_LOG` for Kubernetes readiness probes.](https://socketry.github.io/async-container/releases/index#add-support-for-notify_log-for-kubernetes-readiness-probes.)
