@@ -7,3 +7,14 @@ require "covered/sus"
 include Covered::Sus
 
 ENV["CONSOLE_LEVEL"] ||= "fatal"
+ENV["METRICS_BACKEND"] ||= "metrics/backend/test"
+
+def prepare_instrumentation!
+	require "metrics"
+end
+
+def before_tests(...)
+	prepare_instrumentation!
+	
+	super
+end

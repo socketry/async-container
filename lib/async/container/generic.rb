@@ -145,6 +145,13 @@ module Async
 				@running = true
 			end
 			
+			protected def health_check_failed!(child, age_clock, health_check_timeout)
+				Console.warn(self, "Child failed health check!", child: child, age: age_clock.total, health_check_timeout: health_check_timeout)
+				
+				# If the child has failed the health check, we assume the worst and kill it immediately:
+				child.kill!
+			end
+			
 			# Spawn a child instance into the container.
 			# @parameter name [String] The name of the child instance.
 			# @parameter restart [Boolean] Whether to restart the child instance if it fails.
@@ -176,9 +183,7 @@ module Async
 								case message
 								when :health_check!
 									if health_check_timeout&.<(age_clock.total)
-										Console.warn(self, "Child failed health check!", child: child, age: age_clock.total, health_check_timeout: health_check_timeout)
-										# If the child has failed the health check, we assume the worst and kill it immediately:
-										child.kill!
+										health_check_failed!(child, age_clock, health_check_timeout)
 									end
 								else
 									state.update(message)
