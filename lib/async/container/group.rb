@@ -25,6 +25,7 @@ module Async
 				@queue = nil
 			end
 			
+			# @returns [String] A human-readable representation of the group.
 			def inspect
 				"#<#{self.class} running=#{@running.size}>"
 			end

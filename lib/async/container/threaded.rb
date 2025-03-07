@@ -11,9 +11,6 @@ module Async
 	module Container
 		# A multi-thread container which uses {Thread.fork}.
 		class Threaded < Generic
-			class Kill < Exception
-			end
-			
 			# Indicates that this is not a multi-process container.
 			def self.multiprocess?
 				false
@@ -52,12 +49,18 @@ module Async
 						return instance
 					end
 					
+					# Initialize the child thread instance.
+					#
+					# @parameter io [IO] The IO object to use for communication with the parent.
 					def initialize(io)
 						@thread = ::Thread.current
 						
 						super
 					end
 					
+					# Generate a hash representation of the thread.
+					#
+					# @returns [Hash] The thread as a hash, including `process_id`, `thread_id`, and `name`.
 					def as_json(...)
 						{
 							process_id: ::Process.pid,
@@ -66,6 +69,9 @@ module Async
 						}
 					end
 					
+					# Generate a JSON representation of the thread.
+					#
+					# @returns [String] The thread as JSON.
 					def to_json(...)
 						as_json.to_json(...)
 					end
@@ -101,6 +107,9 @@ module Async
 					end
 				end
 				
+				# Start a new child thread and execute the provided block in it.
+				#
+				# @parameter options [Hash] Additional options to to the new child instance.
 				def self.fork(**options)
 					self.new(**options) do |thread|
 						::Thread.new do
@@ -113,6 +122,7 @@ module Async
 				end
 				
 				# Initialize the thread.
+				#
 				# @parameter name [String] The name to use for the child thread.
 				def initialize(name: nil)
 					super()
@@ -230,6 +240,9 @@ module Async
 						@error.nil?
 					end
 					
+					# Convert the status to a hash, suitable for serialization.
+					#
+					# @returns [Boolean | String] If the status is an error, the error message is returned, otherwise `true`.
 					def as_json(...)
 						if @error
 							@error.inspect

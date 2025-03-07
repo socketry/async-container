@@ -32,12 +32,16 @@ module Async
 		
 		# A base class for implementing containers.
 		class Generic
-			def self.run(*arguments, **options, &block)
-				self.new.run(*arguments, **options, &block)
+			# Run a new container.
+			def self.run(...)
+				self.new.run(...)
 			end
 			
 			UNNAMED = "Unnamed"
 			
+			# Initialize the container.
+			#
+			# @parameter options [Hash] Options passed to the {Group} instance.
 			def initialize(**options)
 				@group = Group.new(**options)
 				@running = true

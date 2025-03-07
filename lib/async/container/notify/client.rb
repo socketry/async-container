@@ -7,6 +7,9 @@ module Async
 	module Container
 		# Handles the details of several process readiness protocols.
 		module Notify
+			# Represents a client that can send messages to the parent controller in order to notify it of readiness, status changes, etc.
+			#
+			# A process readiness protocol (e.g. `sd_notify`) is a simple protocol for a child process to notify the parent process that it is ready (e.g. to accept connections, to process requests, etc). This can help dependency-based startup systems to start services in the correct order, and to handle failures gracefully.
 			class Client
 				# Notify the parent controller that the child has become ready, with a brief status message.
 				# @parameters message [Hash] Additional details to send with the message.

@@ -9,6 +9,7 @@ require "socket"
 module Async
 	module Container
 		module Notify
+			# Represents a client that uses a local log file to communicate readiness, status changes, etc.
 			class Log < Client
 				# The name of the environment variable which contains the path to the notification socket.
 				NOTIFY_LOG = "NOTIFY_LOG"

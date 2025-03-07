@@ -8,22 +8,23 @@ module Async
 		# Tracks a key/value pair such that unmarked keys can be identified and cleaned up.
 		# This helps implement persistent processes that start up child processes per directory or configuration file. If those directories and/or configuration files are removed, the child process can then be cleaned up automatically, because those key/value pairs will not be marked when reloading the container.
 		class Keyed
+			# Initialize the keyed instance
+			#
+			# @parameter key [Object] The key.
+			# @parameter value [Object] The value.
 			def initialize(key, value)
 				@key = key
 				@value = value
 				@marked = true
 			end
 			
-			# The key. Normally a symbol or a file-system path.
-			# @attribute [Object]
+			# @attribute [Object] The key value, normally a symbol or a file-system path.
 			attr :key
 			
-			# The value. Normally a child instance of some sort.
-			# @attribute [Object]
+			# @attribute [Object] The value, normally a child instance.
 			attr :value
 			
-			# Has the instance been marked?
-			# @returns [Boolean]
+			# @returns [Boolean] True if the instance has been marked, during reloading the container.
 			def marked?
 				@marked
 			end
@@ -39,6 +40,8 @@ module Async
 			end
 			
 			# Stop the instance if it was not marked.
+			#
+			# @returns [Boolean] True if the instance was stopped.
 			def stop?
 				unless @marked
 					@value.stop

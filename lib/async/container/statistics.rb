@@ -9,6 +9,7 @@ module Async
 	module Container
 		# Tracks various statistics relating to child instances in a container.
 		class Statistics
+			# Initialize the statistics all to 0.
 			def initialize
 				@spawns = 0
 				@restarts = 0

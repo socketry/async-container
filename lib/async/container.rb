@@ -5,7 +5,9 @@
 
 require_relative "container/controller"
 
+# @namespace
 module Async
+	# @namespace
 	module Container
 	end
 end

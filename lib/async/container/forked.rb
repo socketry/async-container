@@ -35,12 +35,18 @@ module Async
 						return instance
 					end
 					
+					# Initialize the child process instance.
+					#
+					# @parameter io [IO] The IO object to use for communication.
 					def initialize(io)
 						super
 						
 						@name = nil
 					end
 					
+					# Generate a hash representation of the process.
+					#
+					# @returns [Hash] The process as a hash, including `process_id` and `name`.
 					def as_json(...)
 						{
 							process_id: ::Process.pid,
@@ -48,11 +54,15 @@ module Async
 						}
 					end
 					
+					# Generate a JSON representation of the process.
+					#
+					# @returns [String] The process as JSON.
 					def to_json(...)
 						as_json.to_json(...)
 					end
 					
 					# Set the process title to the specified value.
+					#
 					# @parameter value [String] The name of the process.
 					def name= value
 						@name = value
@@ -61,14 +71,17 @@ module Async
 						::Process.setproctitle(@name.to_s)
 					end
 					
-					# The name of the process.
-					# @returns [String]
+					# @returns [String] The name of the process.
 					def name
 						@name
 					end
 					
 					# Replace the current child process with a different one. Forwards arguments and options to {::Process.exec}.
 					# This method replaces the child process with the new executable, thus this method never returns.
+					#
+					# @parameter arguments [Array] The arguments to pass to the new process.
+					# @parameter ready [Boolean] If true, informs the parent process that the child is ready. Otherwise, the child process will need to use a notification protocol to inform the parent process that it is ready.
+					# @parameter options [Hash] Additional options to pass to {::Process.exec}.
 					def exec(*arguments, ready: true, **options)
 						if ready
 							self.ready!(status: "(exec)")
@@ -81,6 +94,7 @@ module Async
 				end
 				
 				# Fork a child process appropriate for a container.
+				#
 				# @returns [Process]
 				def self.fork(**options)
 					# $stderr.puts fork: caller
@@ -105,6 +119,13 @@ module Async
 					end
 				end
 				
+				# Spawn a child process using {::Process.spawn}.
+				#
+				# The child process will need to inform the parent process that it is ready using a notification protocol.
+				#
+				# @parameter arguments [Array] The arguments to pass to the new process.
+				# @parameter name [String] The name of the process.
+				# @parameter options [Hash] Additional options to pass to {::Process.spawn}.
 				def self.spawn(*arguments, name: nil, **options)
 					self.new(name: name) do |process|
 						Notify::Pipe.new(process.out).before_spawn(arguments, options)
