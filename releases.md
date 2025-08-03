@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.25.0
 
   - Introduce `async:container:notify:log:ready?` task for detecting process readiness.
 

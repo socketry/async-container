@@ -18,9 +18,17 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
   - [Getting Started](https://socketry.github.io/async-container/guides/getting-started/index) - This guide explains how to use `async-container` to build basic scalable systems.
 
+  - [Systemd Integration](https://socketry.github.io/async-container/guides/systemd-integration/index) - This guide explains how to use `async-container` with systemd to manage your application as a service.
+
+  - [Kubernetes Integration](https://socketry.github.io/async-container/guides/kubernetes-integration/index) - This guide explains how to use `async-container` with Kubernetes to manage your application as a containerized service.
+
 ## Releases
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
+
+### v0.25.0
+
+  - Introduce `async:container:notify:log:ready?` task for detecting process readiness.
 
 ### v0.24.0
 
