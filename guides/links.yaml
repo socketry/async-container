@@ -4,5 +4,3 @@ systemd-integration:
   order: 2
 kubernetes-integration:
   order: 3
-docker-integration:
-  order: 4
