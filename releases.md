@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Introduce `async:container:notify:log:ready?` task for detecting process readiness.
+
 ## v0.24.0
 
   - Add support for health check failure metrics.
