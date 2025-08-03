@@ -14,9 +14,16 @@ module Async
 				# The name of the environment variable which contains the path to the notification socket.
 				NOTIFY_LOG = "NOTIFY_LOG"
 				
+				# @returns [String] The path to the notification log file.
+				# @parameter environment [Hash] The environment variables, defaults to `ENV`.
+				def self.path(environment = ENV)
+					environment[NOTIFY_LOG]
+				end
+				
 				# Open a notification client attached to the current {NOTIFY_LOG} if possible.
+				# @parameter environment [Hash] The environment variables, defaults to `ENV`.
 				def self.open!(environment = ENV)
-					if path = environment.delete(NOTIFY_LOG)
+					if path = self.path(environment)
 						self.new(path)
 					end
 				end

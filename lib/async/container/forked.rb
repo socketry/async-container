@@ -189,6 +189,7 @@ module Async
 					"\#<#{self.class} name=#{@name.inspect} status=#{@status.inspect} pid=#{@pid.inspect}>"
 				end
 				
+				# @returns [String] A string representation of the process.
 				alias to_s inspect
 				
 				# Invoke {#terminate!} and then {#wait} for the child process to exit.
