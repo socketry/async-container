@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2019-2024, by Samuel Williams.
+# Copyright, 2019-2025, by Samuel Williams.
 
 require "async"
 
@@ -95,7 +95,7 @@ module Async
 						end
 						
 						container.wait
-					
+						
 						expect(container.statistics).to have_attributes(failures: be == 0)
 						
 						output.close

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2017-2024, by Samuel Williams.
+# Copyright, 2017-2025, by Samuel Williams.
 
 require_relative "error"
 
@@ -236,7 +236,7 @@ module Async
 						Console.debug(self, "Waiting for process to exit...", pid: @pid)
 						
 						_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
-
+						
 						while @status.nil?
 							sleep(0.1)
 							

@@ -9,7 +9,7 @@ require "async/container/a_container"
 
 describe Async::Container::Hybrid do
 	it_behaves_like Async::Container::AContainer
-	
+		
 	it "should be multiprocess" do
 		expect(subject).to be(:multiprocess?)
 	end

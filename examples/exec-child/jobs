@@ -8,7 +8,7 @@ require "async/container/notify"
 
 class Jobs
 	def self.start = self.new.start
-		
+	
 	def start
 		Console.info(self, "Starting jobs...")
 		
