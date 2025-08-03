@@ -19,7 +19,7 @@ module Async
 				def self.path(environment = ENV)
 					environment[NOTIFY_LOG]
 				end
-
+				
 				# Open a notification client attached to the current {NOTIFY_LOG} if possible.
 				# @parameter environment [Hash] The environment variables, defaults to `ENV`.
 				def self.open!(environment = ENV)
