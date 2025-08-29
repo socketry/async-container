@@ -21,6 +21,7 @@ module Async
 			end
 		end
 		
+		# Similar to {Terminate}, but represents `SIGKILL`.
 		class Kill < SignalException
 			SIGKILL = Signal.list["KILL"]
 			
