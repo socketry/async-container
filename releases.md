@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.26.0
 
 ### Production Reliability Improvements
 

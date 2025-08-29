@@ -26,6 +26,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.26.0
+
+  - [Production Reliability Improvements](https://socketry.github.io/async-container/releases/index#production-reliability-improvements)
+
 ### v0.25.0
 
   - Introduce `async:container:notify:log:ready?` task for detecting process readiness.
