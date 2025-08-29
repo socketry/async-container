@@ -187,7 +187,7 @@ module Async
 				# Invoke {#terminate!} and then {#wait} for the child thread to exit.
 				def close
 					self.terminate!
-					self.wait(timeout: 10.0) # Use a shorter timeout for close operations
+					self.wait
 				ensure
 					super
 				end
