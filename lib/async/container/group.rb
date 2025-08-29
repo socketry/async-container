@@ -165,7 +165,7 @@ module Async
 				end
 				
 				Console.debug(self, "Stopping all processes...", interrupt_timeout: interrupt_timeout, terminate_timeout: terminate_timeout)
-
+				
 				# If a timeout is specified, interrupt the children first:
 				if interrupt_timeout
 					clock = Async::Clock.start

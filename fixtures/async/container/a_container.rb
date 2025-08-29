@@ -246,6 +246,91 @@ module Async
 					expect(container.statistics).to have_attributes(failures: be > 0)
 				end
 			end
+			
+			with "broken children" do
+				it "can handle children that ignore termination with SIGKILL fallback" do
+					# Test behavior that works for both processes (signals) and threads (exceptions)
+					container.spawn(restart: false) do |instance|
+						instance.ready!
+						
+						# Ignore termination attempts in a way appropriate to the container type
+						if container.class.multiprocess?
+							# For multiprocess containers - ignore signals
+							Signal.trap(:INT) {}
+							Signal.trap(:TERM) {}
+							while true
+								sleep(0.1)
+							end
+						else
+							# For threaded containers - ignore exceptions
+							while true
+								begin
+									sleep(0.1)
+								rescue Async::Container::Interrupt, Async::Container::Terminate
+									# Ignore termination attempts
+								end
+							end
+						end
+					end
+					
+					container.wait_until_ready
+					
+					# Try to stop with a very short timeout to force escalation
+					start_time = Time.now
+					container.stop(0.1) # Very short timeout
+					end_time = Time.now
+					
+					# Should stop successfully via SIGKILL/thread termination
+					expect(container.size).to be == 0
+					
+					# Should not hang - escalation should work
+					expect(end_time - start_time).to be < 2.0
+				end
+				
+				it "can handle unresponsive children that close pipes but don't exit" do
+					container.spawn(restart: false) do |instance|
+						instance.ready!
+						
+						# Close communication pipe to simulate hung process:
+						begin
+							if instance.respond_to?(:out)
+								instance.out.close if instance.out && !instance.out.closed?
+							end
+						rescue
+							# Ignore close errors.
+						end
+						
+						# Become unresponsive:
+						if container.class.multiprocess?
+							# For multiprocess containers - ignore signals and close file descriptors:
+							Signal.trap(:INT) {}
+							Signal.trap(:TERM) {}
+							(4..256).each do |fd|
+								begin
+									IO.for_fd(fd).close
+								rescue
+									# Ignore errors
+								end
+							end
+							loop {} # Tight loop
+						else
+							# For threaded containers - just become unresponsive
+							loop {} # Tight loop, no exception handling
+						end
+					end
+					
+					container.wait_until_ready
+					
+					# Should not hang even with unresponsive children
+					start_time = Time.now
+					container.stop(1.0)
+					end_time = Time.now
+					
+					expect(container.size).to be == 0
+					# Should complete reasonably quickly via hang prevention
+					expect(end_time - start_time).to be < 5.0
+				end
+			end
 		end
 	end
 end
