@@ -119,36 +119,78 @@ module Async
 				end
 			end
 			
-			# Stop all child processes using {#terminate}.
-			# @parameter timeout [Boolean | Numeric | Nil] If specified, invoke a graceful shutdown using {#interrupt} first.
-			def stop(timeout = 1)
-				Console.debug(self, "Stopping all processes...", timeout: timeout)
-				# Use a default timeout if not specified:
-				timeout = 1 if timeout == true
-				
-				if timeout
-					start_time = Async::Clock.now
+			# Kill all running processes.
+			# This resumes the controlling fiber with an instance of {Kill}.
+			def kill
+				Console.info(self, "Sending kill to #{@running.size} running processes...")
+				@running.each_value do |fiber|
+					fiber.resume(Kill)
+				end
+			end
+			
+			private def wait_for_exit(clock, timeout)
+				while self.any?
+					duration = timeout - clock.total
 					
-					self.interrupt
-					
-					while self.any?
-						duration = Async::Clock.now - start_time
-						remaining = timeout - duration
-						
-						if remaining >= 0
-							self.wait_for_children(duration)
-						else
-							self.wait_for_children(0)
-							break
-						end
+					if duration >= 0
+						self.wait_for_children(duration)
+					else
+						self.wait_for_children(0)
+						break
 					end
 				end
+			end
+			
+			# Stop all child processes with a multi-phase shutdown sequence.
+			#
+			# A graceful shutdown performs the following sequence:
+			# 1. Send SIGINT and wait up to `interrupt_timeout` seconds
+			# 2. Send SIGTERM and wait up to `terminate_timeout` seconds  
+			# 3. Send SIGKILL and wait indefinitely for process cleanup
+			#
+			# If `graceful` is false, skips the SIGINT phase and goes directly to SIGTERM → SIGKILL.
+			#
+			# @parameter graceful [Boolean] Whether to send SIGINT first or skip directly to SIGTERM.
+			# @parameter interrupt_timeout [Numeric | Nil] Time to wait after SIGINT before escalating to SIGTERM.
+			# @parameter terminate_timeout [Numeric | Nil] Time to wait after SIGTERM before escalating to SIGKILL.
+			def stop(graceful = true, interrupt_timeout: 1, terminate_timeout: 1)
+				case graceful
+				when true
+					# Use defaults.
+				when false
+					interrupt_timeout = nil
+				when Numeric
+					interrupt_timeout = graceful
+					terminate_timeout = graceful
+				end
 				
-				# Terminate all children:
-				self.terminate if any?
+				Console.debug(self, "Stopping all processes...", interrupt_timeout: interrupt_timeout, terminate_timeout: terminate_timeout)
 				
-				# Wait for all children to exit:
-				self.wait
+				# If a timeout is specified, interrupt the children first:
+				if interrupt_timeout
+					clock = Async::Clock.start
+					
+					# Interrupt the children:
+					self.interrupt
+					
+					# Wait for the children to exit:
+					self.wait_for_exit(clock, interrupt_timeout)
+				end
+				
+				if terminate_timeout
+					clock = Async::Clock.start
+					
+					# If the children are still running, terminate them:
+					self.terminate
+					
+					# Wait for the children to exit:
+					self.wait_for_exit(clock, terminate_timeout)
+				end
+				
+				if any?
+					self.kill
+					self.wait
+				end
 			end
 			
 			# Wait for a message in the specified {Channel}.
@@ -165,6 +207,8 @@ module Async
 						channel.interrupt!
 					elsif result == Terminate
 						channel.terminate!
+					elsif result == Kill
+						channel.kill!
 					elsif result
 						yield result
 					elsif message = channel.receive
@@ -184,7 +228,7 @@ module Async
 				# This log is a big noisy and doesn't really provide a lot of useful information.
 				# Console.debug(self, "Waiting for children...", duration: duration, running: @running)
 				
-				if !@running.empty?
+				unless @running.empty?
 					# Maybe consider using a proper event loop here:
 					if ready = self.select(duration)
 						ready.each do |io|

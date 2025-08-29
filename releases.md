@@ -1,5 +1,17 @@
 # Releases
 
+## Unreleased
+
+### Production Reliability Improvements
+
+This release significantly improves container reliability by eliminating production hangs caused by unresponsive child processes.
+
+**SIGKILL Fallback Support**: Containers now automatically escalate to SIGKILL when child processes ignore SIGINT and SIGTERM signals. This prevents the critical production issue where containers would hang indefinitely waiting for uncooperative processes to exit.
+
+**Hang Prevention**: Individual child processes now have timeout-based hang prevention. If a process closes its notification pipe but doesn't actually exit, the container will detect this and escalate to SIGKILL after a reasonable timeout instead of hanging forever.
+
+**Improved Three-Phase Shutdown**: The `Group#stop()` method now uses a cleaner interrupt → terminate → kill escalation sequence with configurable timeouts for each phase, giving well-behaved processes multiple opportunities to shut down gracefully while ensuring unresponsive processes are eventually terminated.
+
 ## v0.25.0
 
   - Introduce `async:container:notify:log:ready?` task for detecting process readiness.
