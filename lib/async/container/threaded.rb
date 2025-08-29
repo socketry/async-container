@@ -187,7 +187,7 @@ module Async
 				# Invoke {#terminate!} and then {#wait} for the child thread to exit.
 				def close
 					self.terminate!
-					self.wait
+					self.wait(timeout: 10.0) # Use a shorter timeout for close operations
 				ensure
 					super
 				end
@@ -216,10 +216,20 @@ module Async
 				end
 				
 				# Wait for the thread to exit and return he exit status.
+				# @asynchronous This method may block.
+				#
+				# @parameter timeout [Numeric | Nil] Maximum time to wait before forceful termination.
 				# @returns [Status]
-				def wait
+				def wait(timeout = 0.1)
 					if @waiter
-						@waiter.join
+						Console.debug(self, "Waiting for thread to exit...", timeout: timeout)
+						
+						unless @waiter.join(timeout)
+							Console.warn(self) {"Thread #{@thread} is blocking, sending kill signal..."}
+							self.kill!
+							@waiter.join
+						end
+						
 						@waiter = nil
 					end
 					

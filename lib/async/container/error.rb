@@ -21,6 +21,15 @@ module Async
 			end
 		end
 		
+		class Kill < SignalException
+			SIGKILL = Signal.list["KILL"]
+			
+			# Create a new kill error.
+			def initialize
+				super(SIGKILL)
+			end
+		end
+		
 		# Similar to {Interrupt}, but represents `SIGHUP`.
 		class Restart < SignalException
 			SIGHUP = Signal.list["HUP"]

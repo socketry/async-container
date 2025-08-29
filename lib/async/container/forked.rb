@@ -231,20 +231,25 @@ module Async
 				# Wait for the child process to exit.
 				# @asynchronous This method may block.
 				#
+				# @parameter timeout [Numeric | Nil] Maximum time to wait before forceful termination.
 				# @returns [::Process::Status] The process exit status.
-				def wait
+				def wait(timeout = 0.1)
 					if @pid && @status.nil?
 						Console.debug(self, "Waiting for process to exit...", pid: @pid)
 						
 						_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 						
-						while @status.nil?
-							sleep(0.1)
+						if @status.nil?
+							sleep(timeout) if timeout
 							
 							_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 							
 							if @status.nil?
-								Console.warn(self) {"Process #{@pid} is blocking, has it exited?"}
+								Console.warn(self) {"Process #{@pid} is blocking, sending kill signal..."}
+								self.kill!
+								
+								# Wait for the process to exit:
+								_, @status = ::Process.wait2(@pid)
 							end
 						end
 					end

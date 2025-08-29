@@ -39,6 +39,25 @@ container.wait
 Console.debug "Finished."
 ```
 
+### Stopping Child Processes
+
+Containers provide three approaches for stopping child processes (or threads). When you call `container.stop()`, a progressive approach is used:
+
+- **Interrupt** means **"Please start shutting down gracefully"**. This is the gentlest shutdown request, giving applications maximum time to finish current work and cleanup resources.
+
+- **Terminate** means **"Shut down now"**. This is more urgent - the process should stop what it's doing and terminate promptly, but still has a chance to cleanup.
+
+- **Kill** means **"Die immediately"**. This forcefully terminates the process with no cleanup opportunity. This is the method of last resort.
+
+The escalation sequence follows this pattern:
+1. interrupt → wait for timeout → still running?
+2. terminate → wait for timeout → still running? 
+3. kill → process terminated.
+
+This gives well-behaved processes multiple opportunities to shut down gracefully, while ensuring that unresponsive processes are eventually killed.
+
+**Implementation Note:** For forked containers, these methods send Unix signals (`SIGINT`, `SIGTERM`, `SIGKILL`). For threaded containers, they use different mechanisms appropriate to threads. The container abstraction hides these implementation details.
+
 ## Controllers
 
 The controller provides the life-cycle management for one or more containers of processes. It provides behaviour like starting, restarting, reloading and stopping. You can see some [example implementations in Falcon](https://github.com/socketry/falcon/blob/master/lib/falcon/controller/). If the process running the controller receives `SIGHUP` it will recreate the container gracefully.
@@ -72,16 +91,12 @@ controller.run
 # If you send SIGHUP to this process, it will recreate the container.
 ```
 
-## Signal Handling
+### Controller Signal Handling
 
-`SIGINT` is the reload signal. You may send this to a program to request that it reload its configuration. The default behavior is to gracefully reload the container.
+Controllers are designed to run at the process level and are therefore responsible for processing signals. When your controller process receives these signals:
 
-`SIGINT` is the interrupt signal. The terminal sends it to the foreground process when the user presses **ctrl-c**. The default behavior is to terminate the process, but it can be caught or ignored. The intention is to provide a mechanism for an orderly, graceful shutdown.
+- `SIGHUP` → Gracefully reload the container (restart with new configuration).
+- `SIGINT` → Begin graceful shutdown of the entire controller and all children.
+- `SIGTERM` → Begin immediate shutdown of the controller and all children.
 
-`SIGQUIT` is the dump core signal. The terminal sends it to the foreground process when the user presses **ctrl-\\**. The default behavior is to terminate the process and dump core, but it can be caught or ignored. The intention is to provide a mechanism for the user to abort the process. You can look at `SIGINT` as "user-initiated happy termination" and `SIGQUIT` as "user-initiated unhappy termination."
-
-`SIGTERM` is the termination signal. The default behavior is to terminate the process, but it also can be caught or ignored. The intention is to kill the process, gracefully or not, but to first allow it a chance to cleanup.
-
-`SIGKILL` is the kill signal. The only behavior is to kill the process, immediately. As the process cannot catch the signal, it cannot cleanup, and thus this is a signal of last resort.
-
-`SIGSTOP` is the pause signal. The only behavior is to pause the process; the signal cannot be caught or ignored. The shell uses pausing (and its counterpart, resuming via `SIGCONT`) to implement job control.
+Ideally, do not send `SIGKILL` to a controller, as it will immediately terminate the controller without giving it a chance to gracefully shut down child processes. This can leave orphaned processes running and prevent proper cleanup.

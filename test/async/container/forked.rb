@@ -68,4 +68,77 @@ describe Async::Container::Forked do
 	it "should be multiprocess" do
 		expect(subject).to be(:multiprocess?)
 	end
+		
+	it "can handle children that ignore SIGTERM with SIGKILL fallback" do
+		# Create a child that ignores SIGINT and SIGTERM
+		container.spawn(restart: false) do |instance|
+			# Trap both SIGINT and SIGTERM to ignore them (like the example)
+			Signal.trap(:INT) {}
+			Signal.trap(:TERM) {}
+				
+			instance.ready!
+				
+			# Infinite loop that can only be stopped by SIGKILL
+			while true
+				sleep(0.1)
+			end
+		end
+			
+		container.wait_until_ready
+			
+		# Try to stop with a very short timeout
+		# This should first try SIGINT, then SIGTERM, then fall back to SIGKILL
+		start_time = Time.now
+		container.stop(0.1) # 100ms timeout - very short
+		end_time = Time.now
+			
+		# The container should stop successfully even though the child ignored signals
+		expect(container.size).to be == 0
+			
+		# It should not take too long (should not hang waiting for SIGTERM)
+		# Allow some buffer time for the SIGKILL fallback mechanism
+		expect(end_time - start_time).to be < 2.0
+	end
+		
+	it "can handle unresponsive children that close pipes but don't exit" do
+		# Simulate a production hang scenario where a child closes file descriptors
+		# but doesn't actually exit, becoming unresponsive
+		container.spawn(restart: false) do |instance|
+			# Ignore all signals
+			Signal.trap(:INT) {}
+			Signal.trap(:TERM) {}
+				
+			instance.ready!
+				
+			# Close all file descriptors above 3 (like the production hang scenario)
+			# This will close the notify pipe, making the parent think we've "exited"
+			(4..256).each do |fd|
+				begin
+					IO.for_fd(fd).close
+				rescue
+					# Ignore errors for non-existent file descriptors
+				end
+			end
+				
+			# Now become unresponsive (infinite loop without yielding)
+			while true
+				# Tight loop without sleep - process is unresponsive but still alive
+			end
+		end
+			
+		container.wait_until_ready
+			
+		# This should not hang - even with unresponsive processes, stop should work
+		start_time = Time.now
+		container.stop(2.0) # Give it a reasonable timeout for testing
+		end_time = Time.now
+			
+		# Container should stop successfully
+		expect(container.size).to be == 0
+			
+		# Should complete within the child's individual timeout + buffer (30s + 5s)
+		# The process is so unresponsive it needs the individual Child timeout to kill it
+		# This proves the hang prevention works - without it, this would hang forever
+		expect(end_time - start_time).to be < 35.0
+	end
 end if Async::Container.fork?

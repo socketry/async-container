@@ -6,22 +6,33 @@
 # Copyright, 2019, by Yuji Yaginuma.
 # Copyright, 2022, by Anton Sozontov.
 
-require "../lib/async/container"
+require_relative "../lib/async/container"
 
 Console.logger.debug!
 
 container = Async::Container.new
 
-Console.debug "Spawning 2 containers..."
+Console.debug "Spawning 2 children..."
 
 2.times do
-	container.spawn do |task|
-		Console.debug task, "Sleeping..."
-		sleep(2)
-		Console.debug task, "Waking up!"
+	container.spawn do |instance|
+		Signal.trap(:INT) {}
+		Signal.trap(:TERM) {}
+		
+		Console.debug instance, "Sleeping..."
+		while true
+			sleep
+		end
+		Console.debug instance, "Waking up!"
 	end
 end
 
 Console.debug "Waiting for container..."
-container.wait
+begin
+	container.wait
+rescue Interrupt
+	# Okay, done.
+ensure
+	container.stop(true)
+end
 Console.debug "Finished."
