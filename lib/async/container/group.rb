@@ -10,6 +10,12 @@ require_relative "error"
 
 module Async
 	module Container
+		# The default timeout for interrupting processes, before escalating to terminating.
+		INTERRUPT_TIMEOUT = ENV.fetch("ASYNC_CONTAINER_INTERRUPT_TIMEOUT", 10).to_f
+
+		# The default timeout for terminating processes, before escalating to killing.
+		TERMINATE_TIMEOUT = ENV.fetch("ASYNC_CONTAINER_TERMINATE_TIMEOUT", 10).to_f
+		
 		# Manages a group of running processes.
 		class Group
 			# Initialize an empty group.
@@ -153,7 +159,7 @@ module Async
 			# @parameter graceful [Boolean] Whether to send SIGINT first or skip directly to SIGTERM.
 			# @parameter interrupt_timeout [Numeric | Nil] Time to wait after SIGINT before escalating to SIGTERM.
 			# @parameter terminate_timeout [Numeric | Nil] Time to wait after SIGTERM before escalating to SIGKILL.
-			def stop(graceful = true, interrupt_timeout: 1, terminate_timeout: 1)
+			def stop(graceful = true, interrupt_timeout: INTERRUPT_TIMEOUT, terminate_timeout: TERMINATE_TIMEOUT)
 				case graceful
 				when true
 					# Use defaults.
