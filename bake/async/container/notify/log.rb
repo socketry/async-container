@@ -16,7 +16,6 @@ def ready?(path: Async::Container::Notify::Log.path)
 		File.foreach(path) do |line|
 			message = JSON.parse(line)
 			if message["ready"] == true
-				$stderr.puts "Service is ready: #{line}"
 				return true
 			end
 		end
