@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.27.0
 
   - Increased default interrupt timeout and terminate timeout to 10 seconds each.
   - Expose `ASYNC_CONTAINER_INTERRUPT_TIMEOUT` and `ASYNC_CONTAINER_TERMINATE_TIMEOUT` environment variables for configuring default timeouts.
