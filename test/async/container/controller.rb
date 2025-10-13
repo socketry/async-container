@@ -196,7 +196,8 @@ describe Async::Container::Controller do
 			
 			Process.kill(:HUP, pid)
 			
-			expect(input.read(2)).to be == "I."
+			# The ordering between the old child writing "I" and the new child writing "." is timing-dependent (blue-green restart starts the new container before stopping the old one). Accept either order.
+			expect(input.read(2)).to (be == "I.").or(be == ".I")
 		end
 		
 		it "exits gracefully when receiving SIGINT" do
