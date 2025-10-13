@@ -73,7 +73,7 @@ class Controller < Async::Container::Controller
 		# or Async::Container::Threaded.new
 		# or Async::Container::Hybrid.new
 	end
-		
+	
 	def setup(container)
 		container.run count: 2, restart: true do |instance|
 			while true
