@@ -12,6 +12,8 @@ group :maintenance, optional: true do
 	gem "bake-modernize"
 	gem "bake-releases"
 	
+	gem "agent-context"
+	
 	gem "utopia-project"
 end
 
@@ -22,6 +24,7 @@ group :test do
 	
 	gem "rubocop"
 	gem "rubocop-socketry"
+	gem "rubocop-md"
 	
 	gem "metrics"
 	

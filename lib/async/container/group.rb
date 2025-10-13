@@ -12,7 +12,7 @@ module Async
 	module Container
 		# The default timeout for interrupting processes, before escalating to terminating.
 		INTERRUPT_TIMEOUT = ENV.fetch("ASYNC_CONTAINER_INTERRUPT_TIMEOUT", 10).to_f
-
+		
 		# The default timeout for terminating processes, before escalating to killing.
 		TERMINATE_TIMEOUT = ENV.fetch("ASYNC_CONTAINER_TERMINATE_TIMEOUT", 10).to_f
 		

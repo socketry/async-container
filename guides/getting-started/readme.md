@@ -22,7 +22,7 @@ $ bundle add async-container
 A container represents a set of child processes (or threads) which are doing work for you.
 
 ``` ruby
-require 'async/container'
+require "async/container"
 
 Console.logger.debug!
 
@@ -63,7 +63,7 @@ This gives well-behaved processes multiple opportunities to shut down gracefully
 The controller provides the life-cycle management for one or more containers of processes. It provides behaviour like starting, restarting, reloading and stopping. You can see some [example implementations in Falcon](https://github.com/socketry/falcon/blob/master/lib/falcon/controller/). If the process running the controller receives `SIGHUP` it will recreate the container gracefully.
 
 ``` ruby
-require 'async/container'
+require "async/container"
 
 Console.logger.debug!
 
@@ -73,7 +73,7 @@ class Controller < Async::Container::Controller
 		# or Async::Container::Threaded.new
 		# or Async::Container::Hybrid.new
 	end
-	 
+		
 	def setup(container)
 		container.run count: 2, restart: true do |instance|
 			while true
