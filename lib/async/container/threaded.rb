@@ -222,16 +222,18 @@ module Async
 				# @returns [Status]
 				def wait(timeout = 0.1)
 					if @waiter
-						Console.debug(self, "Waiting for thread to exit...", timeout: timeout)
+						Console.debug(self, "Waiting for thread to exit...", child: {thread_id: @thread.object_id}, timeout: timeout)
 						
 						unless @waiter.join(timeout)
-							Console.warn(self) {"Thread #{@thread} is blocking, sending kill signal..."}
+							Console.warn(self, "Thread is blocking, sending kill signal...", child: {thread_id: @thread.object_id}, caller: caller_locations, timeout: timeout)
 							self.kill!
 							@waiter.join
 						end
 						
 						@waiter = nil
 					end
+					
+					Console.debug(self, "Thread exited.", child: {thread_id: @thread.object_id, status: @status})
 					
 					return @status
 				end

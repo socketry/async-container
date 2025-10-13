@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Log caller and timeout when waiting on a child instance to exit, if it blocks.
+
 ## v0.27.0
 
   - Increased default interrupt timeout and terminate timeout to 10 seconds each.

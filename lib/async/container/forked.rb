@@ -235,7 +235,7 @@ module Async
 				# @returns [::Process::Status] The process exit status.
 				def wait(timeout = 0.1)
 					if @pid && @status.nil?
-						Console.debug(self, "Waiting for process to exit...", pid: @pid)
+						Console.debug(self, "Waiting for process to exit...", child: {process_id: @pid}, timeout: timeout)
 						
 						_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 						
@@ -245,7 +245,7 @@ module Async
 							_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 							
 							if @status.nil?
-								Console.warn(self) {"Process #{@pid} is blocking, sending kill signal..."}
+								Console.warn(self, "Process is blocking, sending kill signal...", child: {process_id: @pid}, caller: caller_locations, timeout: timeout)
 								self.kill!
 								
 								# Wait for the process to exit:
@@ -254,7 +254,7 @@ module Async
 						end
 					end
 					
-					Console.debug(self, "Process exited.", pid: @pid, status: @status)
+					Console.debug(self, "Process exited.", child: {process_id: @pid, status: @status})
 					
 					return @status
 				end
