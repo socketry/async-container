@@ -139,6 +139,8 @@ module Async
 			# Stop the children instances.
 			# @parameter timeout [Boolean | Numeric] Whether to stop gracefully, or a specific timeout.
 			def stop(timeout = true)
+				Console.info(self, "Stopping container...", timeout: timeout, caller: caller_locations)
+
 				@running = false
 				@group.stop(timeout)
 				
@@ -184,6 +186,8 @@ module Async
 						
 						begin
 							status = @group.wait_for(child) do |message|
+								Console.info(self, "Message received from child.", child: child, message: message, running: @running)
+								
 								case message
 								when :health_check!
 									if health_check_timeout&.<(age_clock.total)
@@ -199,10 +203,10 @@ module Async
 						end
 						
 						if status.success?
-							Console.debug(self) {"#{child} exited with #{status}"}
+							Console.info(self, "Child exited successfully.", status: status, running: @running)
 						else
 							@statistics.failure!
-							Console.error(self, status: status)
+							Console.error(self, "Child exited with error!", status: status, running: @running)
 						end
 						
 						if restart
@@ -211,6 +215,11 @@ module Async
 							break
 						end
 					end
+				rescue => error
+					Console.error(self, "Failure during child process management!", exception: error, running: @running)
+					raise
+				ensure
+					Console.info(self, "Child process management loop exited.", running: @running)
 				end.resume
 				
 				return true

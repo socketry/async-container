@@ -91,11 +91,11 @@ module Async
 			# Start the container unless it's already running.
 			def start
 				unless @container
-					Console.info(self) {"Controller starting..."}
+					Console.info(self, "Controller starting...")
 					self.restart
 				end
 				
-				Console.info(self) {"Controller started..."}
+				Console.info(self, "Controller started...")
 			end
 			
 			# Stop the container if it's running.
@@ -111,9 +111,9 @@ module Async
 				if @container
 					@notify&.restarting!
 					
-					Console.debug(self) {"Restarting container..."}
+					Console.info(self, "Restarting container...")
 				else
-					Console.debug(self) {"Starting container..."}
+					Console.info(self, "Starting container...")
 				end
 				
 				container = self.create_container
@@ -127,13 +127,14 @@ module Async
 				end
 				
 				# Wait for all child processes to enter the ready state.
-				Console.debug(self, "Waiting for startup...")
+				Console.info(self, "Waiting for startup...")
 				container.wait_until_ready
-				Console.debug(self, "Finished startup.")
+				Console.info(self, "Finished startup.")
 				
 				if container.failed?
 					@notify&.error!("Container failed to start!")
 					
+					Console.info(self, "Stopping failed container...")
 					container.stop(false)
 					
 					raise SetupError, container
@@ -145,7 +146,7 @@ module Async
 				container = nil
 				
 				if old_container
-					Console.debug(self, "Stopping old container...")
+					Console.info(self, "Stopping old container...")
 					old_container&.stop(@graceful_stop)
 				end
 				
@@ -168,11 +169,11 @@ module Async
 				end
 				
 				# Wait for all child processes to enter the ready state.
-				Console.debug(self, "Waiting for startup...")
+				Console.info(self, "Waiting for startup...")
 				
 				@container.wait_until_ready
 				
-				Console.debug(self, "Finished startup.")
+				Console.info(self, "Finished startup.")
 				
 				if @container.failed?
 					@notify.error!("Container failed to reload!")
