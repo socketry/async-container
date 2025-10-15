@@ -56,6 +56,24 @@ module Async
 				@restarts += other.restarts
 				@failures += other.failures
 			end
+			
+			# Generate a hash representation of the statistics.
+			#
+			# @returns [Hash] The statistics as a hash.
+			def as_json(...)
+				{
+					spawns: @spawns,
+					restarts: @restarts,
+					failures: @failures,
+				}
+			end
+			
+			# Generate a JSON representation of the statistics.
+			#
+			# @returns [String] The statistics as JSON.
+			def to_json(...)
+				as_json.to_json(...)
+			end
 		end
 	end
 end

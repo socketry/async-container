@@ -179,9 +179,12 @@ module Async
 				
 				fiber do
 					while @running
-						child = self.start(name, &block)
+						Console.info(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
+						child = self.start(name, &block)
 						state = insert(key, child)
+						
+						Console.info(self, "Started child.", child: child, spawn: {key: key, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
 						# If a health check is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
 						if health_check_timeout

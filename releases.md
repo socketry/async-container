@@ -1,5 +1,10 @@
 # Releases
 
+## Unreleased
+
+  - Add log for starting child, including container statistics.
+  - Don't try to (log) "terminate 0 child processes" if there are none.
+
 ## v0.27.2
 
   - More logging, especially around failure cases.

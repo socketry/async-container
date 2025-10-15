@@ -183,7 +183,7 @@ module Async
 					self.wait_for_exit(clock, interrupt_timeout)
 				end
 				
-				if terminate_timeout
+				if terminate_timeout and self.any?
 					clock = Async::Clock.start
 					
 					# If the children are still running, terminate them:
@@ -231,8 +231,8 @@ module Async
 			protected
 			
 			def wait_for_children(duration = nil)
-				# This log is a big noisy and doesn't really provide a lot of useful information.
-				# Console.debug(self, "Waiting for children...", duration: duration, running: @running)
+				# This log is a bit noisy and doesn't really provide a lot of useful information:
+				Console.debug(self, "Waiting for children...", duration: duration, running: @running)
 				
 				unless @running.empty?
 					# Maybe consider using a proper event loop here:

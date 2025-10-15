@@ -260,7 +260,6 @@ module Async
 				end
 			end
 			
-			
 			# Start a named child process and execute the provided block in it.
 			# @parameter name [String] The name (title) of the child process.
 			# @parameter block [Proc] The block to execute in the child process.
