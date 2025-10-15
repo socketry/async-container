@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - More logging, especially around failure cases.
+
 ## v0.27.1
 
   - Log caller and timeout when waiting on a child instance to exit, if it blocks.

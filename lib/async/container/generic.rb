@@ -139,12 +139,18 @@ module Async
 			# Stop the children instances.
 			# @parameter timeout [Boolean | Numeric] Whether to stop gracefully, or a specific timeout.
 			def stop(timeout = true)
+				Console.info(self, "Stopping container...", timeout: timeout, caller: caller_locations)
 				@running = false
 				@group.stop(timeout)
 				
 				if @group.running?
-					Console.warn(self) {"Group is still running after stopping it!"}
+					Console.warn(self, "Group is still running after stopping it!")
+				else
+					Console.info(self, "Group has stopped.")
 				end
+			rescue => error
+				Console.error(self, "Error while stopping container!", exception: error)
+				raise
 			ensure
 				@running = true
 			end
@@ -165,7 +171,7 @@ module Async
 				name ||= UNNAMED
 				
 				if mark?(key)
-					Console.debug(self) {"Reusing existing child for #{key}: #{name}"}
+					Console.debug(self, "Reusing existing child.", child: {key: key, name: name})
 					return false
 				end
 				
@@ -199,10 +205,10 @@ module Async
 						end
 						
 						if status.success?
-							Console.debug(self) {"#{child} exited with #{status}"}
+							Console.info(self, "Child exited successfully.", status: status, running: @running)
 						else
 							@statistics.failure!
-							Console.error(self, status: status)
+							Console.error(self, "Child exited with error!", status: status, running: @running)
 						end
 						
 						if restart
@@ -211,6 +217,11 @@ module Async
 							break
 						end
 					end
+				rescue => error
+					Console.error(self, "Failure during child process management!", exception: error, running: @running)
+					raise
+				ensure
+					Console.info(self, "Child process management loop exited.", running: @running)
 				end.resume
 				
 				return true
