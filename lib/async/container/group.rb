@@ -100,9 +100,13 @@ module Async
 				end
 			end
 			
+			private def each_running(&block)
+				@running.values.each(&block)
+			end
+			
 			# Perform a health check on all running processes.
 			def health_check!
-				@running.each_value do |fiber|
+				each_running do |fiber|
 					fiber.resume(:health_check!)
 				end
 			end
@@ -111,7 +115,7 @@ module Async
 			# This resumes the controlling fiber with an instance of {Interrupt}.
 			def interrupt
 				Console.info(self, "Sending interrupt to #{@running.size} running processes...")
-				@running.each_value do |fiber|
+				each_running do |fiber|
 					fiber.resume(Interrupt)
 				end
 			end
@@ -120,7 +124,7 @@ module Async
 			# This resumes the controlling fiber with an instance of {Terminate}.
 			def terminate
 				Console.info(self, "Sending terminate to #{@running.size} running processes...")
-				@running.each_value do |fiber|
+				each_running do |fiber|
 					fiber.resume(Terminate)
 				end
 			end
@@ -129,7 +133,7 @@ module Async
 			# This resumes the controlling fiber with an instance of {Kill}.
 			def kill
 				Console.info(self, "Sending kill to #{@running.size} running processes...")
-				@running.each_value do |fiber|
+				each_running do |fiber|
 					fiber.resume(Kill)
 				end
 			end
