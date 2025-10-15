@@ -26,6 +26,11 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.27.3
+
+  - Add log for starting child, including container statistics.
+  - Don't try to (log) "terminate 0 child processes" if there are none.
+
 ### v0.27.2
 
   - More logging, especially around failure cases.
@@ -63,12 +68,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 
   - Fix compatibility between <code class="language-ruby">Async::Container::Hybrid</code> and the health check.
   - <code class="language-ruby">Async::Container::Generic\#initialize</code> passes unused arguments through to <code class="language-ruby">Async::Container::Group</code>.
-
-### v0.20.0
-
-  - Improve container signal handling reliability by using `Thread.handle_interrupt` except at known safe points.
-  - Improved logging when child process fails and container startup.
-  - [Add `health_check_timeout` for detecting hung processes.](https://socketry.github.io/async-container/releases/index#add-health_check_timeout-for-detecting-hung-processes.)
 
 ## Contributing
 
