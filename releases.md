@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.27.2
 
   - More logging, especially around failure cases.
 
