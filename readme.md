@@ -26,6 +26,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.27.4
+
+  - Fix race condition where `wait_for` could modify `@running` while it was being iterated over (`each_value`) during health checks.
+
 ### v0.27.3
 
   - Add log for starting child, including container statistics.
@@ -63,11 +67,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.21.0
 
   - Use `SIGKILL`/`Thread#kill` when the health check fails. In some cases, `SIGTERM` may not be sufficient to terminate a process because the signal can be ignored or the process may be in an uninterruptible state.
-
-### v0.20.1
-
-  - Fix compatibility between <code class="language-ruby">Async::Container::Hybrid</code> and the health check.
-  - <code class="language-ruby">Async::Container::Generic\#initialize</code> passes unused arguments through to <code class="language-ruby">Async::Container::Group</code>.
 
 ## Contributing
 

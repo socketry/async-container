@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.27.4
 
   - Fix race condition where `wait_for` could modify `@running` while it was being iterated over (`each_value`) during health checks.
 
