@@ -101,6 +101,7 @@ module Async
 			end
 			
 			private def each_running(&block)
+				# We create a copy of the values here, in case the block modifies the running set:
 				@running.values.each(&block)
 			end
 			
