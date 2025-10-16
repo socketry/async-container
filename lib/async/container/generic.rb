@@ -203,11 +203,13 @@ module Async
 									age_clock&.reset!
 								end
 							end
+						rescue => error
+							Console.error(self, "Error during child process management!", exception: error, running: @running)
 						ensure
 							delete(key, child)
 						end
 						
-						if status.success?
+						if status&.success?
 							Console.info(self, "Child exited successfully.", status: status, running: @running)
 						else
 							@statistics.failure!
@@ -220,9 +222,6 @@ module Async
 							break
 						end
 					end
-				rescue => error
-					Console.error(self, "Failure during child process management!", exception: error, running: @running)
-					raise
 				ensure
 					Console.info(self, "Child process management loop exited.", running: @running)
 				end.resume
