@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Fix race condition where `wait_for` could modify `@running` while it was being iterated over (`each_value`) during health checks.
+
 ## v0.27.3
 
   - Add log for starting child, including container statistics.
