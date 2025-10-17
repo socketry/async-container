@@ -26,6 +26,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.27.5
+
+  - Make the child handling more robust in the face of exceptions.
+
 ### v0.27.4
 
   - Fix race condition where `wait_for` could modify `@running` while it was being iterated over (`each_value`) during health checks.
@@ -63,10 +67,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.23.0
 
   - [Add support for `NOTIFY_LOG` for Kubernetes readiness probes.](https://socketry.github.io/async-container/releases/index#add-support-for-notify_log-for-kubernetes-readiness-probes.)
-
-### v0.21.0
-
-  - Use `SIGKILL`/`Thread#kill` when the health check fails. In some cases, `SIGTERM` may not be sufficient to terminate a process because the signal can be ignored or the process may be in an uninterruptible state.
 
 ## Contributing
 

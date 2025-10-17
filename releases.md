@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.27.5
 
   - Make the child handling more robust in the face of exceptions.
 
