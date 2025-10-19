@@ -124,8 +124,8 @@ module Async
 				# Initialize the thread.
 				#
 				# @parameter name [String] The name to use for the child thread.
-				def initialize(name: nil)
-					super()
+				def initialize(name: nil, **options)
+					super(**options)
 					
 					@status = nil
 					

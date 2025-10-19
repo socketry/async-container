@@ -136,8 +136,8 @@ module Async
 				
 				# Initialize the process.
 				# @parameter name [String] The name to use for the child process.
-				def initialize(name: nil)
-					super()
+				def initialize(name: nil, **options)
+					super(**options)
 					
 					@name = name
 					@status = nil

@@ -30,4 +30,14 @@ describe Async::Container::Notify::Pipe do
 		
 		expect(container.statistics).to have_attributes(failures: be == 0)
 	end
+	
+	it "writes data with one write call" do
+		output = StringIO.new
+		expect(output).to receive(:write).with("{\"ready\":true,\"status\":\"All systems go!\"}\n")
+		
+		client = Async::Container::Notify::Pipe.new(output)
+		client.send(ready: true, status: "All systems go!")
+		
+		expect(output.string).to be == "{\"ready\":true,\"status\":\"All systems go!\"}\n"
+	end
 end

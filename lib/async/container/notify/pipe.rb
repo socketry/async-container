@@ -63,9 +63,9 @@ module Async
 				# Formats the message using JSON and sends it to the parent controller.
 				# This is suitable for use with {Channel}.
 				def send(**message)
-					data = ::JSON.dump(message)
+					data = ::JSON.dump(message) << "\n"
 					
-					@io.puts(data)
+					@io.write(data)
 					@io.flush
 				end
 				

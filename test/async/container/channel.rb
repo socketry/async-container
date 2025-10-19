@@ -24,9 +24,17 @@ describe Async::Container::Channel do
 		expect(channel.receive).to be == {hello: "world"}
 	end
 	
-	it "can receive invalid JSON" do
+	it "ignores invalid JSON" do
 		channel.out.puts "Hello, World!"
 		
-		expect(channel.receive).to be == {line: "Hello, World!\n"}
+		expect(channel.receive).to be_nil
+	end
+	
+	with "timeout" do
+		let(:channel) {subject.new(timeout: 0.001)}
+		
+		it "fails gracefully on timeout" do
+			expect(channel.receive).to be_nil
+		end
 	end
 end
