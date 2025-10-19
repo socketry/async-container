@@ -1,0 +1,21 @@
+# Automatically generated context index for Utopia::Project guides.
+# Do not edit then files in this directory directly, instead edit the guides and then run `bake utopia:project:agent:context:update`.
+---
+description: Abstract container-based parallelism using threads and processes where
+  appropriate.
+metadata:
+  documentation_uri: https://socketry.github.io/async-container/
+  source_code_uri: https://github.com/socketry/async-container.git
+files:
+- path: getting-started.md
+  title: Getting Started
+  description: This guide explains how to use `async-container` to build basic scalable
+    systems.
+- path: systemd-integration.md
+  title: Systemd Integration
+  description: This guide explains how to use `async-container` with systemd to manage
+    your application as a service.
+- path: kubernetes-integration.md
+  title: Kubernetes Integration
+  description: This guide explains how to use `async-container` with Kubernetes to
+    manage your application as a containerized service.
