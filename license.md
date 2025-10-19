@@ -5,6 +5,7 @@ Copyright, 2019, by Yuji Yaginuma.
 Copyright, 2020, by Olle Jonsson.  
 Copyright, 2020, by Juan Antonio Martín Lucas.  
 Copyright, 2022, by Anton Sozontov.  
+Copyright, 2025, by Marc-André Cournoyer.  
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

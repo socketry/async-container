@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
 	spec.version = Async::Container::VERSION
 	
 	spec.summary = "Abstract container-based parallelism using threads and processes where appropriate."
-	spec.authors = ["Samuel Williams", "Olle Jonsson", "Anton Sozontov", "Juan Antonio Martín Lucas", "Yuji Yaginuma"]
+	spec.authors = ["Samuel Williams", "Olle Jonsson", "Anton Sozontov", "Juan Antonio Martín Lucas", "Marc-André Cournoyer", "Yuji Yaginuma"]
 	spec.license = "MIT"
 	
 	spec.cert_chain  = ["release.cert"]

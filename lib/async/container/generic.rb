@@ -2,6 +2,7 @@
 
 # Released under the MIT License.
 # Copyright, 2019-2025, by Samuel Williams.
+# Copyright, 2025, by Marc-André Cournoyer.
 
 require "etc"
 require "async/clock"
