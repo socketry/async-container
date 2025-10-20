@@ -180,12 +180,12 @@ module Async
 				
 				fiber do
 					while @running
-						Console.info(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
+						Console.debug(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
 						child = self.start(name, &block)
 						state = insert(key, child)
 						
-						Console.info(self, "Started child.", child: child, spawn: {key: key, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
+						Console.debug(self, "Started child.", child: child, spawn: {key: key, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
 						# If a health check is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
 						if health_check_timeout
@@ -213,7 +213,7 @@ module Async
 						end
 						
 						if status&.success?
-							Console.info(self, "Child exited successfully.", status: status, running: @running)
+							Console.debug(self, "Child exited successfully.", status: status, running: @running)
 						else
 							@statistics.failure!
 							Console.error(self, "Child exited with error!", status: status, running: @running)
@@ -225,8 +225,6 @@ module Async
 							break
 						end
 					end
-				ensure
-					Console.info(self, "Child process management loop exited.", running: @running)
 				end.resume
 				
 				return true
