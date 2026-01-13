@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Introduce `Client#healthy!` for sending health check messages.
+
 ## v0.28.0
 
   - Add `startup_timeout` parameter to `spawn` and `run` methods for detecting processes that hang during startup and never become ready.

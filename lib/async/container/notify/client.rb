@@ -17,6 +17,12 @@ module Async
 					send(ready: true, **message)
 				end
 				
+				# Notify the parent controller that the child is healthy.
+				# @parameters message [Hash] Additional details to send with the message.
+				def healthy!(**message)
+					send(healthy: true, **message)
+				end
+				
 				# Notify the parent controller that the child is reloading.
 				# @parameters message [Hash] Additional details to send with the message.
 				def reloading!(**message)

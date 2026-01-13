@@ -51,6 +51,34 @@ describe Async::Container::Notify do
 		end
 	end
 		
+	with "#healthy!" do
+		it "sends healthy message" do
+			context = server.bind
+				
+			client.healthy!
+				
+			message = context.receive
+				
+			expect(message).to have_keys(
+				healthy: be == true
+			)
+		end
+			
+		it "sends healthy message with additional details" do
+			context = server.bind
+				
+			client.healthy!(status: "All systems operational", uptime: 3600)
+				
+			message = context.receive
+				
+			expect(message).to have_keys(
+				healthy: be == true,
+				status: be == "All systems operational",
+				uptime: be == 3600
+			)
+		end
+	end
+		
 	with "#send" do
 		it "sends message" do
 			context = server.bind
