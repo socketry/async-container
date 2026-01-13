@@ -1,9 +1,9 @@
 # Releases
 
-## Unreleased
+## v0.28.0
 
-- Add `startup_timeout` parameter to `spawn` and `run` methods for detecting processes that hang during startup and never become ready.
-- Health check timeout now only applies after a process becomes ready, preventing premature timeouts for slow-starting applications.
+  - Add `startup_timeout` parameter to `spawn` and `run` methods for detecting processes that hang during startup and never become ready.
+  - Health check timeout now only applies after a process becomes ready, preventing premature timeouts for slow-starting applications.
 
 ## v0.27.5
 

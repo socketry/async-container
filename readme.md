@@ -26,6 +26,11 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.28.0
+
+  - Add `startup_timeout` parameter to `spawn` and `run` methods for detecting processes that hang during startup and never become ready.
+  - Health check timeout now only applies after a process becomes ready, preventing premature timeouts for slow-starting applications.
+
 ### v0.27.5
 
   - Make the child handling more robust in the face of exceptions.
@@ -63,10 +68,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.24.0
 
   - Add support for health check failure metrics.
-
-### v0.23.0
-
-  - [Add support for `NOTIFY_LOG` for Kubernetes readiness probes.](https://socketry.github.io/async-container/releases/index#add-support-for-notify_log-for-kubernetes-readiness-probes.)
 
 ## Contributing
 

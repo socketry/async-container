@@ -58,6 +58,48 @@ This gives well-behaved processes multiple opportunities to shut down gracefully
 
 **Implementation Note:** For forked containers, these methods send Unix signals (`SIGINT`, `SIGTERM`, `SIGKILL`). For threaded containers, they use different mechanisms appropriate to threads. The container abstraction hides these implementation details.
 
+### Health Checking and Timeouts
+
+Containers can monitor child processes to detect hung or unresponsive processes using two timeout mechanisms:
+
+- **`startup_timeout`**: Maximum time a process can take to become ready (call `instance.ready!`) before being terminated. This detects processes that hang during startup.
+- **`health_check_timeout`**: Maximum time between health check messages after a process has become ready. This detects processes that stop responding after they've started.
+
+Both timeouts use a single clock that starts when the process starts. The clock resets when the process becomes ready, transitioning from startup timeout monitoring to health check timeout monitoring.
+
+``` ruby
+require "async/container"
+
+container = Async::Container.new
+
+container.run(
+	count: 2,
+	restart: true,
+	# Allow up to 60 seconds for startup:
+	startup_timeout: 60,
+	# Require health checks every 30 seconds after ready:
+	health_check_timeout: 30
+) do |instance|
+	# Send status updates during startup:
+	instance.status!("Preparing...")
+	
+	# Do initialization work...
+	
+	# Signal readiness:
+	instance.ready!
+	
+	# After ready, send periodic health checks:
+	while true
+		instance.ready!
+		sleep(10)
+	end
+end
+
+container.wait
+```
+
+**Note:** Any message sent through the notification pipe (including `status!` and `ready!`) resets the timeout clock. This allows processes to take time during startup while still detecting hung processes.
+
 ## Controllers
 
 The controller provides the life-cycle management for one or more containers of processes. It provides behaviour like starting, restarting, reloading and stopping. You can see some [example implementations in Falcon](https://github.com/socketry/falcon/blob/master/lib/falcon/controller/). If the process running the controller receives `SIGHUP` it will recreate the container gracefully.
