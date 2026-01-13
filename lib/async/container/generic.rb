@@ -163,12 +163,20 @@ module Async
 				child.kill!
 			end
 			
+			protected def startup_failed!(child, age_clock, startup_timeout)
+				Console.warn(self, "Child failed startup!", child: child, age: age_clock.total, startup_timeout: startup_timeout)
+				
+				# If the child has failed the startup, we assume the worst and kill it immediately:
+				child.kill!
+			end
+			
 			# Spawn a child instance into the container.
 			# @parameter name [String] The name of the child instance.
 			# @parameter restart [Boolean] Whether to restart the child instance if it fails.
 			# @parameter key [Symbol] A key used for reloading child instances.
 			# @parameter health_check_timeout [Numeric | Nil] The maximum time a child instance can run without updating its state, before it is terminated as unhealthy.
-			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, &block)
+			# @parameter startup_timeout [Numeric | Nil] The maximum time a child instance can run without becoming ready, before it is terminated as unhealthy.
+			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, startup_timeout: nil, &block)
 				name ||= UNNAMED
 				
 				if mark?(key)
@@ -187,8 +195,8 @@ module Async
 						
 						Console.debug(self, "Started child.", child: child, spawn: {key: key, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
-						# If a health check is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
-						if health_check_timeout
+						# If a health check or startup timeout is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
+						if health_check_timeout || startup_timeout
 							age_clock = state[:age] = Clock.start
 						end
 						
@@ -198,12 +206,28 @@ module Async
 							status = @group.wait_for(child) do |message|
 								case message
 								when :health_check!
-									if health_check_timeout&.<(age_clock.total)
-										health_check_failed!(child, age_clock, health_check_timeout)
+									if state[:ready]
+										# If a health check timeout is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
+										if health_check_timeout
+											if health_check_timeout < age_clock.total
+												health_check_failed!(child, age_clock, health_check_timeout)
+											end
+										end
+									else
+										# If a startup timeout is specified, we will monitor the child process and terminate it if it does not become ready within the specified time.
+										if startup_timeout
+											if startup_timeout < age_clock.total
+												startup_failed!(child, age_clock, startup_timeout)
+											end
+										end
 									end
 								else
 									state.update(message)
-									age_clock&.reset!
+									
+									# Reset the age clock if the child has become ready:
+									if state[:ready]
+										age_clock&.reset!
+									end
 								end
 							end
 						rescue => error

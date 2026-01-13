@@ -231,7 +231,8 @@ module Async
 				end
 				
 				it "can kill a child process even if it ignores exceptions/signals" do
-					container.spawn(health_check_timeout: 1.0) do |instance|
+					# This process never calls ready!, so we need startup_timeout to kill it
+					container.spawn(health_check_timeout: 1.0, startup_timeout: 1.0) do |instance|
 						while true
 							begin
 								sleep 1
@@ -244,6 +245,93 @@ module Async
 					container.wait
 					
 					expect(container.statistics).to have_attributes(failures: be > 0)
+				end
+			end
+			
+			with "startup_timeout:" do
+				let(:container) {subject.new(health_check_interval: 1.0)}
+				
+				it "should not terminate a child process if it becomes ready within the startup timeout" do
+					container.spawn(startup_timeout: 2.0) do |instance|
+						instance.status!("Starting...")
+						sleep(0.5)
+						
+						instance.status!("Preparing...")
+						sleep(0.5)
+						
+						instance.ready!
+						
+						# Keep running
+						sleep(1)
+					end
+					
+					container.wait
+					
+					expect(container.statistics).to have_attributes(failures: be == 0)
+				end
+				
+				it "can terminate a child process if it does not become ready within the startup timeout" do
+					container.spawn(startup_timeout: 1.0) do |instance|
+						instance.status!("Starting...")
+						
+						# Never call ready! - should be killed by startup timeout
+						sleep
+					end
+					
+					container.wait
+					
+					expect(container.statistics).to have_attributes(failures: be > 0)
+				end
+				
+				it "can terminate a child process that sends status messages but never becomes ready" do
+					container.spawn(startup_timeout: 1.0) do |instance|
+						# Send status messages but never become ready
+						while true
+							instance.status!("Still starting...")
+							sleep(0.3)
+						end
+					end
+					
+					container.wait
+					
+					expect(container.statistics).to have_attributes(failures: be > 0)
+				end
+				
+				it "transitions from startup timeout to health check timeout after becoming ready" do
+					container.spawn(startup_timeout: 2.0, health_check_timeout: 1.0) do |instance|
+						instance.status!("Starting...")
+						sleep(0.5)
+						
+						instance.ready!
+						
+						# After becoming ready, health_check_timeout should apply
+						# Don't send any more messages - should be killed by health check timeout
+						sleep
+					end
+					
+					container.wait
+					
+					expect(container.statistics).to have_attributes(failures: be > 0)
+				end
+				
+				it "resets the clock when the child becomes ready" do
+					container.spawn(startup_timeout: 1.5, health_check_timeout: 1.0) do |instance|
+						instance.status!("Starting...")
+						sleep(1.0) # Use up most of startup timeout
+						
+						instance.ready! # Clock should reset here
+						
+						# After ready, health_check_timeout applies (1.0 seconds)
+						# Send ready! messages periodically to stay alive
+						5.times do
+							sleep(0.4)
+							instance.ready!
+						end
+					end
+					
+					container.wait
+					
+					expect(container.statistics).to have_attributes(failures: be == 0)
 				end
 			end
 			
