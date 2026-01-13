@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2019-2025, by Samuel Williams.
+# Copyright, 2019-2026, by Samuel Williams.
 
 require "async"
 
@@ -344,8 +344,8 @@ module Async
 						# Ignore termination attempts in a way appropriate to the container type
 						if container.class.multiprocess?
 							# For multiprocess containers - ignore signals
-							Signal.trap(:INT) {}
-							Signal.trap(:TERM) {}
+							Signal.trap(:INT){}
+							Signal.trap(:TERM){}
 							while true
 								sleep(0.1)
 							end
@@ -391,8 +391,8 @@ module Async
 						# Become unresponsive:
 						if container.class.multiprocess?
 							# For multiprocess containers - ignore signals and close file descriptors:
-							Signal.trap(:INT) {}
-							Signal.trap(:TERM) {}
+							Signal.trap(:INT){}
+							Signal.trap(:TERM){}
 							(4..256).each do |fd|
 								begin
 									IO.for_fd(fd).close
@@ -403,7 +403,7 @@ module Async
 							loop {} # Tight loop
 						else
 							# For threaded containers - just become unresponsive
-							loop {} # Tight loop, no exception handling
+							loop{} # Tight loop, no exception handling
 						end
 					end
 					

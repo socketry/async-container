@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2024, by Samuel Williams.
+# Copyright, 2024-2026, by Samuel Williams.
 
 require "../../lib/async/container"
 require "io/endpoint/host_endpoint"
@@ -29,7 +29,7 @@ class Controller < Async::Container::Controller
 	end
 	
 	def start
-		Console.debug(self) {"Binding to #{@endpoint}"}
+		Console.debug(self){"Binding to #{@endpoint}"}
 		@bound_endpoint = Sync{@endpoint.bound}
 		
 		super
@@ -38,12 +38,12 @@ class Controller < Async::Container::Controller
 	def setup(container)
 		container.run count: 2, restart: true do |instance|
 			SignalWrapper.trap(:INT) do
-				Console.debug(self) {"Closing bound instance..."}
+				Console.debug(self){"Closing bound instance..."}
 				@bound_endpoint.close
 			end
 			
 			Sync do |task|
-				Console.info(self) {"Starting bound instance..."}
+				Console.info(self){"Starting bound instance..."}
 				
 				instance.ready!
 				

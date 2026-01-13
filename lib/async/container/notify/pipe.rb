@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2025, by Samuel Williams.
+# Copyright, 2020-2026, by Samuel Williams.
 # Copyright, 2020, by Juan Antonio Martín Lucas.
 
 require_relative "client"
@@ -22,7 +22,7 @@ module Async
 						self.new(::IO.for_fd(descriptor.to_i))
 					end
 				rescue Errno::EBADF => error
-					Console.error(self) {error}
+					Console.error(self){error}
 					
 					return nil
 				end

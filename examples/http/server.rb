@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2022-2024, by Samuel Williams.
+# Copyright, 2022-2026, by Samuel Williams.
 
 require "async/container"
 
@@ -14,7 +14,7 @@ container = Async::Container::Forked.new
 endpoint = Async::HTTP::Endpoint.parse("http://localhost:9292")
 bound_endpoint = Sync{endpoint.bound}
 
-Console.info(endpoint) {"Bound to #{bound_endpoint.inspect}"}
+Console.info(endpoint){"Bound to #{bound_endpoint.inspect}"}
 
 GC.start
 GC.compact if GC.respond_to?(:compact)
@@ -25,7 +25,7 @@ container.run(count: 16, restart: true) do
 			Protocol::HTTP::Response[200, {}, ["Hello World"]]
 		end
 		
-		Console.info(server) {"Starting server..."}
+		Console.info(server){"Starting server..."}
 		
 		server.run
 		

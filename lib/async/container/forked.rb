@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2017-2025, by Samuel Williams.
+# Copyright, 2017-2026, by Samuel Williams.
 
 require_relative "error"
 
@@ -101,9 +101,9 @@ module Async
 					self.new(**options) do |process|
 						::Process.fork do
 							# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
-							Signal.trap(:INT) {::Thread.current.raise(Interrupt)}
-							Signal.trap(:TERM) {::Thread.current.raise(Terminate)}
-							Signal.trap(:HUP) {::Thread.current.raise(Restart)}
+							Signal.trap(:INT){::Thread.current.raise(Interrupt)}
+							Signal.trap(:TERM){::Thread.current.raise(Terminate)}
+							Signal.trap(:HUP){::Thread.current.raise(Restart)}
 							
 							# This could be a configuration option:
 							::Thread.handle_interrupt(SignalException => :immediate) do

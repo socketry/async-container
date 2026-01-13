@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright, 2017-2025, by Samuel Williams.  
+Copyright, 2017-2026, by Samuel Williams.  
 Copyright, 2019, by Yuji Yaginuma.  
 Copyright, 2020, by Olle Jonsson.  
 Copyright, 2020, by Juan Antonio Martín Lucas.  

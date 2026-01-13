@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2024, by Samuel Williams.
+# Copyright, 2020-2026, by Samuel Williams.
 
 require_relative "client"
 
@@ -25,7 +25,7 @@ module Async
 				
 				# Send a message to the console.
 				def send(level: :info, **message)
-					@logger.public_send(level, self) {message}
+					@logger.public_send(level, self){message}
 				end
 				
 				# Send an error message to the console.

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2018-2025, by Samuel Williams.
+# Copyright, 2018-2026, by Samuel Williams.
 
 require_relative "error"
 require_relative "best"
@@ -160,7 +160,7 @@ module Async
 			def reload
 				@notify&.reloading!
 				
-				Console.info(self) {"Reloading container: #{@container}..."}
+				Console.info(self){"Reloading container: #{@container}..."}
 				
 				begin
 					self.setup(@container)

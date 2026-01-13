@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2024, by Samuel Williams.
+# Copyright, 2020-2026, by Samuel Williams.
 # Copyright, 2020, by Olle Jonsson.
 
 class Threaded
@@ -60,8 +60,8 @@ class Forked
 		@status = nil
 		
 		@pid = Process.fork do
-			Signal.trap(:INT) {::Thread.current.raise(Interrupt)}
-			Signal.trap(:TERM) {::Thread.current.raise(Terminate)}
+			Signal.trap(:INT){::Thread.current.raise(Interrupt)}
+			Signal.trap(:TERM){::Thread.current.raise(Terminate)}
 			
 			@channel.in.close
 			

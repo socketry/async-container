@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2017-2025, by Samuel Williams.
+# Copyright, 2017-2026, by Samuel Williams.
 
 require_relative "generic"
 require_relative "channel"
@@ -274,7 +274,7 @@ module Async
 				# Invoked by the @waiter thread to indicate the outcome of the child thread.
 				def finished(error = nil)
 					if error
-						Console.error(self) {error}
+						Console.error(self){error}
 					end
 					
 					@status ||= Status.new(error)

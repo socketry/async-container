@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2025, by Samuel Williams.
+# Copyright, 2025-2026, by Samuel Williams.
 
 require "async/container/group"
 require "async/container/channel"
@@ -18,8 +18,8 @@ describe Async::Container::Group do
 			channel1 = Async::Container::Channel.new
 			channel2 = Async::Container::Channel.new
 			
-			fiber1 = Fiber.new {Fiber.yield}
-			fiber2 = Fiber.new {Fiber.yield}
+			fiber1 = Fiber.new{Fiber.yield}
+			fiber2 = Fiber.new{Fiber.yield}
 			
 			fiber1.resume
 			fiber2.resume
@@ -38,7 +38,7 @@ describe Async::Container::Group do
 		
 		it "returns true when processes are running" do
 			channel = Async::Container::Channel.new
-			fiber = Fiber.new {Fiber.yield}
+			fiber = Fiber.new{Fiber.yield}
 			fiber.resume
 			
 			group.running[channel.in] = fiber
@@ -54,7 +54,7 @@ describe Async::Container::Group do
 		
 		it "returns true when processes are running" do
 			channel = Async::Container::Channel.new
-			fiber = Fiber.new {Fiber.yield}
+			fiber = Fiber.new{Fiber.yield}
 			fiber.resume
 			
 			group.running[channel.in] = fiber
@@ -70,7 +70,7 @@ describe Async::Container::Group do
 		
 		it "returns false when processes are running" do
 			channel = Async::Container::Channel.new
-			fiber = Fiber.new {Fiber.yield}
+			fiber = Fiber.new{Fiber.yield}
 			fiber.resume
 			
 			group.running[channel.in] = fiber
@@ -87,7 +87,7 @@ describe Async::Container::Group do
 		
 		it "shows the number of running processes" do
 			channel = Async::Container::Channel.new
-			fiber = Fiber.new {Fiber.yield}
+			fiber = Fiber.new{Fiber.yield}
 			fiber.resume
 			
 			group.running[channel.in] = fiber

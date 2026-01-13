@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2024, by Samuel Williams.
+# Copyright, 2020-2026, by Samuel Williams.
 
 require "async"
 require "async/container"
@@ -39,12 +39,12 @@ container = Async::Container.new
 container.spawn do |instance|
 	Async do
 		queue = 500_000.times.to_a
-		Console.info(self) {"Hosting the queue..."}
+		Console.info(self){"Hosting the queue..."}
 		
 		instance.ready!
 		
 		bound_endpoint.accept do |peer|
-			Console.info(self) {"Incoming connection from #{peer}..."}
+			Console.info(self){"Incoming connection from #{peer}..."}
 			
 			packer = wrapper.packer(peer)
 			unpacker = wrapper.unpacker(peer)
@@ -62,9 +62,9 @@ container.spawn do |instance|
 						break
 					end
 				when :status
-					Console.info("Job Status") {arguments}
+					Console.info("Job Status"){arguments}
 				else
-					Console.warn(self) {"Unhandled command: #{command}#{arguments.inspect}"}
+					Console.warn(self){"Unhandled command: #{command}#{arguments.inspect}"}
 				end
 			end
 		end
@@ -92,7 +92,7 @@ container.run do |instance|
 					packer.write([:ready])
 					packer.flush
 				else
-					Console.warn(self) {"Unhandled command: #{command}#{arguments.inspect}"}
+					Console.warn(self){"Unhandled command: #{command}#{arguments.inspect}"}
 				end
 			end
 		end
@@ -101,4 +101,4 @@ end
 
 container.wait
 
-Console.info(self) {"Done!"}
+Console.info(self){"Done!"}
