@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.29.0
 
   - Introduce `Client#healthy!` for sending health check messages.
 

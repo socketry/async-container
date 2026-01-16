@@ -26,6 +26,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.29.0
+
+  - Introduce `Client#healthy!` for sending health check messages.
+
 ### v0.28.0
 
   - Add `startup_timeout` parameter to `spawn` and `run` methods for detecting processes that hang during startup and never become ready.
@@ -64,10 +68,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.25.0
 
   - Introduce `async:container:notify:log:ready?` task for detecting process readiness.
-
-### v0.24.0
-
-  - Add support for health check failure metrics.
 
 ## Contributing
 
