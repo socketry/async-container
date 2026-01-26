@@ -91,7 +91,8 @@ module Async
 				@group.running?
 			end
 			
-			# Sleep until some state change occurs.
+			# Sleep until some state change occurs or the specified duration elapses.
+			#
 			# @parameter duration [Numeric] the maximum amount of time to sleep for.
 			def sleep(duration = nil)
 				@group.sleep(duration)
@@ -140,7 +141,7 @@ module Async
 			# Stop the children instances.
 			# @parameter timeout [Boolean | Numeric] Whether to stop gracefully, or a specific timeout.
 			def stop(timeout = true)
-				Console.info(self, "Stopping container...", timeout: timeout, caller: caller_locations)
+				Console.debug(self, "Stopping container...", timeout: timeout)
 				@running = false
 				@group.stop(timeout)
 				
