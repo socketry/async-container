@@ -16,11 +16,12 @@ describe Async::Container::Notify do
 	it "can send and receive messages" do
 		context = server.bind
 			
-		client.send(true: true, false: false, hello: "world")
+		client.send(hello: "world", count: 42)
 			
 		message = context.receive
 			
-		expect(message).to be == {true: true, false: false, hello: "world"}
+		# Custom fields are transmitted as strings per the systemd protocol
+		expect(message).to be == {hello: "world", count: "42"}
 	end
 		
 	with "#ready!" do
@@ -74,7 +75,7 @@ describe Async::Container::Notify do
 			expect(message).to have_keys(
 				healthy: be == true,
 				status: be == "All systems operational",
-				uptime: be == 3600
+				uptime: be == "3600"
 			)
 		end
 	end

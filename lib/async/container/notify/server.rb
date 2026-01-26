@@ -7,6 +7,7 @@
 require "tmpdir"
 require "socket"
 require "securerandom"
+require "set"
 
 module Async
 	module Container
@@ -14,6 +15,20 @@ module Async
 			# A simple UDP server that can be used to receive messages from a child process, tracking readiness, status changes, etc.
 			class Server
 				MAXIMUM_MESSAGE_SIZE = 4096
+				
+				# Fields from the systemd sd_notify protocol that use "0"/"1" for boolean values.
+				# See: https://www.freedesktop.org/software/systemd/man/sd_notify.html
+				BOOLEAN_FIELDS = Set[
+					:ready,
+					:reloading,
+					:stopping,
+					:fdstore,
+					:fdstoreremove,
+					:fdpoll,
+					:barrier,
+					:watchdog, # Note: also accepts "trigger" as a string value.
+					:healthy, # Extension: not in standard systemd protocol.
+				].freeze
 				
 				# Parse a message, according to the `sd_notify` protocol.
 				#
@@ -29,11 +44,15 @@ module Async
 						
 						key = key.downcase.to_sym
 						
-						if value == "0"
-							value = false
-						elsif value == "1"
-							value = true
+						if BOOLEAN_FIELDS.include?(key)
+							# Convert "0"/"1" to boolean for known systemd boolean fields:
+							if value == "0"
+								value = false
+							elsif value == "1"
+								value = true
+							end
 						elsif key == :errno and value =~ /\A\-?\d+\z/
+							# Convert errno to integer:
 							value = Integer(value)
 						end
 						
