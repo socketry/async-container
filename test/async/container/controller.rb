@@ -120,19 +120,22 @@ describe Async::Container::Controller do
 			super
 		end
 		
-		it "has graceful shutdown" do
+		it "attempts graceful shutdown then escalates to SIGKILL" do
 			expect(input.gets).to be == "Ready...\n"
 			start_time = input.gets.to_f
 			
+			clock = Async::Clock.start
 			Process.kill(:INT, @pid)
 			
 			expect(input.gets).to be == "Graceful shutdown...\n"
 			graceful_shutdown_time = input.gets.to_f
 			
-			expect(input.gets).to be == "Exiting...\n"
-			exit_time = input.gets.to_f
+			# Since the child doesn't exit gracefully (Signal.trap restores handler),
+			# it will receive SIGKILL after the timeout, so the ensure block won't run:
+			expect(input.gets).to be_nil
 			
-			expect(exit_time - graceful_shutdown_time).to be >= 0.01
+			# Verify that graceful shutdown was attempted (waited at least timeout duration):
+			expect(clock.total).to be >= 0.01
 		end
 	end
 	
@@ -164,7 +167,8 @@ describe Async::Container::Controller do
 			
 			Process.kill(:INT, @pid)
 			
-			expect(input.gets).to be == "Exiting...\n"
+			# It was killed:
+			expect(input.gets).to be_nil
 		end
 	end
 	
@@ -213,7 +217,8 @@ describe Async::Container::Controller do
 			
 			Process.kill(:TERM, pid)
 			
-			expect(input.read).to be == "T"
+			# SIGTERM now behaves like SIGINT (graceful)
+			expect(input.read).to be == "I"
 		end
 	end
 	

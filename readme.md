@@ -26,6 +26,11 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### Unreleased
+
+  - `SIGTERM` is now graceful, the same as `SIGINT`, for better compatibility with Kubernetes and systemd.
+  - `ASYNC_CONTAINER_INTERRUPT_TIMEOUT` and `ASYNC_CONTAINER_TERMINATE_TIMEOUT` are removed and replaced by `ASYNC_CONTAINER_GRACEFUL_TIMEOUT`.
+
 ### v0.29.0
 
   - Introduce `Client#healthy!` for sending health check messages.
@@ -64,10 +69,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.26.0
 
   - [Production Reliability Improvements](https://socketry.github.io/async-container/releases/index#production-reliability-improvements)
-
-### v0.25.0
-
-  - Introduce `async:container:notify:log:ready?` task for detecting process readiness.
 
 ## Contributing
 

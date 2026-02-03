@@ -37,3 +37,9 @@ spec:
             periodSeconds: 5
             failureThreshold: 12
 ```
+
+## Graceful Shutdown
+
+Controllers handle `SIGTERM` gracefully (same as `SIGINT`). This ensures proper graceful shutdown when Kubernetes terminates pods during rolling updates, scaling down, or pod eviction.
+
+**Note**: Kubernetes sends `SIGTERM` to containers when terminating pods. With graceful handling, your application will have time to clean up resources, finish in-flight requests, and shut down gracefully before Kubernetes sends `SIGKILL` (after the termination grace period).

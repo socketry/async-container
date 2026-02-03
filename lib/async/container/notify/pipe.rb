@@ -69,7 +69,7 @@ module Async
 					@io.flush
 				end
 				
-				private
+			private
 				
 				def environment_for(arguments)
 					# Insert or duplicate the environment hash which is the first argument:
