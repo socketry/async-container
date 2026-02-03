@@ -45,4 +45,4 @@ jobs:
     
     - name: Run tests
       timeout-minutes: 10
-      run: bundle exec bake test
+      run: bundle exec sus --verbose
