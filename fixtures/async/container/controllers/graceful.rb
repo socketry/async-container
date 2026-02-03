@@ -21,7 +21,7 @@ class Graceful < Async::Container::Controller
 	end
 end
 
-controller = Graceful.new(graceful_stop: 0.01)
+controller = Graceful.new
 
 begin
 	controller.run
