@@ -23,7 +23,7 @@ module Async
 		end
 		
 		# The default timeout for graceful termination.
-		DEFAULT_GRACEFUL_TIMEOUT = 30.0
+		DEFAULT_GRACEFUL_TIMEOUT = 10.0
 		
 		# Manages a group of running processes.
 		class Group
@@ -167,7 +167,7 @@ module Async
 			# 1. Send SIGINT and wait up to `graceful` seconds if specified.
 			# 2. Send SIGKILL and wait indefinitely for process cleanup.
 			#
-			# If `graceful` is true, default to `DEFAULT_GRACEFUL_TIMEOUT` (30 seconds).
+			# If `graceful` is true, default to `DEFAULT_GRACEFUL_TIMEOUT` (10 seconds).
 			# If `graceful` is false, skip the SIGINT phase and go directly to SIGKILL.
 			#
 			# @parameter graceful [Boolean | Numeric] Whether to send SIGINT first or skip directly to SIGKILL.

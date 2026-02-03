@@ -151,7 +151,7 @@ module Async
 			ensure
 				# If we are leaving this function with an exception, kill the container:
 				if container
-					Console.info(self, "Stopping failed container...")
+					Console.info(self, "Stopping failed container...", exception: $!)
 					container.stop(false)
 				end
 			end
