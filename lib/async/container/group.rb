@@ -194,7 +194,7 @@ module Async
 					if graceful
 						Console.warn(self, "Killing processes after graceful shutdown failed...", size: self.size, clock: clock)
 					end
-
+					
 					self.kill
 					self.wait
 				end
