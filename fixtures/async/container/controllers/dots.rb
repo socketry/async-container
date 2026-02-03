@@ -10,13 +10,10 @@ $stdout.sync = true
 
 class Dots < Async::Container::Controller
 	def setup(container)
-		container.run(name: "dots", count: 1, restart: true) do |instance|
-			instance.ready!
-			
-			# This is to avoid race conditions in the controller in test conditions.
-			sleep 0.001
-			
+		container.run(name: "dots", count: 1, restart: true) do |instance|			
 			$stdout.write "."
+			
+			instance.ready!
 			
 			sleep
 		rescue Async::Container::Interrupt

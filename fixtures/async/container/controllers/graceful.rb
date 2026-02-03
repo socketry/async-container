@@ -11,8 +11,8 @@ $stdout.sync = true
 class Graceful < Async::Container::Controller
 	def setup(container)
 		container.run(name: "graceful", count: 1, restart: true) do |instance|
-			$stdout.puts "Ready..."
 			instance.ready!
+			$stdout.puts "Ready..."
 			
 			sleep
 		ensure

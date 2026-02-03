@@ -148,10 +148,12 @@ module Async
 				end
 				
 				@notify&.ready!(size: @container.size)
+			rescue => error
+				raise
 			ensure
 				# If we are leaving this function with an exception, kill the container:
 				if container
-					Console.info(self, "Stopping failed container...", exception: $!)
+					Console.warn(self, "Stopping failed container...", exception: error)
 					container.stop(false)
 				end
 			end

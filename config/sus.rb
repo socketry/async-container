@@ -6,7 +6,7 @@
 require "covered/sus"
 include Covered::Sus
 
-# ENV["CONSOLE_LEVEL"] ||= "fatal"
+ENV["CONSOLE_LEVEL"] ||= "fatal"
 ENV["METRICS_BACKEND"] ||= "metrics/backend/test"
 
 def prepare_instrumentation!
