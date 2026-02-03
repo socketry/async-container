@@ -11,9 +11,9 @@ $stdout.sync = true
 class Dots < Async::Container::Controller
 	def setup(container)
 		container.run(name: "dots", count: 1, restart: true) do |instance|			
-			$stdout.write "."
-			
 			instance.ready!
+			
+			$stdout.write "."
 			
 			sleep
 		rescue Async::Container::Interrupt
