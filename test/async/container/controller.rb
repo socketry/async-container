@@ -120,7 +120,7 @@ describe Async::Container::Controller do
 			super
 		end
 		
-		it "triggers graceful shutdown" do
+		it "has graceful shutdown" do
 			expect(input.gets).to be == "Ready...\n"
 			
 			Process.kill(:INT, @pid)
