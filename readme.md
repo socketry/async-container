@@ -26,7 +26,7 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
-### Unreleased
+### v0.30.0
 
   - `SIGTERM` is now graceful, the same as `SIGINT`, for better compatibility with Kubernetes and systemd.
   - `ASYNC_CONTAINER_INTERRUPT_TIMEOUT` and `ASYNC_CONTAINER_TERMINATE_TIMEOUT` are removed and replaced by `ASYNC_CONTAINER_GRACEFUL_TIMEOUT`.
