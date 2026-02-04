@@ -126,7 +126,7 @@ module Async
 					self.sleep
 					
 					if self.status?(:ready)
-						Console.logger.debug(self) do |buffer|
+						Console.debug(self) do |buffer|
 							buffer.puts "All ready:"
 							@state.each do |child, state|
 								buffer.puts "\t#{child.inspect}: #{state}"

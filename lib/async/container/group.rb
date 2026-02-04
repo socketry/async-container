@@ -10,11 +10,20 @@ require_relative "error"
 
 module Async
 	module Container
-		# The default timeout for interrupting processes, before escalating to terminating.
-		INTERRUPT_TIMEOUT = ENV.fetch("ASYNC_CONTAINER_INTERRUPT_TIMEOUT", 10).to_f
-		
 		# The default timeout for terminating processes, before escalating to killing.
-		TERMINATE_TIMEOUT = ENV.fetch("ASYNC_CONTAINER_TERMINATE_TIMEOUT", 10).to_f
+		GRACEFUL_TIMEOUT = ENV.fetch("ASYNC_CONTAINER_GRACEFUL_TIMEOUT", "true").then do |value|
+			case value
+			when "true"
+				true # Default timeout for graceful termination.
+			when "false"
+				false # Immediately kill the processes.
+			else
+				value.to_f
+			end
+		end
+		
+		# The default timeout for graceful termination.
+		DEFAULT_GRACEFUL_TIMEOUT = 10.0
 		
 		# Manages a group of running processes.
 		class Group
@@ -155,50 +164,37 @@ module Async
 			# Stop all child processes with a multi-phase shutdown sequence.
 			#
 			# A graceful shutdown performs the following sequence:
-			# 1. Send SIGINT and wait up to `interrupt_timeout` seconds
-			# 2. Send SIGTERM and wait up to `terminate_timeout` seconds  
-			# 3. Send SIGKILL and wait indefinitely for process cleanup
+			# 1. Send SIGINT and wait up to `graceful` seconds if specified.
+			# 2. Send SIGKILL and wait indefinitely for process cleanup.
 			#
-			# If `graceful` is false, skips the SIGINT phase and goes directly to SIGTERM → SIGKILL.
+			# If `graceful` is true, default to `DEFAULT_GRACEFUL_TIMEOUT` (10 seconds).
+			# If `graceful` is false, skip the SIGINT phase and go directly to SIGKILL.
 			#
-			# @parameter graceful [Boolean] Whether to send SIGINT first or skip directly to SIGTERM.
-			# @parameter interrupt_timeout [Numeric | Nil] Time to wait after SIGINT before escalating to SIGTERM.
-			# @parameter terminate_timeout [Numeric | Nil] Time to wait after SIGTERM before escalating to SIGKILL.
-			def stop(graceful = true, interrupt_timeout: INTERRUPT_TIMEOUT, terminate_timeout: TERMINATE_TIMEOUT)
-				case graceful
-				when true
-					# Use defaults.
-				when false
-					interrupt_timeout = nil
-				when Numeric
-					interrupt_timeout = graceful
-					terminate_timeout = graceful
-				end
-				
-				Console.debug(self, "Stopping all processes...", interrupt_timeout: interrupt_timeout, terminate_timeout: terminate_timeout)
+			# @parameter graceful [Boolean | Numeric] Whether to send SIGINT first or skip directly to SIGKILL.
+			def stop(graceful = GRACEFUL_TIMEOUT)
+				Console.info(self, "Stopping all processes...", graceful: graceful)
 				
 				# If a timeout is specified, interrupt the children first:
-				if interrupt_timeout
-					clock = Async::Clock.start
-					
-					# Interrupt the children:
+				if graceful
+					# Send SIGINT to the children:
 					self.interrupt
 					
-					# Wait for the children to exit:
-					self.wait_for_exit(clock, interrupt_timeout)
-				end
-				
-				if terminate_timeout and self.any?
-					clock = Async::Clock.start
+					if graceful == true
+						graceful = DEFAULT_GRACEFUL_TIMEOUT
+					end
 					
-					# If the children are still running, terminate them:
-					self.terminate
+					clock = Clock.start
 					
 					# Wait for the children to exit:
-					self.wait_for_exit(clock, terminate_timeout)
+					self.wait_for_exit(clock, graceful)
 				end
-				
+			ensure
+				# Do our best to clean up the children:
 				if any?
+					if graceful
+						Console.warn(self, "Killing processes after graceful shutdown failed...", size: self.size, clock: clock)
+					end
+					
 					self.kill
 					self.wait
 				end

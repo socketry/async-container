@@ -12,34 +12,19 @@ class Graceful < Async::Container::Controller
 	def setup(container)
 		container.run(name: "graceful", count: 1, restart: true) do |instance|
 			instance.ready!
-			
-			# This is to avoid race conditions in the controller in test conditions.
-			sleep 0.001
-			
-			clock = Async::Clock.start
-			
-			original_action = Signal.trap(:INT) do
-				# We ignore the int, but in practical applications you would want start a graceful shutdown.
-				$stdout.puts "Graceful shutdown...", clock.total
-				
-				Signal.trap(:INT, original_action)
-			end
-			
-			$stdout.puts "Ready...", clock.total
+			$stdout.puts "Ready..."
 			
 			sleep
 		ensure
-			$stdout.puts "Exiting...", clock.total
+			$stdout.puts "Exiting..."
 		end
 	end
 end
 
-controller = Graceful.new(graceful_stop: 0.01)
+controller = Graceful.new
 
 begin
 	controller.run
-rescue Async::Container::Terminate
-	$stdout.puts "Terminated..."
 rescue Interrupt
 	$stdout.puts "Interrupted..."
 end

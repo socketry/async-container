@@ -134,9 +134,6 @@ module Async
 				if container.failed?
 					@notify&.error!("Container failed to start!")
 					
-					Console.info(self, "Stopping failed container...")
-					container.stop(false)
-					
 					raise SetupError, container
 				end
 				
@@ -151,9 +148,14 @@ module Async
 				end
 				
 				@notify&.ready!(size: @container.size)
+			rescue => error
+				raise
 			ensure
-				# If we are leaving this function with an exception, try to kill the container:
-				container&.stop(false)
+				# If we are leaving this function with an exception, kill the container:
+				if container
+					Console.warn(self, "Stopping failed container...", exception: error)
+					container.stop(false)
+				end
 			end
 			
 			# Reload the existing container. Children instances will be reloaded using `SIGHUP`.
@@ -222,9 +224,10 @@ module Async
 					::Thread.current.raise(Interrupt)
 				end
 				
+				# SIGTERM behaves the same as SIGINT by default.
 				terminate_action = Signal.trap(:TERM) do
-					# $stderr.puts "Received TERM signal, terminating...", caller
-					::Thread.current.raise(Terminate)
+					# $stderr.puts "Received TERM signal, interrupting...", caller
+					::Thread.current.raise(Interrupt)  # Same as SIGINT
 				end
 				
 				hangup_action = Signal.trap(:HUP) do

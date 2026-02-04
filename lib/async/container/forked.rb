@@ -102,7 +102,7 @@ module Async
 						::Process.fork do
 							# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 							Signal.trap(:INT){::Thread.current.raise(Interrupt)}
-							Signal.trap(:TERM){::Thread.current.raise(Terminate)}
+							Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
 							Signal.trap(:HUP){::Thread.current.raise(Restart)}
 							
 							# This could be a configuration option:
