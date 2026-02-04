@@ -225,7 +225,7 @@ module Async
 						Console.debug(self, "Waiting for thread to exit...", child: {thread_id: @thread.object_id}, timeout: timeout)
 						
 						unless @waiter.join(timeout)
-							Console.warn(self, "Thread is blocking, sending kill signal...", child: {thread_id: @thread.object_id}, caller: caller_locations, timeout: timeout)
+							Console.warn(self, "Thread is blocking, sending kill signal...", child: {thread_id: @thread.object_id}, timeout: timeout)
 							self.kill!
 							@waiter.join
 						end

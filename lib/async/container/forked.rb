@@ -245,7 +245,7 @@ module Async
 							_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 							
 							if @status.nil?
-								Console.warn(self, "Process is blocking, sending kill signal...", child: {process_id: @pid}, caller: caller_locations, timeout: timeout)
+								Console.warn(self, "Process is blocking, sending kill signal...", child: {process_id: @pid}, timeout: timeout)
 								self.kill!
 								
 								# Wait for the process to exit:

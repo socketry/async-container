@@ -141,7 +141,7 @@ module Async
 			# Stop the children instances.
 			# @parameter timeout [Boolean | Numeric] Whether to stop gracefully, or a specific timeout.
 			def stop(timeout = true)
-				Console.debug(self, "Stopping container...", timeout: timeout)
+				Console.info(self, "Stopping container...", timeout: timeout)
 				@running = false
 				@group.stop(timeout)
 				
