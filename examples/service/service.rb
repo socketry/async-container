@@ -10,9 +10,15 @@ require "async/service/managed_environment"
 
 class SleepService < Async::Service::ManagedService
 	def run(instance, evaluator)
-		Async do
-			Console.info(self, "Sleeping for 10 seconds...")
-			sleep 10
+		Async do |task|
+			while true
+				Console.info(self, "Sleeping for 5 seconds...")
+				task.defer_stop do
+					sleep 5
+				end
+			end
+		ensure
+			Console.info(self, "Exiting sleep service...")
 		end
 	end
 end
@@ -22,21 +28,6 @@ module SleepEnvironment
 	
 	def service_class
 		SleepService
-	end
-	
-	def startup_timeout
-		9
-	end
-	
-	def health_check_timeout
-		4
-	end
-	
-	def prepare!(instance)
-		Console.info(self, "Preparing instance #{instance}...")
-		instance.status!("Preparing...")
-		sleep 8.5
-		instance.status!("Finished preparing...")
 	end
 end
 

@@ -172,7 +172,7 @@ module Async
 			#
 			# @parameter graceful [Boolean | Numeric] Whether to send SIGINT first or skip directly to SIGKILL.
 			def stop(graceful = GRACEFUL_TIMEOUT)
-				Console.info(self, "Stopping all processes...", graceful: graceful)
+				Console.debug(self, "Stopping all processes...", graceful: graceful)
 				
 				# If a timeout is specified, interrupt the children first:
 				if graceful
