@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Use a process group for forked children, so that signals sent from the terminal are isolated to the foreground process.
+
 ## v0.30.0
 
   - `SIGTERM` is now graceful, the same as `SIGINT`, for better compatibility with Kubernetes and systemd.
