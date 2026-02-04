@@ -13,6 +13,9 @@ class Dots < Async::Container::Controller
 		container.run(name: "dots", count: 1, restart: true) do |instance|			
 			instance.ready!
 			
+			# This helps prevent race conditions in the tests:
+			sleep 0.01
+			
 			$stdout.write "."
 			
 			sleep
