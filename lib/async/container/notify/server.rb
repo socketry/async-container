@@ -129,6 +129,14 @@ module Async
 							end
 						end
 					end
+					
+					def wait_until_ready
+						while message = receive
+							if message[:ready] == true
+								return
+							end
+						end
+					end
 				end
 			end
 		end

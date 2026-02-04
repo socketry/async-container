@@ -12,6 +12,7 @@ class Graceful < Async::Container::Controller
 	def setup(container)
 		container.run(name: "graceful", count: 1, restart: true) do |instance|
 			instance.ready!
+			
 			$stdout.puts "Ready..."
 			
 			sleep

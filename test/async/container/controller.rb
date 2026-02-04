@@ -5,6 +5,7 @@
 
 require "async/container/controller"
 require "async/container/controllers"
+require "async/container/notify/server"
 
 describe Async::Container::Controller do
 	let(:controller) {subject.new}
@@ -98,64 +99,26 @@ describe Async::Container::Controller do
 	end
 	
 	with "graceful controller" do
-		let(:controller_path) {Async::Container::Controllers.path_for("graceful")}
-		
-		let(:pipe) {IO.pipe}
-		let(:input) {pipe.first}
-		let(:output) {pipe.last}
-		
-		let(:pid) {@pid}
-		
-		def before
-			@pid = Process.spawn("bundle", "exec", controller_path, out: output)
-			output.close
-			
-			super
-		end
-		
-		def after(error = nil)
-			Process.kill(:TERM, @pid)
-			Process.wait(@pid)
-			
-			super
-		end
+		include_context Async::Container::AController, "graceful"
 		
 		it "has graceful shutdown" do
 			expect(input.gets).to be == "Ready...\n"
 			
-			Process.kill(:INT, @pid)
+			wait_until_ready
+			
+			Process.kill(:INT, process_id)
 			
 			expect(input.gets).to be == "Exiting...\n"
 		end
 	end
 	
 	with "bad controller" do
-		let(:controller_path) {Async::Container::Controllers.path_for("bad")}
-		
-		let(:pipe) {IO.pipe}
-		let(:input) {pipe.first}
-		let(:output) {pipe.last}
-		
-		let(:pid) {@pid}
-		
-		def before
-			@pid = Process.spawn("bundle", "exec", controller_path, out: output)
-			output.close
-			
-			super
-		end
-		
-		def after(error = nil)
-			Process.kill(:TERM, @pid)
-			Process.wait(@pid)
-			
-			super
-		end
+		include_context Async::Container::AController, "bad"
 		
 		it "fails to start" do
 			expect(input.gets).to be == "Ready...\n"
 			
-			Process.kill(:INT, @pid)
+			Process.kill(:INT, process_id)
 			
 			# It was killed:
 			expect(input.gets).to be_nil
@@ -163,32 +126,14 @@ describe Async::Container::Controller do
 	end
 	
 	with "signals" do
-		let(:controller_path) {Async::Container::Controllers.path_for("dots")}
-		
-		let(:pipe) {IO.pipe}
-		let(:input) {pipe.first}
-		let(:output) {pipe.last}
-		
-		let(:pid) {@pid}
-		
-		def before
-			@pid = Process.spawn("bundle", "exec", controller_path, out: output)
-			output.close
-			
-			super
-		end
-		
-		def after(error = nil)
-			Process.kill(:TERM, @pid)
-			Process.wait(@pid)
-			
-			super
-		end
+		include_context Async::Container::AController, "dots"
 		
 		it "restarts children when receiving SIGHUP" do
 			expect(input.read(1)).to be == "."
 			
-			Process.kill(:HUP, pid)
+			wait_until_ready
+			
+			Process.kill(:HUP, process_id)
 			
 			# The ordering between the old child writing "I" and the new child writing "." is timing-dependent (blue-green restart starts the new container before stopping the old one). Accept either order.
 			expect(input.read(2)).to (be == "I.").or(be == ".I")
@@ -197,7 +142,9 @@ describe Async::Container::Controller do
 		it "exits gracefully when receiving SIGINT" do
 			expect(input.read(1)).to be == "."
 			
-			Process.kill(:INT, pid)
+			wait_until_ready
+			
+			Process.kill(:INT, process_id)
 			
 			expect(input.read).to be == "I"
 		end
@@ -205,7 +152,9 @@ describe Async::Container::Controller do
 		it "exits gracefully when receiving SIGTERM" do
 			expect(input.read(1)).to be == "."
 			
-			Process.kill(:TERM, pid)
+			wait_until_ready
+			
+			Process.kill(:TERM, process_id)
 			
 			# SIGTERM now behaves like SIGINT (graceful)
 			expect(input.read).to be == "I"
