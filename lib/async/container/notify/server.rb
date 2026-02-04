@@ -130,6 +130,7 @@ module Async
 						end
 					end
 					
+					# Wait until a "ready" message is received from the child process.
 					def wait_until_ready
 						while message = receive
 							if message[:ready] == true
