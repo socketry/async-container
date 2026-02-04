@@ -116,7 +116,7 @@ module Async
 			# @returns [Boolean] The children all became ready.
 			def wait_until_ready
 				while true
-					Console.warn(self) do |buffer|
+					Console.debug(self) do |buffer|
 						buffer.puts "Waiting for ready:"
 						@state.each do |child, state|
 							buffer.puts "\t#{child.inspect}: #{state}"
@@ -126,7 +126,7 @@ module Async
 					self.sleep
 					
 					if self.status?(:ready)
-						Console.warn(self) do |buffer|
+						Console.debug(self) do |buffer|
 							buffer.puts "All ready:"
 							@state.each do |child, state|
 								buffer.puts "\t#{child.inspect}: #{state}"
