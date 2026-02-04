@@ -100,6 +100,11 @@ module Async
 					# $stderr.puts fork: caller
 					self.new(**options) do |process|
 						::Process.fork do
+							# Create a new process group for this child process.
+							# This prevents Ctrl-C from the terminal from directly interrupting child processes.
+							# Instead, only the controller receives the interrupt and can gracefully shut down children.
+							::Process.setpgid(0, 0)
+							
 							# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 							Signal.trap(:INT){::Thread.current.raise(Interrupt)}
 							Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
@@ -214,10 +219,11 @@ module Async
 					end
 				end
 				
-				# Send `SIGKILL` to the child process.
+				# Send `SIGKILL` to the child process and its entire process group.
+				# This ensures any subprocesses spawned by the child are also killed.
 				def kill!
 					unless @status
-						::Process.kill(:KILL, @pid)
+						::Process.kill(:KILL, -@pid)
 					end
 				end
 				
@@ -248,7 +254,9 @@ module Async
 								Console.warn(self, "Process is blocking, sending kill signal...", child: {process_id: @pid}, timeout: timeout)
 								self.kill!
 								
-								# Wait for the process to exit:
+								# Wait for the direct child process to exit.
+								# Any subprocesses in the process group are also killed by SIGKILL,
+								# and when the child exits, its subprocesses are reparented to init which reaps them.
 								_, @status = ::Process.wait2(@pid)
 							end
 						end
