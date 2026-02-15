@@ -8,6 +8,7 @@ require_relative "best"
 
 require_relative "statistics"
 require_relative "notify"
+require_relative "policy"
 
 module Async
 	module Container
@@ -22,12 +23,14 @@ module Async
 			
 			# Initialize the controller.
 			# @parameter notify [Notify::Client] A client used for process readiness notifications.
-			def initialize(notify: Notify.open!, container_class: Container, graceful_stop: true)
+			# @parameter policy [Policy] The policy to use for managing child lifecycle events.
+			def initialize(notify: Notify.open!, container_class: Container, graceful_stop: true, policy: Policy.new)
 				@container = nil
 				@container_class = container_class
 				
 				@notify = notify
 				@signals = {}
+				@policy = policy
 				
 				self.trap(SIGHUP) do
 					self.restart
@@ -62,11 +65,14 @@ module Async
 			# The current container being managed by the controller.
 			attr :container
 			
+			# The policy used for managing child lifecycle events.
+			attr :policy
+			
 			# Create a container for the controller.
 			# Can be overridden by a sub-class.
 			# @returns [Generic] A specific container instance to use.
 			def create_container
-				@container_class.new
+				@container_class.new(policy: @policy)
 			end
 			
 			# Whether the controller has a running container.
