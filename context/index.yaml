@@ -11,6 +11,10 @@ files:
   title: Getting Started
   description: This guide explains how to use `async-container` to build basic scalable
     systems.
+- path: policies.md
+  title: Container Policies
+  description: This guide explains how to use policies to monitor container health
+    and implement custom failure handling strategies.
 - path: systemd-integration.md
   title: Systemd Integration
   description: This guide explains how to use `async-container` with systemd to manage

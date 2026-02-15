@@ -1,5 +1,11 @@
 # Releases
 
+## Unreleased
+
+  - Introduce `Async::Container::Policy` for managing child lifecycle events and implementing custom failure handling strategies.
+  - Add `Async::Container::Statistics::Rate` for tracking failure and restart rates over sliding time windows.
+  - Fix restart counter to only increment when actually restarting (check `@running` flag).
+
 ## v0.30.0
 
   - `SIGTERM` is now graceful, the same as `SIGINT`, for better compatibility with Kubernetes and systemd.

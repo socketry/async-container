@@ -1,6 +1,8 @@
 getting-started:
   order: 1
-systemd-integration:
+policies:
   order: 2
-kubernetes-integration:
+systemd-integration:
   order: 3
+kubernetes-integration:
+  order: 4

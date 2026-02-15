@@ -10,6 +10,7 @@ require "async/clock"
 require_relative "group"
 require_relative "keyed"
 require_relative "statistics"
+require_relative "policy"
 
 module Async
 	module Container
@@ -42,8 +43,9 @@ module Async
 			
 			# Initialize the container.
 			#
+			# @parameter policy [Policy] The policy to use for managing child lifecycle events.
 			# @parameter options [Hash] Options passed to the {Group} instance.
-			def initialize(**options)
+			def initialize(policy: Policy::DEFAULT, **options)
 				@group = Group.new(**options)
 				@running = true
 				
@@ -51,6 +53,7 @@ module Async
 				
 				@statistics = Statistics.new
 				@keyed = {}
+				@policy = policy
 			end
 			
 			# @attribute [Group] The group of running children instances.
@@ -63,6 +66,9 @@ module Async
 			
 			# @attribute [Hash(Child, Hash)] The state of each child instance.
 			attr :state
+			
+			# @attribute [Policy] The policy for managing child lifecycle events.
+			attr_accessor :policy
 			
 			# A human readable representation of the container.
 			# @returns [String]
@@ -157,18 +163,30 @@ module Async
 				@running = true
 			end
 			
-			protected def health_check_failed!(child, age_clock, health_check_timeout)
-				Console.warn(self, "Child failed health check!", child: child, age: age_clock.total, health_check_timeout: health_check_timeout)
-				
-				# If the child has failed the health check, we assume the worst and kill it immediately:
-				child.kill!
+			protected def health_check_failed(child, age_clock, health_check_timeout)
+				begin
+					@policy.health_check_failed(
+						self, child,
+						age: age_clock.total,
+						timeout: health_check_timeout
+					)
+				rescue => error
+					Console.error(self, "Policy error in health_check_failed!", exception: error)
+					child.kill!
+				end
 			end
 			
-			protected def startup_failed!(child, age_clock, startup_timeout)
-				Console.warn(self, "Child failed startup!", child: child, age: age_clock.total, startup_timeout: startup_timeout)
-				
-				# If the child has failed the startup, we assume the worst and kill it immediately:
-				child.kill!
+			protected def startup_failed(child, age_clock, startup_timeout)
+				begin
+					@policy.startup_failed(
+						self, child,
+						age: age_clock.total,
+						timeout: startup_timeout
+					)
+				rescue => error
+					Console.error(self, "Policy error in startup_failed!", exception: error)
+					child.kill!
+				end
 			end
 			
 			# Spawn a child instance into the container.
@@ -194,6 +212,13 @@ module Async
 						child = self.start(name, &block)
 						state = insert(key, child)
 						
+						# Notify policy of spawn
+						begin
+							@policy.child_spawn(self, child, name: name, key: key)
+						rescue => error
+							Console.error(self, "Policy error in child_spawn!", exception: error)
+						end
+						
 						Console.debug(self, "Started child.", child: child, spawn: {key: key, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
 						# If a health check or startup timeout is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
@@ -211,14 +236,14 @@ module Async
 										# If a health check timeout is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
 										if health_check_timeout
 											if health_check_timeout < age_clock.total
-												health_check_failed!(child, age_clock, health_check_timeout)
+												health_check_failed(child, age_clock, health_check_timeout)
 											end
 										end
 									else
 										# If a startup timeout is specified, we will monitor the child process and terminate it if it does not become ready within the specified time.
 										if startup_timeout
 											if startup_timeout < age_clock.total
-												startup_failed!(child, age_clock, startup_timeout)
+												startup_failed(child, age_clock, startup_timeout)
 											end
 										end
 									end
@@ -237,6 +262,13 @@ module Async
 							delete(key, child)
 						end
 						
+						# Notify policy of exit
+						begin
+							@policy.child_exit(self, child, status: status, name: name, key: key)
+						rescue => error
+							Console.error(self, "Policy error in child_exit!", exception: error)
+						end
+						
 						if status&.success?
 							Console.debug(self, "Child exited successfully.", status: status, running: @running)
 						else
@@ -244,7 +276,7 @@ module Async
 							Console.error(self, "Child exited with error!", status: status, running: @running)
 						end
 						
-						if restart
+						if restart && @running
 							@statistics.restart!
 						else
 							break
