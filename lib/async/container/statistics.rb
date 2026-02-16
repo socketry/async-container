@@ -20,6 +20,9 @@ module Async
 					@last_update = Array.new(@window, 0)
 				end
 				
+				# The time window in seconds for rate calculations.
+				attr :window
+				
 				# Get the current time in seconds.
 				# @returns [Integer] The current monotonic time in seconds.
 				def now

@@ -8,6 +8,18 @@ require "async/container/statistics"
 describe Async::Container::Statistics::Rate do
 	let(:rate) {subject.new(window: 10)}
 	
+	with "#window" do
+		it "stores window size" do
+			rate = subject.new(window: 30)
+			expect(rate.window).to be == 30
+		end
+		
+		it "defaults to 60 second window" do
+			rate = subject.new
+			expect(rate.window).to be == 60
+		end
+	end
+	
 	with "#add" do
 		it "can add values to the current slot" do
 			rate.add(1, time: 100)
