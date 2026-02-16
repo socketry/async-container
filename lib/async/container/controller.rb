@@ -24,18 +24,29 @@ module Async
 			# Initialize the controller.
 			# @parameter notify [Notify::Client] A client used for process readiness notifications.
 			def initialize(notify: Notify.open!, container_class: Container, graceful_stop: true)
-				@container = nil
-				@container_class = container_class
-				
 				@notify = notify
+				@container_class = container_class
+				@graceful_stop = graceful_stop
+				
+				@container = nil
 				@signals = {}
 				
 				self.trap(SIGHUP) do
 					self.restart
 				end
-				
-				@graceful_stop = graceful_stop
 			end
+			
+			# The notify client used by the controller.
+			attr :notify
+			
+			# The container class used by the controller.
+			attr :container_class
+			
+			# The graceful stop flag used by the controller.
+			attr :graceful_stop
+			
+			# The current container being managed by the controller.
+			attr :container
 			
 			# The state of the controller.
 			# @returns [String]
@@ -59,9 +70,6 @@ module Async
 			def trap(signal, &block)
 				@signals[signal] = block
 			end
-			
-			# The current container being managed by the controller.
-			attr :container
 			
 			# Create a policy for managing child lifecycle events.
 			# Can be overridden by a sub-class to provide a custom policy.
