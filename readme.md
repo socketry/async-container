@@ -28,6 +28,11 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.32.0
+
+  - Minor **breaking** changes to `Async::Container::Policy` interface.
+  - Expose `Async::Container::Statistics::Rate#window`.
+
 ### v0.31.0
 
   - Introduce `Async::Container::Policy` for managing child lifecycle events and implementing custom failure handling strategies.
@@ -68,11 +73,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.27.1
 
   - Log caller and timeout when waiting on a child instance to exit, if it blocks.
-
-### v0.27.0
-
-  - Increased default interrupt timeout and terminate timeout to 10 seconds each.
-  - Expose `ASYNC_CONTAINER_INTERRUPT_TIMEOUT` and `ASYNC_CONTAINER_TERMINATE_TIMEOUT` environment variables for configuring default timeouts.
 
 ## Contributing
 

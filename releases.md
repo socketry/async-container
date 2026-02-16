@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.32.0
 
   - Minor **breaking** changes to `Async::Container::Policy` interface.
   - Expose `Async::Container::Statistics::Rate#window`.
