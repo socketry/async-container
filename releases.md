@@ -1,5 +1,10 @@
 # Releases
 
+## Unreleased
+
+  - Minor **breaking** changes to `Async::Container::Policy` interface.
+  - Expose `Async::Container::Statistics::Rate#window`.
+
 ## v0.31.0
 
   - Introduce `Async::Container::Policy` for managing child lifecycle events and implementing custom failure handling strategies.
