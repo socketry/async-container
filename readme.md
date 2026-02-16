@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.32.1
+
+  - Expose `Async::Container::Controller` `#notify`, `#container_class`, and `#graceful_stop` for testing.
+
 ### v0.32.0
 
   - Minor **breaking** changes to `Async::Container::Policy` interface.
@@ -69,10 +73,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.27.2
 
   - More logging, especially around failure cases.
-
-### v0.27.1
-
-  - Log caller and timeout when waiting on a child instance to exit, if it blocks.
 
 ## Contributing
 

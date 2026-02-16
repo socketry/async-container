@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.32.1
 
   - Expose `Async::Container::Controller` `#notify`, `#container_class`, and `#graceful_stop` for testing.
 
