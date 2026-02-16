@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.33.0
+
+  - Add `Policy#make_statistics` to allow policies to customize statistics initialization.
+
 ### v0.32.1
 
   - Expose `Async::Container::Controller` `#notify`, `#container_class`, and `#graceful_stop` for testing.
@@ -69,10 +73,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 
   - Add log for starting child, including container statistics.
   - Don't try to (log) "terminate 0 child processes" if there are none.
-
-### v0.27.2
-
-  - More logging, especially around failure cases.
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.33.0
 
   - Add `Policy#make_statistics` to allow policies to customize statistics initialization.
 
