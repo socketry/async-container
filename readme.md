@@ -28,7 +28,7 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
-### Unreleased
+### v0.31.0
 
   - Introduce `Async::Container::Policy` for managing child lifecycle events and implementing custom failure handling strategies.
   - Add `Async::Container::Statistics::Rate` for tracking failure and restart rates over sliding time windows.
