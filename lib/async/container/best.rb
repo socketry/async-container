@@ -15,13 +15,17 @@ module Async
 			::Process.respond_to?(:fork) && ::Process.respond_to?(:setpgid)
 		end
 		
+		def self.ractor?
+			defined?(::Ractor)
+		end
+		
 		# Determins the best container class based on the underlying Ruby implementation.
 		# Some platforms, including JRuby, don't support fork. Applications which just want a reasonable default can use this method.
 		# @returns [Class]
 		def self.best_container_class
 			if fork?
 				return Forked
-			else
+			els
 				return Threaded
 			end
 		end
