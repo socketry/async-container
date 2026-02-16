@@ -8,6 +8,7 @@ require_relative "best"
 
 require_relative "statistics"
 require_relative "notify"
+require_relative "policy"
 
 module Async
 	module Container
@@ -62,11 +63,18 @@ module Async
 			# The current container being managed by the controller.
 			attr :container
 			
+			# Create a policy for managing child lifecycle events.
+			# Can be overridden by a sub-class to provide a custom policy.
+			# @returns [Policy] The policy to use for the container.
+			def make_policy
+				Policy::DEFAULT
+			end
+			
 			# Create a container for the controller.
 			# Can be overridden by a sub-class.
 			# @returns [Generic] A specific container instance to use.
 			def create_container
-				@container_class.new
+				@container_class.new(policy: self.make_policy)
 			end
 			
 			# Whether the controller has a running container.

@@ -18,6 +18,8 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
   - [Getting Started](https://socketry.github.io/async-container/guides/getting-started/index) - This guide explains how to use `async-container` to build basic scalable systems.
 
+  - [Container Policies](https://socketry.github.io/async-container/guides/policies/index) - This guide explains how to use policies to monitor container health and implement custom failure handling strategies.
+
   - [Systemd Integration](https://socketry.github.io/async-container/guides/systemd-integration/index) - This guide explains how to use `async-container` with systemd to manage your application as a service.
 
   - [Kubernetes Integration](https://socketry.github.io/async-container/guides/kubernetes-integration/index) - This guide explains how to use `async-container` with Kubernetes to manage your application as a containerized service.
@@ -25,6 +27,12 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 ## Releases
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
+
+### Unreleased
+
+  - Introduce `Async::Container::Policy` for managing child lifecycle events and implementing custom failure handling strategies.
+  - Add `Async::Container::Statistics::Rate` for tracking failure and restart rates over sliding time windows.
+  - Fix restart counter to only increment when actually restarting (check `@running` flag).
 
 ### v0.30.0
 
@@ -65,10 +73,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 
   - Increased default interrupt timeout and terminate timeout to 10 seconds each.
   - Expose `ASYNC_CONTAINER_INTERRUPT_TIMEOUT` and `ASYNC_CONTAINER_TERMINATE_TIMEOUT` environment variables for configuring default timeouts.
-
-### v0.26.0
-
-  - [Production Reliability Improvements](https://socketry.github.io/async-container/releases/index#production-reliability-improvements)
 
 ## Contributing
 
