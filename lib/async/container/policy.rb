@@ -92,6 +92,13 @@ module Async
 				status&.exitstatus
 			end
 			
+			# Create statistics for a container.
+			# Can be overridden by subclasses to customize the statistics window.
+			# @returns [Statistics] A new statistics instance.
+			def make_statistics
+				Statistics.new
+			end
+			
 			# The default policy instance.
 			DEFAULT = self.new.freeze
 		end

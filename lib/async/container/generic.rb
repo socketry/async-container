@@ -51,9 +51,9 @@ module Async
 				
 				@state = {}
 				
-				@statistics = Statistics.new
-				@keyed = {}
 				@policy = policy
+				@statistics = @policy.make_statistics
+				@keyed = {}
 			end
 			
 			# @attribute [Group] The group of running children instances.

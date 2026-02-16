@@ -141,6 +141,15 @@ describe Async::Container::Policy do
 		end
 	end
 	
+	with "#make_statistics" do
+		it "creates default statistics" do
+			statistics = policy.make_statistics
+			
+			expect(statistics).to be_a(Async::Container::Statistics)
+			expect(statistics.failure_rate.window).to be == 60
+		end
+	end
+	
 	with "default behavior" do
 		let(:mock_child) do
 			Class.new do
