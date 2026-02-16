@@ -113,11 +113,11 @@ describe Async::Container::Policy do
 					@events = events
 				end
 				
-				def child_spawn(container, child, name:, key:)
+				def child_spawn(container, child, name:, key:, **options)
 					@events << [:spawn, name, key]
 				end
 				
-				def child_exit(container, child, status:, name:, key:)
+				def child_exit(container, child, status, name:, key:, **options)
 					@events << [:exit, name, success?(status)]
 				end
 			end.new(events)
@@ -134,7 +134,7 @@ describe Async::Container::Policy do
 			status = mock_status.new
 			status.exitstatus = 0
 			
-			tracking_policy.child_exit(nil, nil, status: status, name: "worker", key: nil)
+			tracking_policy.child_exit(nil, nil, status, name: "worker", key: nil)
 			
 			expect(events.size).to be == 1
 			expect(events.first).to be == [:exit, "worker", true]
@@ -184,11 +184,11 @@ describe Async::Container::Policy do
 					@exits = exits
 				end
 				
-				def child_spawn(container, child, name:, key:)
+				def child_spawn(container, child, name:, key:, **options)
 					@spawns << {name: name, key: key}
 				end
 				
-				def child_exit(container, child, status:, name:, key:)
+				def child_exit(container, child, status, name:, key:, **options)
 					@exits << {name: name, success: success?(status)}
 				end
 			end.new(spawns, exits)

@@ -40,13 +40,13 @@ class SegfaultDetectionPolicy < Async::Container::Policy
 		@segfault_rate = Async::Container::Rate.new(window: window)
 	end
 	
-	def child_exit(container, child, status:, name:, key:)
+	def child_exit(container, child, status, name:, key:, **options)
 		if segfault?(status)
 			@segfault_rate.add(1)
 			
 			segfault_count = @segfault_rate.total
 			
-			Console.warn(self, "Segfault detected!", 
+			Console.warn(self, "Segfault detected", 
 				name: name, 
 				count: segfault_count,
 				rate: @segfault_rate.per_minute
@@ -54,7 +54,7 @@ class SegfaultDetectionPolicy < Async::Container::Policy
 			
 			# Stop container if too many segfaults
 			if segfault_count >= @max_segfaults
-				Console.error(self, "Too many segfaults, stopping container!",
+				Console.error(self, "Too many segfaults, stopping container",
 					count: segfault_count,
 					rate: @segfault_rate.per_second
 				)
@@ -85,7 +85,7 @@ Policies can implement these callbacks:
 Called when a child process starts:
 
 ``` ruby
-def child_spawn(container, child, name:, key:)
+def child_spawn(container, child, name:, key:, **options)
 	Console.info(self, "Child started", name: name)
 end
 ```
@@ -97,7 +97,7 @@ Use this for tracking which children are running or initializing per-child state
 Called when a child process exits (success or failure):
 
 ``` ruby
-def child_exit(container, child, status:, name:, key:)
+def child_exit(container, child, status, name:, key:, **options)
 	if success?(status)
 		Console.info(self, "Child succeeded", name: name)
 	else
@@ -120,7 +120,7 @@ This is the main callback for implementing failure detection logic. You can:
 Called when a health check timeout is exceeded. The default implementation logs and kills the child:
 
 ``` ruby
-def health_check_failed(container, child, age:, timeout:)
+def health_check_failed(container, child, age:, timeout:, **options)
 	Console.warn(self, "Health check failed", child: child, age: age)
 	
 	# Send alert before killing
@@ -141,7 +141,7 @@ Override this to:
 Called when a startup timeout is exceeded. The default implementation logs and kills the child:
 
 ``` ruby
-def startup_failed(container, child, age:, timeout:)
+def startup_failed(container, child, age:, timeout:, **options)
 	# Custom logging with more context
 	Console.error(self, "Child never became ready",
 		child: child,

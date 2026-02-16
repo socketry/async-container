@@ -12,7 +12,8 @@ module Async
 			# @parameter child [Child] The child process.
 			# @parameter name [String] The name of the child.
 			# @parameter key [Symbol] An optional key for the child.
-			def child_spawn(container, child, name:, key:)
+			# @parameter options [Hash] Additional options for future extensibility.
+			def child_spawn(container, child, name:, key:, **options)
 			end
 			
 			# Called when a child exits.
@@ -21,7 +22,8 @@ module Async
 			# @parameter status [Process::Status] The exit status.
 			# @parameter name [String] The name of the child.
 			# @parameter key [Symbol] An optional key for the child.
-			def child_exit(container, child, status:, name:, key:)
+			# @parameter options [Hash] Additional options for future extensibility.
+			def child_exit(container, child, status, name:, key:, **options)
 			end
 			
 			# Called when a health check fails.
@@ -30,8 +32,9 @@ module Async
 			# @parameter child [Child] The child process.
 			# @parameter age [Numeric] How long the child has been running.
 			# @parameter timeout [Numeric] The health check timeout that was exceeded.
-			def health_check_failed(container, child, age:, timeout:)
-				Console.warn(container, "Health check failed!", child: child, age: age, timeout: timeout)
+			# @parameter options [Hash] Additional options for future extensibility.
+			def health_check_failed(container, child, age:, timeout:, **options)
+				Console.warn(self, "Health check failed!", child: child, age: age, timeout: timeout)
 				child.kill!
 			end
 			
@@ -41,8 +44,9 @@ module Async
 			# @parameter child [Child] The child process.
 			# @parameter age [Numeric] How long the child has been running.
 			# @parameter timeout [Numeric] The startup timeout that was exceeded.
-			def startup_failed(container, child, age:, timeout:)
-				Console.warn(container, "Startup failed!", child: child, age: age, timeout: timeout)
+			# @parameter options [Hash] Additional options for future extensibility.
+			def startup_failed(container, child, age:, timeout:, **options)
+				Console.warn(self, "Startup failed!", child: child, age: age, timeout: timeout)
 				child.kill!
 			end
 			

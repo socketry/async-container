@@ -271,7 +271,7 @@ module Async
 						
 						# Notify policy of exit (after statistics are updated):
 						begin
-							@policy.child_exit(self, child, status: status, name: name, key: key)
+							@policy.child_exit(self, child, status, name: name, key: key)
 						rescue => error
 							Console.error(self, "Policy error in child_exit!", exception: error)
 						end
