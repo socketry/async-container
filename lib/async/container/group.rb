@@ -35,9 +35,6 @@ module Async
 				
 				# The running fibers, indexed by IO:
 				@running = {}
-				
-				# This queue allows us to wait for processes to complete, without spawning new processes as a result.
-				@queue = nil
 			end
 			
 			# @returns [String] A human-readable representation of the group.
@@ -73,16 +70,11 @@ module Async
 			
 			# Sleep for at most the specified duration until some state change occurs.
 			def sleep(duration)
-				self.resume
-				self.suspend
-				
 				self.wait_for_children(duration)
 			end
 			
 			# Begin any outstanding queued processes and wait for them indefinitely.
 			def wait
-				self.resume
-				
 				with_health_checks do |duration|
 					self.wait_for_children(duration)
 				end
@@ -254,28 +246,6 @@ module Async
 					readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)
 					
 					return readable
-				end
-			end
-			
-			def yield
-				if @queue
-					fiber = Fiber.current
-					
-					@queue << fiber
-					Fiber.yield
-				end
-			end
-			
-			def suspend
-				@queue ||= []
-			end
-			
-			def resume
-				if @queue
-					queue = @queue
-					@queue = nil
-					
-					queue.each(&:resume)
 				end
 			end
 		end
