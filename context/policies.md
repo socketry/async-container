@@ -51,9 +51,11 @@ class SegfaultDetectionPolicy < Async::Container::Policy
 				count: segfault_count,
 				rate: @segfault_rate.per_minute
 			)
-			
-			# Stop container if too many segfaults
-			if segfault_count >= @max_segfaults
+		end
+		
+		# Stop container if too many segfaults
+		if segfault_count >= @max_segfaults
+			unless container.stopping?
 				Console.error(self, "Too many segfaults, stopping container",
 					count: segfault_count,
 					rate: @segfault_rate.per_second
