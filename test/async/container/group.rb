@@ -272,7 +272,7 @@ describe Async::Container::Group do
 			group.health_check!
 		end.not.to raise_exception
 	end
-
+	
 	it "handles nil fiber in @running during iteration (re-entrance scenario)" do
 		# This test simulates a scenario where:
 		# 1. IO.select returns [io1, io2]
