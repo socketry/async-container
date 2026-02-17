@@ -272,4 +272,32 @@ describe Async::Container::Group do
 			group.health_check!
 		end.not.to raise_exception
 	end
+
+	it "handles nil fiber in @running during iteration (re-entrance scenario)" do
+		# This test simulates a scenario where:
+		# 1. IO.select returns [io1, io2]
+		# 2. While resuming fiber for io1, a re-entrant call completes fiber for io2
+		# 3. When iteration continues to io2, @running[io2] is nil
+		# Without defensive check (&.), this would crash with NoMethodError
+		
+		channel1 = Async::Container::Channel.new
+		channel2 = Async::Container::Channel.new
+		
+		fiber1 = Fiber.new{group.running.delete(channel2.in)}
+		fiber2 = Fiber.new{Fiber.yield}
+		
+		fiber2.resume
+		
+		group.running[channel1.in] = fiber1
+		group.running[channel2.in] = fiber2
+		
+		# Mock select to return both channels:
+		expect(group).to receive(:select).and_return([channel1.in, channel2.in])
+		
+		# This should not crash due to &. operator:
+		group.sleep(0)
+		
+		# Verify fiber2 was removed
+		expect(group.running.key?(channel2.in)).to be == false
+	end
 end

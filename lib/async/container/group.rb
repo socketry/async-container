@@ -239,7 +239,10 @@ module Async
 					# Maybe consider using a proper event loop here:
 					if ready = self.select(duration)
 						ready.each do |io|
-							@running[io].resume
+							if fiber = @running[io]
+								# This method can be re-entered. While resuming a fiber, a policy hook may be invoked, which may invoke operations on the container. In that case, select may be called again on the same set of waiting fibers. On returning, those fibers may have already completed and removed themselves from @running, so we need to check for that.
+								fiber.resume
+							end
 						end
 					end
 				end
