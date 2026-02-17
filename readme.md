@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.34.0
+
+  - Add `Async::Container::Generic#stopping?` so that policies can more accurately track the state of the container.
+
 ### v0.33.0
 
   - Add `Policy#make_statistics` to allow policies to customize statistics initialization.
@@ -68,11 +72,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.27.4
 
   - Fix race condition where `wait_for` could modify `@running` while it was being iterated over (`each_value`) during health checks.
-
-### v0.27.3
-
-  - Add log for starting child, including container statistics.
-  - Don't try to (log) "terminate 0 child processes" if there are none.
 
 ## Contributing
 

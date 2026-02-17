@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.34.0
 
   - Add `Async::Container::Generic#stopping?` so that policies can more accurately track the state of the container.
 
