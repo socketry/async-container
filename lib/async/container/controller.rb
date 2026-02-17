@@ -111,7 +111,7 @@ module Async
 					self.restart
 				end
 				
-				Console.info(self, "Controller started...")
+				Console.info(self, "Controller started.")
 			end
 			
 			# Stop the container if it's running.
