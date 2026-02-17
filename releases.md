@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Add `Async::Container::Generic#stopping?` so that policies can more accurately track the state of the container.
+
 ## v0.33.0
 
   - Add `Policy#make_statistics` to allow policies to customize statistics initialization.

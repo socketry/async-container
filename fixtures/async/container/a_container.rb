@@ -8,7 +8,8 @@ require "async"
 module Async
 	module Container
 		AContainer = Sus::Shared("a container") do
-			let(:container) {subject.new}
+			let(:policy) {Async::Container::Policy::DEFAULT}
+			let(:container) {subject.new(policy: policy)}
 			
 			with "#run" do
 				it "can run several instances concurrently" do
@@ -124,6 +125,21 @@ module Async
 			end
 			
 			with "#stop" do
+				let(:policy) do
+					Class.new(Async::Container::Policy) do
+						def initialize
+							@events = []
+						end
+						
+						attr :events
+						
+						def child_exit(container, child, status, name:, key:, **options)
+							# Capture the state of `stopping?`:
+							@events << [:child_exit, container.stopping?]
+						end
+					end.new
+				end
+				
 				it "can gracefully stop the child process" do
 					container.spawn do
 						sleep(1)
@@ -132,6 +148,7 @@ module Async
 					end
 					
 					expect(container).to be(:running?)
+					expect(container).not.to be(:stopping?)
 					
 					# See above.
 					sleep 0.001
@@ -139,6 +156,7 @@ module Async
 					container.stop(true)
 					
 					expect(container).not.to be(:running?)
+					expect(policy.events).to be == [[:child_exit, true]]
 				end
 				
 				it "can forcefully stop the child process" do
@@ -156,6 +174,7 @@ module Async
 					container.stop(false)
 					
 					expect(container).not.to be(:running?)
+					expect(policy.events).to be == [[:child_exit, true]]
 				end
 				
 				it "can stop an uncooperative child process" do

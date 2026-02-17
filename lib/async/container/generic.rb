@@ -97,6 +97,12 @@ module Async
 				@group.running?
 			end
 			
+			# Whether the container is currently stopping.
+			# @returns [Boolean]
+			def stopping?
+				!@running
+			end
+			
 			# Sleep until some state change occurs or the specified duration elapses.
 			#
 			# @parameter duration [Numeric] the maximum amount of time to sleep for.
