@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.34.2
 
   - Once a container is stopped, it stays stopped.
 
