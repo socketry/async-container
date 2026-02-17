@@ -170,8 +170,6 @@ module Async
 			rescue => error
 				Console.error(self, "Error while stopping container!", exception: error)
 				raise
-			ensure
-				@stopping = false
 			end
 			
 			protected def health_check_failed(child, age_clock, health_check_timeout)
