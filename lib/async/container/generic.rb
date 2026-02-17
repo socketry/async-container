@@ -47,7 +47,7 @@ module Async
 			# @parameter options [Hash] Options passed to the {Group} instance.
 			def initialize(policy: Policy::DEFAULT, **options)
 				@group = Group.new(**options)
-				@running = true
+				@stopping = false
 				
 				@state = {}
 				
@@ -100,7 +100,7 @@ module Async
 			# Whether the container is currently stopping.
 			# @returns [Boolean]
 			def stopping?
-				!@running
+				@stopping
 			end
 			
 			# Sleep until some state change occurs or the specified duration elapses.
@@ -153,8 +153,13 @@ module Async
 			# Stop the children instances.
 			# @parameter timeout [Boolean | Numeric] Whether to stop gracefully, or a specific timeout.
 			def stop(timeout = true)
+				if @stopping
+					Console.warn(self, "Container is already stopping!")
+					return
+				end
+				
 				Console.info(self, "Stopping container...", timeout: timeout)
-				@running = false
+				@stopping = true
 				@group.stop(timeout)
 				
 				if @group.running?
@@ -166,7 +171,7 @@ module Async
 				Console.error(self, "Error while stopping container!", exception: error)
 				raise
 			ensure
-				@running = true
+				@stopping = false
 			end
 			
 			protected def health_check_failed(child, age_clock, health_check_timeout)
@@ -212,7 +217,7 @@ module Async
 				@statistics.spawn!
 				
 				fiber do
-					while @running
+					until @stopping
 						Console.debug(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
 						child = self.start(name, &block)
@@ -263,16 +268,16 @@ module Async
 								end
 							end
 						rescue => error
-							Console.error(self, "Error during child process management!", exception: error, running: @running)
+							Console.error(self, "Error during child process management!", exception: error, stopping: @stopping)
 						ensure
 							delete(key, child)
 						end
 						
 						if status&.success?
-							Console.debug(self, "Child exited successfully.", status: status, running: @running)
+							Console.debug(self, "Child exited successfully.", status: status, stopping: @stopping)
 						else
 							@statistics.failure!
-							Console.error(self, "Child exited with error!", status: status, running: @running)
+							Console.error(self, "Child exited with error!", status: status, stopping: @stopping)
 						end
 						
 						# Notify policy of exit (after statistics are updated):
@@ -282,7 +287,7 @@ module Async
 							Console.error(self, "Policy error in child_exit!", exception: error)
 						end
 						
-						if restart && @running
+						if restart && !@stopping
 							@statistics.restart!
 						else
 							break
