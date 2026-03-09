@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.34.3
 
   - `Controller#restart` and `Controller#reload` now include a `status:` message in the `ready!` notification, so `systemctl status` shows "Running with N children." instead of the stale "Initializing controller..." message.
 
