@@ -163,7 +163,7 @@ module Async
 					old_container&.stop(@graceful_stop)
 				end
 				
-				@notify&.ready!(size: @container.size)
+				@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
 			rescue => error
 				raise
 			ensure
@@ -196,7 +196,7 @@ module Async
 					
 					raise SetupError, @container
 				else
-					@notify&.ready!
+					@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
 				end
 			end
 			

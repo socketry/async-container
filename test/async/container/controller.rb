@@ -6,6 +6,7 @@
 require "async/container/controller"
 require "async/container/controllers"
 require "async/container/notify/server"
+require "async/container/notify/socket"
 
 describe Async::Container::Controller do
 	let(:controller) {subject.new}
@@ -53,6 +54,46 @@ describe Async::Container::Controller do
 			expect(input.read(1)).to be == ","
 			
 			controller.wait
+		end
+	end
+	
+	with "notify" do
+		before do
+			@notify_server = Async::Container::Notify::Server.open
+			@notify_client = Async::Container::Notify::Socket.new(@notify_server.path)
+			@notify = @notify_server.bind
+		end
+		
+		after do
+			@notify&.close
+		end
+		
+		let(:controller) {subject.new(notify: @notify_client)}
+		
+		it "sends status with ready notification on reload" do
+			def controller.setup(container)
+				container.spawn do |instance|
+					instance.ready!
+					sleep(0.1)
+				end
+			end
+			
+			controller.start
+			
+			# Drain the start ready message:
+			@notify.wait_until_ready
+			
+			controller.reload
+			
+			# Capture messages until we find the reload ready notification:
+			while message = @notify.receive
+				break if message[:ready]
+			end
+			
+			expect(message).to have_keys(
+				ready: be == true,
+				status: be =~ /Running/
+			)
 		end
 	end
 	
@@ -109,6 +150,20 @@ describe Async::Container::Controller do
 			Process.kill(:INT, process_id)
 			
 			expect(input.gets).to be == "Exiting...\n"
+		end
+		
+		it "sends status with ready notification on start" do
+			expect(input.gets).to be == "Ready...\n"
+			
+			# Capture messages until we receive the ready notification:
+			while message = @notify.receive
+				break if message[:ready]
+			end
+			
+			expect(message).to have_keys(
+				ready: be == true,
+				status: be =~ /Running/
+			)
 		end
 	end
 	

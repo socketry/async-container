@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - `Controller#restart` and `Controller#reload` now include a `status:` message in the `ready!` notification, so `systemctl status` shows "Running with N children." instead of the stale "Initializing controller..." message.
+
 ## v0.34.2
 
   - Once a container is stopped, it stays stopped.
