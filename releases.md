@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.34.4
 
   - Add missing `bake` and `context` files to the release.
 

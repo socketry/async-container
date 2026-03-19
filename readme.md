@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.34.4
+
+  - Add missing `bake` and `context` files to the release.
+
 ### v0.34.3
 
   - `Controller#restart` and `Controller#reload` now include a `status:` message in the `ready!` notification, so `systemctl status` shows "Running with N children." instead of the stale "Initializing controller..." message.
@@ -67,11 +71,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.29.0
 
   - Introduce `Client#healthy!` for sending health check messages.
-
-### v0.28.0
-
-  - Add `startup_timeout` parameter to `spawn` and `run` methods for detecting processes that hang during startup and never become ready.
-  - Health check timeout now only applies after a process becomes ready, preventing premature timeouts for slow-starting applications.
 
 ## Contributing
 
