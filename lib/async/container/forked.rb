@@ -80,13 +80,15 @@ module Async
 					# This method replaces the child process with the new executable, thus this method never returns.
 					#
 					# @parameter arguments [Array] The arguments to pass to the new process.
-					# @parameter ready [Boolean] If true, informs the parent process that the child is ready. Otherwise, the child process will need to use a notification protocol to inform the parent process that it is ready.
+					# @parameter ready [Boolean] If true, informs the parent process that the child is ready before exec. The notification pipe will still be passed to the exec'd process to prevent premature termination.
 					# @parameter options [Hash] Additional options to pass to {::Process.exec}.
 					def exec(*arguments, ready: true, **options)
+						# Always set up the notification pipe to be inherited by the exec'd process.
+						# This prevents the pipe from closing, which would trigger hang prevention and SIGKILL.
+						self.before_spawn(arguments, options)
+						
 						if ready
 							self.ready!(status: "(exec)")
-						else
-							self.before_spawn(arguments, options)
 						end
 						
 						::Process.exec(*arguments, **options)
