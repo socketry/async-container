@@ -91,10 +91,11 @@ module Async
 					# Execute a child process using {::Process.spawn}. In order to simulate {::Process.exec}, an {Exit} instance is raised to propagage exit status.
 					# This creates the illusion that this method does not return (normally).
 					def exec(*arguments, ready: true, **options)
+						# Always set up the notification pipe to be inherited by the spawned process.
+						self.before_spawn(arguments, options)
+						
 						if ready
 							self.ready!(status: "(spawn)")
-						else
-							self.before_spawn(arguments, options)
 						end
 						
 						begin

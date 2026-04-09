@@ -107,6 +107,27 @@ module Async
 						)
 					end
 				end
+				
+				it "can exec with ready: true without premature termination" do
+					container.spawn(restart: false) do |instance|
+						# Using exec with ready: true should not cause the process to be killed
+						# by hang prevention, even though the notification pipe stays open.
+						instance.exec("sleep", "1", ready: true)
+					end
+					
+					# Wait for the process to become ready:
+					container.wait_until_ready
+					
+					# Sleep longer than the hang prevention timeout (0.1s) to verify
+					# the process isn't prematurely killed:
+					sleep(0.2)
+					
+					# The process should still be running (not killed by hang prevention):
+					expect(container).to be(:running?)
+					
+					# Now stop the container:
+					container.stop(false)
+				end
 			end
 			
 			with "#sleep" do

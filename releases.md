@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - **Fixed**: `instance.exec` with `ready: true` no longer causes premature termination. The notification pipe is now always passed to the exec'd process.
+
 ## v0.34.4
 
   - Add missing `bake` and `context` files to the release.
