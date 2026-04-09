@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.34.5
+
+  - **Fixed**: `instance.exec` with `ready: true` no longer causes premature termination. The notification pipe is now always passed to the exec'd process.
+
 ### v0.34.4
 
   - Add missing `bake` and `context` files to the release.
@@ -67,10 +71,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 
   - `SIGTERM` is now graceful, the same as `SIGINT`, for better compatibility with Kubernetes and systemd.
   - `ASYNC_CONTAINER_INTERRUPT_TIMEOUT` and `ASYNC_CONTAINER_TERMINATE_TIMEOUT` are removed and replaced by `ASYNC_CONTAINER_GRACEFUL_TIMEOUT`.
-
-### v0.29.0
-
-  - Introduce `Client#healthy!` for sending health check messages.
 
 ## Contributing
 

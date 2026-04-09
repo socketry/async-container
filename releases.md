@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.34.5
 
   - **Fixed**: `instance.exec` with `ready: true` no longer causes premature termination. The notification pipe is now always passed to the exec'd process.
 
