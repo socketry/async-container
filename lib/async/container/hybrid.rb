@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2019-2025, by Samuel Williams.
+# Copyright, 2019-2026, by Samuel Williams.
 # Copyright, 2022, by Anton Sozontov.
 
 require_relative "forked"
@@ -37,8 +37,15 @@ module Async
 						container.stop(false)
 						raise
 					ensure
-						# Stop it gracefully (also code path for Interrupt):
-						container.stop
+						# Graceful drain on Interrupt. The inner per-fork container imposes
+						# no wall-clock deadline of its own — the parent's `Group#stop(graceful)`
+						# is the authoritative timer, via `Forked::Child.wait(timeout)` followed
+						# by `kill!` escalation if the fork doesn't exit within budget. A finite
+						# value here would race the parent's budget (most visibly when they're
+						# equal, e.g. configured at 30s on both layers); `Float::INFINITY` lets
+						# the inner threads exit at their own pace so the parent's escalation
+						# remains the single source of shutdown timing.
+						container.stop(Float::INFINITY)
 					end
 				end
 				
