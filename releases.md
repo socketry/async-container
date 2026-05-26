@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - **Fixed**: `Hybrid` now interrupts inner threaded children during graceful shutdown and force-stops remaining children on exit.
+
 ## v0.34.5
 
   - **Fixed**: `instance.exec` with `ready: true` no longer causes premature termination. The notification pipe is now always passed to the exec'd process.

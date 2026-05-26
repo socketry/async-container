@@ -115,6 +115,11 @@ module Async
 				@group.wait
 			end
 			
+			# Gracefully interrupt all child instances.
+			def interrupt
+				@group.interrupt
+			end
+			
 			# Returns true if all children instances have the specified status flag set.
 			# e.g. `:ready`.
 			# This state is updated by the process readiness protocol mechanism. See {Notify::Client} for more details.
