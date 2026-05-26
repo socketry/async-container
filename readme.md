@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.35.0
+
+  - **Fixed**: `Hybrid` now interrupts inner threaded children during graceful shutdown and force-stops remaining children on exit.
+
 ### v0.34.5
 
   - **Fixed**: `instance.exec` with `ready: true` no longer causes premature termination. The notification pipe is now always passed to the exec'd process.
@@ -66,11 +70,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
   - Introduce `Async::Container::Policy` for managing child lifecycle events and implementing custom failure handling strategies.
   - Add `Async::Container::Statistics::Rate` for tracking failure and restart rates over sliding time windows.
   - Fix restart counter to only increment when actually restarting (check `@running` flag).
-
-### v0.30.0
-
-  - `SIGTERM` is now graceful, the same as `SIGINT`, for better compatibility with Kubernetes and systemd.
-  - `ASYNC_CONTAINER_INTERRUPT_TIMEOUT` and `ASYNC_CONTAINER_TERMINATE_TIMEOUT` are removed and replaced by `ASYNC_CONTAINER_GRACEFUL_TIMEOUT`.
 
 ## Contributing
 
