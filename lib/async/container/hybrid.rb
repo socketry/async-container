@@ -31,14 +31,15 @@ module Async
 						container.wait_until_ready
 						instance.ready!
 						
-						container.wait
-					rescue Async::Container::Terminate
-						# Stop it immediately:
-						container.stop(false)
-						raise
+						begin
+							container.wait
+						rescue Interrupt
+							# Gracefully interrupt child threads; parent process handles escalation.
+							container.interrupt
+							retry
+						end
 					ensure
-						# Stop it gracefully (also code path for Interrupt):
-						container.stop
+						container.stop(false)
 					end
 				end
 				
