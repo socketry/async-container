@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.35.1
 
   - **Fixed**: `Hybrid` container now stops on interrupt instead of restarting indefinitely.
 

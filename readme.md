@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.35.1
+
+  - **Fixed**: `Hybrid` container now stops on interrupt instead of restarting indefinitely.
+
 ### v0.35.0
 
   - **Fixed**: `Hybrid` now interrupts inner threaded children during graceful shutdown and force-stops remaining children on exit.
@@ -64,12 +68,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 
   - Minor **breaking** changes to `Async::Container::Policy` interface.
   - Expose `Async::Container::Statistics::Rate#window`.
-
-### v0.31.0
-
-  - Introduce `Async::Container::Policy` for managing child lifecycle events and implementing custom failure handling strategies.
-  - Add `Async::Container::Statistics::Rate` for tracking failure and restart rates over sliding time windows.
-  - Fix restart counter to only increment when actually restarting (check `@running` flag).
 
 ## Contributing
 
