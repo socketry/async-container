@@ -117,6 +117,10 @@ module Async
 			
 			# Gracefully interrupt all child instances.
 			def interrupt
+				# We must enter the stopping state before signalling the children. Interrupting a child causes it to drain and exit, but the main run loop will respawn any child that exits while `restart: true` and the container is not stopping (see the `restart && !@stopping` gate in `#run`). Without setting this flag, an interrupted child immediately respawns, so the container never drains and `#wait` never returns.
+				#
+				# This matters most for `Hybrid` containers: a `SIGINT`/`SIGTERM` delivered to a fork is translated into a call to `#interrupt` on the inner threaded container, which typically runs with `restart: true` (the default for `async-service` managed services). If `#interrupt` did not set this flag, the inner threads would drain, exit, and respawn in a loop, so a single signal would never terminate the fork. Setting `@stopping = true` here makes `#interrupt` behave as the start of a graceful shutdown: children drain and exit, are not respawned, and the fork terminates - consistent with how `Forked` and `Threaded` containers handle a single interrupt.
+				@stopping = true
 				@group.interrupt
 			end
 			

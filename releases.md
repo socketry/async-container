@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - **Fixed**: `Hybrid` container now stops on interrupt instead of restarting indefinitely.
+
 ## v0.35.0
 
   - **Fixed**: `Hybrid` now interrupts inner threaded children during graceful shutdown and force-stops remaining children on exit.
