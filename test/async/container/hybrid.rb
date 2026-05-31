@@ -61,4 +61,43 @@ describe Async::Container::Hybrid do
 		Async::Container.send(:remove_const, :Threaded)
 		Async::Container.const_set(:Threaded, original_threaded)
 	end
+	
+	# https://github.com/socketry/async-container/issues/58
+	it "exits the fork on a single interrupt even when the inner container has restart: true" do
+		pids = IO.pipe
+		
+		container = subject.new
+		container.run(count: 1, forks: 1, threads: 1, restart: true) do |instance|
+			pids.last.puts(Process.pid.to_s)
+			instance.ready!
+			sleep
+		end
+		
+		container.wait_until_ready
+		
+		fork_pid = Integer(pids.first.gets)
+		
+		# Mimic a single SIGINT delivered to the fork (e.g. memory-based worker recycling):
+		Process.kill(:INT, fork_pid)
+		
+		# The fork must drain its inner threads and exit, rather than respawning them forever:
+		exited = false
+		8.times do
+			reaped, _status = Process.waitpid2(fork_pid, Process::WNOHANG)
+			if reaped
+				exited = true
+				break
+			end
+			sleep(0.1)
+		rescue Errno::ECHILD
+			exited = true
+			break
+		end
+		
+		expect(exited).to be == true
+	ensure
+		Process.kill(:KILL, fork_pid) if fork_pid && !exited
+		container&.stop
+		pids&.each(&:close)
+	end
 end if Async::Container.fork?
