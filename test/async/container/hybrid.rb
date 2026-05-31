@@ -63,10 +63,14 @@ describe Async::Container::Hybrid do
 	end
 	
 	# https://github.com/socketry/async-container/issues/58
-	it "exits the fork on a single interrupt even when the inner container has restart: true" do
+	#
+	# SIGINT and SIGTERM are intentionally equivalent: both are trapped in the fork and converted into `Interrupt` (see `Forked::Child.fork`), so a single signal of either kind must drain the inner threads and exit, rather than respawning them forever (the inner container has `restart: true`, the default for `async-service` managed services).
+	def exits_fork_on_single_signal(signal)
 		pids = IO.pipe
-		
+		fork_pid = nil
+		exited = false
 		container = subject.new
+		
 		container.run(count: 1, forks: 1, threads: 1, restart: true) do |instance|
 			pids.last.puts(Process.pid.to_s)
 			instance.ready!
@@ -77,11 +81,10 @@ describe Async::Container::Hybrid do
 		
 		fork_pid = Integer(pids.first.gets)
 		
-		# Mimic a single SIGINT delivered to the fork (e.g. memory-based worker recycling):
-		Process.kill(:INT, fork_pid)
+		# Mimic a single signal delivered to the fork (e.g. memory-based worker recycling):
+		Process.kill(signal, fork_pid)
 		
 		# The fork must drain its inner threads and exit, rather than respawning them forever:
-		exited = false
 		8.times do
 			reaped, _status = Process.waitpid2(fork_pid, Process::WNOHANG)
 			if reaped
@@ -99,5 +102,13 @@ describe Async::Container::Hybrid do
 		Process.kill(:KILL, fork_pid) if fork_pid && !exited
 		container&.stop
 		pids&.each(&:close)
+	end
+	
+	it "exits the fork on a single SIGINT even when the inner container has restart: true" do
+		exits_fork_on_single_signal(:INT)
+	end
+	
+	it "exits the fork on a single SIGTERM even when the inner container has restart: true" do
+		exits_fork_on_single_signal(:TERM)
 	end
 end if Async::Container.fork?
