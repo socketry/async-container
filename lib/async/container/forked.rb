@@ -7,6 +7,7 @@ require_relative "error"
 
 require_relative "generic"
 require_relative "channel"
+require_relative "context"
 require_relative "notify/pipe"
 
 module Async
@@ -22,10 +23,12 @@ module Async
 			class Child < Channel
 				# Represents a running child process from the point of view of the child process.
 				class Instance < Notify::Pipe
+					include Context
+					
 					# Wrap an instance around the {Process} instance from within the forked child.
 					# @parameter process [Process] The process intance to wrap.
-					def self.for(process)
-						instance = self.new(process.out)
+					def self.for(process, instance_num: nil)
+						instance = self.new(process.out, num: instance_num)
 						
 						# The child process won't be reading from the channel:
 						process.close_read
@@ -38,10 +41,19 @@ module Async
 					# Initialize the child process instance.
 					#
 					# @parameter io [IO] The IO object to use for communication.
-					def initialize(io)
-						super
+					def initialize(io, num: nil)
+						super(io)
 						
 						@name = nil
+						@num = num
+					end
+					
+					# @returns [Integer | Nil] The container-scoped ordinal of this worker.
+					attr :num
+					
+					# @returns [Symbol] The kind of worker this instance represents.
+					def kind
+						:process
 					end
 					
 					# Generate a hash representation of the process.
@@ -51,6 +63,7 @@ module Async
 						{
 							process_id: ::Process.pid,
 							name: @name,
+							num: @num,
 						}
 					end
 					
@@ -98,9 +111,9 @@ module Async
 				# Fork a child process appropriate for a container.
 				#
 				# @returns [Process]
-				def self.fork(**options)
+				def self.fork(instance_num: nil, **options)
 					# $stderr.puts fork: caller
-					self.new(**options) do |process|
+					self.new(instance_num: instance_num, **options) do |process|
 						::Process.fork do
 							# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 							Signal.trap(:INT){::Thread.current.raise(Interrupt)}
@@ -109,7 +122,7 @@ module Async
 							
 							# This could be a configuration option:
 							::Thread.handle_interrupt(SignalException => :immediate) do
-								yield Instance.for(process)
+								yield Instance.for(process, instance_num: instance_num)
 							rescue Interrupt
 								# Graceful exit.
 							rescue Exception => error
@@ -138,10 +151,11 @@ module Async
 				
 				# Initialize the process.
 				# @parameter name [String] The name to use for the child process.
-				def initialize(name: nil, **options)
+				def initialize(name: nil, instance_num: nil, **options)
 					super(**options)
 					
 					@name = name
+					@instance_num = instance_num
 					@status = nil
 					@pid = nil
 					
@@ -184,6 +198,9 @@ module Async
 				
 				# @attribute [Integer] The process identifier.
 				attr :pid
+				
+				# @attribute [Integer | Nil] The container-scoped ordinal of the worker this child represents.
+				attr :instance_num
 				
 				# A human readable representation of the process.
 				# @returns [String]
@@ -265,8 +282,8 @@ module Async
 			# Start a named child process and execute the provided block in it.
 			# @parameter name [String] The name (title) of the child process.
 			# @parameter block [Proc] The block to execute in the child process.
-			def start(name, &block)
-				Child.fork(name: name, &block)
+			def start(name, instance_num: nil, &block)
+				Child.fork(name: name, instance_num: instance_num, &block)
 			end
 		end
 	end

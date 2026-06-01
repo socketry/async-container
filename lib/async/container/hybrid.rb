@@ -26,7 +26,12 @@ module Async
 					self.spawn(**options) do |instance|
 						container = Threaded.new
 						
-						container.run(count: threads, health_check_timeout: health_check_timeout, **options, &block)
+						# Link each inner thread worker to this fork, so the thread instance can reach
+						# the durable process num via `instance.parent` / `instance.context`.
+						container.run(count: threads, health_check_timeout: health_check_timeout, **options) do |worker|
+							worker.parent = instance
+							block.call(worker)
+						end
 						
 						container.wait_until_ready
 						instance.ready!

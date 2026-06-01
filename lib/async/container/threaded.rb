@@ -5,6 +5,7 @@
 
 require_relative "generic"
 require_relative "channel"
+require_relative "context"
 require_relative "notify/pipe"
 
 module Async
@@ -41,10 +42,12 @@ module Async
 				
 				# Represents a running child thread from the point of view of the child thread.
 				class Instance < Notify::Pipe
+					include Context
+					
 					# Wrap an instance around the {Thread} instance from within the threaded child.
 					# @parameter thread [Thread] The thread intance to wrap.
-					def self.for(thread)
-						instance = self.new(thread.out)
+					def self.for(thread, instance_num: nil)
+						instance = self.new(thread.out, num: instance_num)
 						
 						return instance
 					end
@@ -52,10 +55,19 @@ module Async
 					# Initialize the child thread instance.
 					#
 					# @parameter io [IO] The IO object to use for communication with the parent.
-					def initialize(io)
+					def initialize(io, num: nil)
 						@thread = ::Thread.current
+						@num = num
 						
-						super
+						super(io)
+					end
+					
+					# @returns [Integer | Nil] The container-scoped ordinal of this worker.
+					attr :num
+					
+					# @returns [Symbol] The kind of worker this instance represents.
+					def kind
+						:thread
 					end
 					
 					# Generate a hash representation of the thread.
@@ -66,6 +78,7 @@ module Async
 							process_id: ::Process.pid,
 							thread_id: @thread.object_id,
 							name: @thread.name,
+							num: @num,
 						}
 					end
 					
@@ -111,12 +124,12 @@ module Async
 				# Start a new child thread and execute the provided block in it.
 				#
 				# @parameter options [Hash] Additional options to to the new child instance.
-				def self.fork(**options)
-					self.new(**options) do |thread|
+				def self.fork(instance_num: nil, **options)
+					self.new(instance_num: instance_num, **options) do |thread|
 						::Thread.new do
 							# This could be a configuration option (see forked implementation too):
 							::Thread.handle_interrupt(SignalException => :immediate) do
-								yield Instance.for(thread)
+								yield Instance.for(thread, instance_num: instance_num)
 							end
 						end
 					end
@@ -125,9 +138,10 @@ module Async
 				# Initialize the thread.
 				#
 				# @parameter name [String] The name to use for the child thread.
-				def initialize(name: nil, **options)
+				def initialize(name: nil, instance_num: nil, **options)
 					super(**options)
 					
+					@instance_num = instance_num
 					@status = nil
 					
 					@thread = yield(self)
@@ -149,6 +163,9 @@ module Async
 						end
 					end
 				end
+				
+				# @attribute [Integer | Nil] The container-scoped ordinal of the worker this child represents.
+				attr :instance_num
 				
 				# Convert the child process to a hash, suitable for serialization.
 				#
@@ -286,8 +303,8 @@ module Async
 			# Start a named child thread and execute the provided block in it.
 			# @parameter name [String] The name (title) of the child process.
 			# @parameter block [Proc] The block to execute in the child process.
-			def start(name, &block)
-				Child.fork(name: name, &block)
+			def start(name, instance_num: nil, &block)
+				Child.fork(name: name, instance_num: instance_num, &block)
 			end
 		end
 	end

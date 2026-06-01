@@ -54,6 +54,11 @@ module Async
 				@policy = policy
 				@statistics = @policy.make_statistics
 				@keyed = {}
+				# Container-scoped allocation of worker ordinals (`instance_num`): a monotonic
+				# counter plus a free set, so a num released by a permanently exited worker is
+				# recycled, keeping the range compact (e.g. for multiprocess metric files).
+				@next_instance_num = 0
+				@free_instance_nums = Set.new
 			end
 			
 			# @attribute [Group] The group of running children instances.
@@ -213,7 +218,7 @@ module Async
 			# @parameter key [Symbol] A key used for reloading child instances.
 			# @parameter health_check_timeout [Numeric | Nil] The maximum time a child instance can run without updating its state, before it is terminated as unhealthy.
 			# @parameter startup_timeout [Numeric | Nil] The maximum time a child instance can run without becoming ready, before it is terminated as unhealthy.
-			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, startup_timeout: nil, &block)
+			def spawn(name: nil, restart: false, key: nil, instance_num: nil, health_check_timeout: nil, startup_timeout: nil, &block)
 				name ||= UNNAMED
 				
 				if mark?(key)
@@ -221,13 +226,19 @@ module Async
 					return false
 				end
 				
+				# Allocate before the fiber so the closure captures the num and it stays unchanged
+				# across a restart (which re-enters `start` in the same fiber). Only release a num
+				# we allocated ourselves, and only when the worker permanently exits.
+				owned = instance_num.nil?
+				instance_num ||= acquire_instance_num
+				
 				@statistics.spawn!
 				
 				fiber do
 					until @stopping
 						Console.debug(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
-						child = self.start(name, &block)
+						child = self.start(name, instance_num: instance_num, &block)
 						state = insert(key, child)
 						
 						# Notify policy of spawn
@@ -300,9 +311,32 @@ module Async
 							break
 						end
 					end
+				ensure
+					release_instance_num(instance_num) if owned
 				end.resume
 				
 				return true
+			end
+			
+			# Allocate a container-scoped worker ordinal, recycling the lowest released num.
+			# Allocation runs on the single cooperative reactor thread (acquire in the run loop,
+			# release in the fiber's ensure), so no synchronisation is required.
+			protected def acquire_instance_num
+				unless @free_instance_nums.empty?
+					num = @free_instance_nums.min
+					@free_instance_nums.delete(num)
+					return num
+				end
+				
+				num = @next_instance_num
+				@next_instance_num += 1
+				num
+			end
+			
+			# Return a worker ordinal to the free set once its worker has permanently exited. Using a
+			# Set makes release idempotent, so a double release can't hand the same num to two workers.
+			protected def release_instance_num(instance_num)
+				@free_instance_nums.add(instance_num)
 			end
 			
 			# Run multiple instances of the same block in the container.
