@@ -24,9 +24,15 @@ module Async
 				
 				forks.times do
 					self.spawn(**options) do |instance|
-						container = Threaded.new
+						# Fork ordinals are unique and stable across restart; each fork owns a
+						# deterministic fixed range for its inner threaded workers.
+						first_ordinal = instance.ordinal * threads
+						ordinals = Ordinals::Fixed.range(first_ordinal, threads)
+						container = Threaded.new(ordinals: ordinals)
 						
-						container.run(count: threads, health_check_timeout: health_check_timeout, **options, &block)
+						container.run(count: threads, health_check_timeout: health_check_timeout, **options) do |worker|
+							block.call(worker)
+						end
 						
 						container.wait_until_ready
 						instance.ready!

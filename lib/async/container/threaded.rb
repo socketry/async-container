@@ -43,8 +43,8 @@ module Async
 				class Instance < Notify::Pipe
 					# Wrap an instance around the {Thread} instance from within the threaded child.
 					# @parameter thread [Thread] The thread intance to wrap.
-					def self.for(thread)
-						instance = self.new(thread.out)
+					def self.for(thread, ordinal: nil)
+						instance = self.new(thread.out, ordinal: ordinal)
 						
 						return instance
 					end
@@ -52,11 +52,15 @@ module Async
 					# Initialize the child thread instance.
 					#
 					# @parameter io [IO] The IO object to use for communication with the parent.
-					def initialize(io)
+					def initialize(io, ordinal: nil)
 						@thread = ::Thread.current
+						@ordinal = ordinal
 						
-						super
+						super(io)
 					end
+					
+					# @returns [Integer | Nil] The container-scoped ordinal of this worker.
+					attr :ordinal
 					
 					# Generate a hash representation of the thread.
 					#
@@ -66,6 +70,7 @@ module Async
 							process_id: ::Process.pid,
 							thread_id: @thread.object_id,
 							name: @thread.name,
+							ordinal: @ordinal,
 						}
 					end
 					
@@ -111,12 +116,12 @@ module Async
 				# Start a new child thread and execute the provided block in it.
 				#
 				# @parameter options [Hash] Additional options to to the new child instance.
-				def self.fork(**options)
-					self.new(**options) do |thread|
+				def self.fork(ordinal: nil, **options)
+					self.new(ordinal: ordinal, **options) do |thread|
 						::Thread.new do
 							# This could be a configuration option (see forked implementation too):
 							::Thread.handle_interrupt(SignalException => :immediate) do
-								yield Instance.for(thread)
+								yield Instance.for(thread, ordinal: ordinal)
 							end
 						end
 					end
@@ -125,9 +130,10 @@ module Async
 				# Initialize the thread.
 				#
 				# @parameter name [String] The name to use for the child thread.
-				def initialize(name: nil, **options)
+				def initialize(name: nil, ordinal: nil, **options)
 					super(**options)
 					
+					@ordinal = ordinal
 					@status = nil
 					
 					@thread = yield(self)
@@ -149,6 +155,9 @@ module Async
 						end
 					end
 				end
+				
+				# @attribute [Integer | Nil] The container-scoped ordinal of the worker this child represents.
+				attr :ordinal
 				
 				# Convert the child process to a hash, suitable for serialization.
 				#
@@ -286,8 +295,8 @@ module Async
 			# Start a named child thread and execute the provided block in it.
 			# @parameter name [String] The name (title) of the child process.
 			# @parameter block [Proc] The block to execute in the child process.
-			def start(name, &block)
-				Child.fork(name: name, &block)
+			def start(name, ordinal: nil, &block)
+				Child.fork(name: name, ordinal: ordinal, &block)
 			end
 		end
 	end

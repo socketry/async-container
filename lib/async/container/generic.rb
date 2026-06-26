@@ -9,6 +9,7 @@ require "async/clock"
 
 require_relative "group"
 require_relative "keyed"
+require_relative "ordinals"
 require_relative "statistics"
 require_relative "policy"
 
@@ -45,7 +46,7 @@ module Async
 			#
 			# @parameter policy [Policy] The policy to use for managing child lifecycle events.
 			# @parameter options [Hash] Options passed to the {Group} instance.
-			def initialize(policy: Policy::DEFAULT, **options)
+			def initialize(policy: Policy::DEFAULT, ordinals: nil, **options)
 				@group = Group.new(**options)
 				@stopping = false
 				
@@ -54,6 +55,7 @@ module Async
 				@policy = policy
 				@statistics = @policy.make_statistics
 				@keyed = {}
+				@ordinals = ordinals || Ordinals::Sequential.new
 			end
 			
 			# @attribute [Group] The group of running children instances.
@@ -221,13 +223,17 @@ module Async
 					return false
 				end
 				
+				# Allocate before the fiber so the closure captures the ordinal and it stays
+				# unchanged across a restart (which re-enters `start` in the same fiber).
+				ordinal = @ordinals.acquire
+				
 				@statistics.spawn!
 				
 				fiber do
 					until @stopping
 						Console.debug(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
-						child = self.start(name, &block)
+						child = self.start(name, ordinal: ordinal, &block)
 						state = insert(key, child)
 						
 						# Notify policy of spawn
@@ -300,6 +306,8 @@ module Async
 							break
 						end
 					end
+				ensure
+					@ordinals.release(ordinal)
 				end.resume
 				
 				return true

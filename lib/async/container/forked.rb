@@ -24,8 +24,8 @@ module Async
 				class Instance < Notify::Pipe
 					# Wrap an instance around the {Process} instance from within the forked child.
 					# @parameter process [Process] The process intance to wrap.
-					def self.for(process)
-						instance = self.new(process.out)
+					def self.for(process, ordinal: nil)
+						instance = self.new(process.out, ordinal: ordinal)
 						
 						# The child process won't be reading from the channel:
 						process.close_read
@@ -38,11 +38,15 @@ module Async
 					# Initialize the child process instance.
 					#
 					# @parameter io [IO] The IO object to use for communication.
-					def initialize(io)
-						super
+					def initialize(io, ordinal: nil)
+						super(io)
 						
 						@name = nil
+						@ordinal = ordinal
 					end
+					
+					# @returns [Integer | Nil] The container-scoped ordinal of this worker.
+					attr :ordinal
 					
 					# Generate a hash representation of the process.
 					#
@@ -51,6 +55,7 @@ module Async
 						{
 							process_id: ::Process.pid,
 							name: @name,
+							ordinal: @ordinal,
 						}
 					end
 					
@@ -98,9 +103,9 @@ module Async
 				# Fork a child process appropriate for a container.
 				#
 				# @returns [Process]
-				def self.fork(**options)
+				def self.fork(ordinal: nil, **options)
 					# $stderr.puts fork: caller
-					self.new(**options) do |process|
+					self.new(ordinal: ordinal, **options) do |process|
 						::Process.fork do
 							# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 							Signal.trap(:INT){::Thread.current.raise(Interrupt)}
@@ -109,7 +114,7 @@ module Async
 							
 							# This could be a configuration option:
 							::Thread.handle_interrupt(SignalException => :immediate) do
-								yield Instance.for(process)
+								yield Instance.for(process, ordinal: ordinal)
 							rescue Interrupt
 								# Graceful exit.
 							rescue Exception => error
@@ -138,10 +143,11 @@ module Async
 				
 				# Initialize the process.
 				# @parameter name [String] The name to use for the child process.
-				def initialize(name: nil, **options)
+				def initialize(name: nil, ordinal: nil, **options)
 					super(**options)
 					
 					@name = name
+					@ordinal = ordinal
 					@status = nil
 					@pid = nil
 					
@@ -184,6 +190,9 @@ module Async
 				
 				# @attribute [Integer] The process identifier.
 				attr :pid
+				
+				# @attribute [Integer | Nil] The container-scoped ordinal of the worker this child represents.
+				attr :ordinal
 				
 				# A human readable representation of the process.
 				# @returns [String]
@@ -265,8 +274,8 @@ module Async
 			# Start a named child process and execute the provided block in it.
 			# @parameter name [String] The name (title) of the child process.
 			# @parameter block [Proc] The block to execute in the child process.
-			def start(name, &block)
-				Child.fork(name: name, &block)
+			def start(name, ordinal: nil, &block)
+				Child.fork(name: name, ordinal: ordinal, &block)
 			end
 		end
 	end
