@@ -221,14 +221,20 @@ module Async
 				#
 				# @parameter timeout [Numeric | Nil] Maximum time to wait before forceful termination.
 				# @returns [Status]
-				def wait(timeout = 0.1)
+				def wait(timeout = nil)
 					if @waiter
 						Console.debug(self, "Waiting for thread to exit...", child: {thread_id: @thread.object_id}, timeout: timeout)
 						
-						unless @waiter.join(timeout)
-							Console.warn(self, "Thread is blocking, sending kill signal...", child: {thread_id: @thread.object_id}, timeout: timeout)
-							self.kill!
-							@waiter.join
+						if timeout
+							unless @waiter.join(timeout)
+								Console.warn(self, "Thread is blocking, sending kill signal...", child: {thread_id: @thread.object_id}, timeout: timeout)
+								self.kill!
+								@waiter.join
+							end
+						else
+							until @waiter.join(0)
+								sleep(0.1)
+							end
 						end
 						
 						@waiter = nil
