@@ -101,14 +101,14 @@ module Async
 				def self.fork(**options)
 					# $stderr.puts fork: caller
 					self.new(**options) do |process|
-						# Fork from a dedicated thread so the child does not inherit the parent fiber scheduler or the current caller's fiber stack.
+						# Fork from a dedicated thread so the child does not inherit the parent fiber scheduler or the current caller's fiber stack; only this short-lived thread is copied into the child process.
 						::Thread.new do
 							::Process.fork do
 								Signal.trap(:INT){::Thread.current.raise(Interrupt)}
 								Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
 								Signal.trap(:HUP){::Thread.current.raise(Restart)}
 								
-								# CRuby inherits the `Thread.handle_interrupt` mask stack across `Thread.new`, so reset signal delivery before running user code.
+								# CRuby inherits the `Thread.handle_interrupt` mask stack across `Thread.new`, so reset signal delivery before running user code; Async deliberately masks SignalException.
 								::Thread.handle_interrupt(SignalException => :immediate) do
 									yield Instance.for(process)
 								rescue Interrupt
