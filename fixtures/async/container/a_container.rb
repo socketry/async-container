@@ -73,6 +73,38 @@ module Async
 				end
 			end
 			
+			with "Async compatibility" do
+				it "can wait inside an Async task after spawning outside Async" do
+					input, output = IO.pipe
+					
+					container.spawn do
+						output.write(".")
+					end
+					
+					Async do
+						container.wait
+					end
+					
+					output.close
+					expect(input.read).to be == "."
+				end
+				
+				it "can spawn and wait inside the same Async task" do
+					input, output = IO.pipe
+					
+					Async do
+						container.spawn do
+							output.write(".")
+						end
+						
+						container.wait
+					end
+					
+					output.close
+					expect(input.read).to be == "."
+				end
+			end
+			
 			it "should be blocking" do
 				skip "Fiber.blocking? is not supported!" unless Fiber.respond_to?(:blocking?)
 				

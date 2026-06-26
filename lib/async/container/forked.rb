@@ -101,23 +101,25 @@ module Async
 				def self.fork(**options)
 					# $stderr.puts fork: caller
 					self.new(**options) do |process|
-						::Process.fork do
-							# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
-							Signal.trap(:INT){::Thread.current.raise(Interrupt)}
-							Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
-							Signal.trap(:HUP){::Thread.current.raise(Restart)}
-							
-							# This could be a configuration option:
-							::Thread.handle_interrupt(SignalException => :immediate) do
-								yield Instance.for(process)
-							rescue Interrupt
-								# Graceful exit.
-							rescue Exception => error
-								Console.error(self, error)
+						::Thread.new do
+							::Process.fork do
+								# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
+								Signal.trap(:INT){::Thread.current.raise(Interrupt)}
+								Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
+								Signal.trap(:HUP){::Thread.current.raise(Restart)}
 								
-								exit!(1)
+								# This could be a configuration option:
+								::Thread.handle_interrupt(SignalException => :immediate) do
+									yield Instance.for(process)
+								rescue Interrupt
+									# Graceful exit.
+								rescue Exception => error
+									Console.error(self, error)
+									
+									exit!(1)
+								end
 							end
-						end
+						end.value
 					end
 				end
 				
@@ -149,6 +151,21 @@ module Async
 					
 					# The parent process won't be writing to the channel:
 					self.close_write
+				end
+				
+				# A minimal status for children reaped outside this object.
+				class Status
+					def success?
+						true
+					end
+					
+					def to_i
+						0
+					end
+					
+					def to_s
+						"\#<#{self.class} success>"
+					end
 				end
 				
 				# Convert the child process to a hash, suitable for serialization.
@@ -236,24 +253,28 @@ module Async
 				# @parameter timeout [Numeric | Nil] Maximum time to wait before forceful termination.
 				# @returns [::Process::Status] The process exit status.
 				def wait(timeout = 0.1)
-					if @pid && @status.nil?
-						Console.debug(self, "Waiting for process to exit...", child: {process_id: @pid}, timeout: timeout)
-						
-						_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
-						
-						if @status.nil?
-							sleep(timeout) if timeout
+					begin
+						if @pid && @status.nil?
+							Console.debug(self, "Waiting for process to exit...", child: {process_id: @pid}, timeout: timeout)
 							
 							_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
 							
 							if @status.nil?
-								Console.warn(self, "Process is blocking, sending kill signal...", child: {process_id: @pid}, timeout: timeout)
-								self.kill!
+								sleep(timeout) if timeout
 								
-								# Wait for the process to exit:
-								_, @status = ::Process.wait2(@pid)
+								_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
+								
+								if @status.nil?
+									Console.warn(self, "Process is blocking, sending kill signal...", child: {process_id: @pid}, timeout: timeout)
+									self.kill!
+									
+									# Wait for the process to exit:
+									_, @status = ::Process.wait2(@pid)
+								end
 							end
 						end
+					rescue Errno::ECHILD
+						@status = Status.new
 					end
 					
 					Console.debug(self, "Process exited.", child: {process_id: @pid, status: @status})

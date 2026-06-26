@@ -5,6 +5,7 @@
 # Copyright, 2025, by Marc-André Cournoyer.
 
 require "etc"
+require "io/wait"
 require "async/clock"
 
 require_relative "group"
@@ -144,8 +145,6 @@ module Async
 						end
 					end
 					
-					self.sleep
-					
 					if self.status?(:ready)
 						Console.debug(self) do |buffer|
 							buffer.puts "All ready:"
@@ -156,6 +155,8 @@ module Async
 						
 						return true
 					end
+					
+					self.sleep
 				end
 			end
 			
@@ -222,13 +223,22 @@ module Async
 				end
 				
 				@statistics.spawn!
+				started = ::Thread::Queue.new
 				
-				fiber do
+				@group.supervise do
+					first = true
+					
 					until @stopping
 						Console.debug(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
 						child = self.start(name, &block)
 						state = insert(key, child)
+						@group.insert(child)
+						
+						if first
+							started << true
+							first = false
+						end
 						
 						# Notify policy of spawn
 						begin
@@ -247,36 +257,11 @@ module Async
 						status = nil
 						
 						begin
-							status = @group.wait_for(child) do |message|
-								case message
-								when :health_check!
-									if state[:ready]
-										# If a health check timeout is specified, we will monitor the child process and terminate it if it does not update its state within the specified time.
-										if health_check_timeout
-											if health_check_timeout < age_clock.total
-												health_check_failed(child, age_clock, health_check_timeout)
-											end
-										end
-									else
-										# If a startup timeout is specified, we will monitor the child process and terminate it if it does not become ready within the specified time.
-										if startup_timeout
-											if startup_timeout < age_clock.total
-												startup_failed(child, age_clock, startup_timeout)
-											end
-										end
-									end
-								else
-									state.update(message)
-									
-									# Reset the age clock if the child has become ready:
-									if state[:ready]
-										age_clock&.reset!
-									end
-								end
-							end
+							status = wait_for(child, state, age_clock, health_check_timeout, startup_timeout)
 						rescue => error
 							Console.error(self, "Error during child process management!", exception: error, stopping: @stopping)
 						ensure
+							@group.delete(child)
 							delete(key, child)
 						end
 						
@@ -300,7 +285,17 @@ module Async
 							break
 						end
 					end
-				end.resume
+				rescue => error
+					started << error if first
+					raise
+				ensure
+					started << false if first
+				end
+				
+				case result = started.pop
+				when Exception
+					raise result
+				end
 				
 				return true
 			end
@@ -363,6 +358,78 @@ module Async
 			
 			protected
 			
+			def wait_for(child, state, age_clock, health_check_timeout, startup_timeout)
+				while true
+					timeout = next_timeout(state, age_clock, health_check_timeout, startup_timeout)
+					
+					if wait_readable(child, timeout)
+						if message = child.receive
+							state.update(message)
+							
+							# Reset the age clock if the child has become ready:
+							if state[:ready]
+								age_clock&.reset!
+							end
+							
+							@group.health_check!
+						else
+							break
+						end
+					else
+						break if check_timeout(child, state, age_clock, health_check_timeout, startup_timeout)
+					end
+				end
+				
+				return child.wait
+			end
+			
+			def wait_readable(child, timeout)
+				child.in.wait_readable(timeout)
+			rescue IO::TimeoutError
+				false
+			end
+			
+			def next_timeout(state, age_clock, health_check_timeout, startup_timeout)
+				return nil unless age_clock
+				
+				timeout = if state[:ready]
+					health_check_timeout
+				else
+					startup_timeout
+				end
+				
+				if timeout
+					remaining = timeout - age_clock.total
+					return 0 if remaining.negative?
+					
+					if interval = @group.health_check_interval
+						return [remaining, interval].min
+					else
+						return remaining
+					end
+				elsif interval = @group.health_check_interval
+					return interval
+				end
+			end
+			
+			def check_timeout(child, state, age_clock, health_check_timeout, startup_timeout)
+				return false unless age_clock
+				
+				if state[:ready]
+					if health_check_timeout && health_check_timeout < age_clock.total
+						health_check_failed(child, age_clock, health_check_timeout)
+						return true
+					end
+				else
+					if startup_timeout && startup_timeout < age_clock.total
+						startup_failed(child, age_clock, startup_timeout)
+						return true
+					end
+				end
+				
+				return false
+			end
+			
 			# Register the child (value) as running.
 			def insert(key, child)
 				if key
@@ -385,17 +452,6 @@ module Async
 				@state.delete(child)
 			end
 			
-			private
-			
-			if Fiber.respond_to?(:blocking?)
-				def fiber(&block)
-					Fiber.new(blocking: true, &block)
-				end
-			else
-				def fiber(&block)
-					Fiber.new(&block)
-				end
-			end
 		end
 	end
 end
