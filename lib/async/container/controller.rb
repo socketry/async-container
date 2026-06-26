@@ -7,6 +7,7 @@ require_relative "error"
 require_relative "best"
 
 require "async"
+require "async/queue"
 
 require_relative "statistics"
 require_relative "notify"
@@ -33,6 +34,7 @@ module Async
 				@container = nil
 				@signals = {}
 				@signal_queue = ::Thread::Queue.new
+				@event_queue = ::Thread::Queue.new
 				
 				self.trap(SIGHUP) do
 					self.restart
@@ -164,12 +166,7 @@ module Async
 				if old_container
 					Console.info(self, "Stopping old container...")
 					
-					begin
-						@stopping_container = old_container
-						old_container&.stop(@graceful_stop)
-					ensure
-						@stopping_container = nil
-					end
+					stop_container(old_container, @graceful_stop)
 				end
 				
 				@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
@@ -221,7 +218,7 @@ module Async
 							process_signals(@container)
 							
 							if container = @container
-								container.sleep
+								controller_sleep(container)
 							end
 							
 							process_signals(@container) if @container
@@ -236,20 +233,49 @@ module Async
 				self.stop(false)
 			end
 			
-			private def wait_until_ready(container)
-				@waiting_container = container
-				
-				begin
-					until container.status?(:ready)
-						process_signals(container, graceful: container.status?(:ready))
-						
-						break unless container.running?
-						
-						container.sleep
-					end
-				ensure
-					@waiting_container = nil
+			private def stop_container(container, graceful)
+				parent = Async::Task.current
+				task = parent.async(transient: true) do
+					container.stop(graceful)
 				end
+				
+				while task.running?
+					process_signals(@container)
+					controller_sleep(container)
+					process_signals(@container) if @container
+				end
+				
+				task.wait
+			end
+			
+			private def wait_until_ready(container)
+				until container.status?(:ready)
+					process_signals(container, graceful: container.status?(:ready))
+					
+					break unless container.running?
+					
+					controller_sleep(container)
+				end
+			end
+			
+			private def controller_sleep(container = nil)
+				parent = Async::Task.current
+				result = Async::Queue.new
+				
+				event_task = parent.async(transient: true) do
+					result << @event_queue.pop
+				end
+				
+				container_task = if container
+					parent.async(transient: true) do
+						result << container.sleep
+					end
+				end
+				
+				result.pop
+			ensure
+				event_task&.stop
+				container_task&.stop
 			end
 			
 			private def process_signals(container = @container, graceful: @graceful_stop)
@@ -275,27 +301,22 @@ module Async
 			end
 			
 			private def with_signal_handlers
-				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
-				wake_containers = proc do
-					@container&.group&.health_check!
-					@waiting_container&.group&.health_check!
-					@stopping_container&.group&.health_check!
+				queue_signal = proc do |signal|
+					@signal_queue << signal
+					@event_queue << true
 				end
 				
 				interrupt_action = Signal.trap(:INT) do
-					@signal_queue << SIGINT
-					wake_containers.call
+					queue_signal.call(SIGINT)
 				end
 				
 				# SIGTERM behaves the same as SIGINT by default.
 				terminate_action = Signal.trap(:TERM) do
-					@signal_queue << SIGTERM
-					wake_containers.call
+					queue_signal.call(SIGTERM)
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
-					@signal_queue << SIGHUP
-					wake_containers.call
+					queue_signal.call(SIGHUP)
 				end
 				
 				yield
