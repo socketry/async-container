@@ -114,7 +114,9 @@ module Async
 				def self.fork(**options)
 					self.new(**options) do |thread|
 						::Thread.new do
-							yield Instance.for(thread)
+							::Thread.handle_interrupt(SignalException => :immediate) do
+								yield Instance.for(thread)
+							end
 						end
 					end
 				end
