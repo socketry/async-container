@@ -31,6 +31,8 @@ module Async
 		# Async task context used for child supervisors and provides just enough
 		# coordination for container-level wait, sleep and shutdown operations.
 		class Group
+			# Initialize the child supervision registry.
+			# @parameter health_check_interval [Numeric | Nil] The interval used to wake waiters for periodic health checks.
 			def initialize(health_check_interval: 1.0)
 				@health_check_interval = health_check_interval
 				
@@ -43,33 +45,48 @@ module Async
 				@thread = nil
 			end
 			
+			# @attribute [Numeric | Nil] The interval used to wake waiters for periodic health checks.
 			attr :health_check_interval
 			
+			# Generate a human-readable representation of the group.
+			# @returns [String] The group inspection string.
 			def inspect
 				"#<#{self.class} running=#{size}>"
 			end
 			
+			# Get the number of currently registered children.
+			# @returns [Integer] The number of running children.
 			def size
 				@mutex.synchronize{@children.size}
 			end
 			
+			# Check whether any supervisor tasks are still running.
+			# @returns [Boolean] Whether any supervisor tasks are running.
 			def running?
 				@mutex.synchronize{@supervisors.positive?}
 			end
 			
+			# Check whether any supervisor tasks are still running.
+			# @returns [Boolean] Whether any supervisor tasks are running.
 			def any?
 				running?
 			end
 			
+			# Check whether all supervisor tasks have stopped.
+			# @returns [Boolean] Whether no supervisor tasks are running.
 			def empty?
 				!running?
 			end
 			
 			# Compatibility for older tests/code that inspected the implementation.
+			# @returns [Hash] A copy of the current child registration map.
 			def running
 				@mutex.synchronize{@children.dup}
 			end
 			
+			# Run a child supervisor block in the group's Async task context.
+			# @yields {...} The supervisor block to execute.
+			# @returns [Object] The queued supervisor job.
 			def supervise(&block)
 				@mutex.synchronize{@supervisors += 1}
 				
@@ -83,44 +100,66 @@ module Async
 				end
 			end
 			
+			# Register a child as running.
+			# @parameter child [Object] The child to register.
+			# @returns [Boolean] The child registration value.
 			def insert(child)
 				@mutex.synchronize{@children[child] = true}
 			end
 			
+			# Remove a child from the running set and wake waiters.
+			# @parameter child [Object] The child to remove.
+			# @returns [Object] The queued signal value.
 			def delete(child)
 				@mutex.synchronize{@children.delete(child)}
 				signal!
 			end
 			
+			# Sleep until the group is signalled or the optional duration elapses.
+			# @parameter duration [Numeric | Nil] The maximum duration to sleep.
+			# @returns [Object | Nil] The queued signal value, or `nil` if the sleep timed out.
 			def sleep(duration = nil)
 				::Thread.handle_interrupt(SignalException => :immediate) do
 					@events.pop(timeout: duration)
 				end
 			end
 			
+			# Wait until all supervisor tasks have stopped.
+			# @returns [Nil]
 			def wait
 				sleep while running?
 			end
 			
+			# Wake any waiters so they can re-check child health or state.
+			# @returns [Object] The queued signal value.
 			def health_check!
 				signal!
 			end
 			
+			# Send an interrupt signal to all registered children.
+			# @returns [Object] The result of iterating over the current children.
 			def interrupt
 				Console.info(self, "Sending interrupt to #{size} running children...")
 				each_child(&:interrupt!)
 			end
 			
+			# Send a terminate signal to all registered children.
+			# @returns [Object] The result of iterating over the current children.
 			def terminate
 				Console.info(self, "Sending terminate to #{size} running children...")
 				each_child(&:terminate!)
 			end
 			
+			# Send a kill signal to all registered children.
+			# @returns [Object] The result of iterating over the current children.
 			def kill
 				Console.info(self, "Sending kill to #{size} running children...")
 				each_child(&:kill!)
 			end
 			
+			# Stop all registered children, escalating to kill if graceful shutdown does not complete.
+			# @parameter graceful [Boolean | Numeric] Whether to stop gracefully, or the graceful timeout duration.
+			# @returns [Nil]
 			def stop(graceful = GRACEFUL_TIMEOUT)
 				Console.debug(self, "Stopping all children...", graceful: graceful)
 				
