@@ -129,25 +129,11 @@ module Async
 					super(**options)
 					
 					@status = nil
+					@joined = false
 					
 					@thread = yield(self)
 					@thread.report_on_exception = false
 					@thread.name = name
-					
-					@waiter = ::Thread.new do
-						begin
-							@thread.join
-						rescue Exit => exit
-							finished(exit.error)
-						rescue Interrupt
-							# Graceful shutdown.
-							finished
-						rescue Exception => error
-							finished(error)
-						else
-							finished
-						end
-					end
 				end
 				
 				# Convert the child process to a hash, suitable for serialization.
@@ -216,28 +202,28 @@ module Async
 					@thread.raise(Restart)
 				end
 				
-				# Wait for the thread to exit and return he exit status.
+				# Wait for the thread to exit and return the exit status.
 				# @asynchronous This method may block.
 				#
-				# @parameter timeout [Numeric | Nil] Maximum time to wait before forceful termination.
 				# @returns [Status]
-				def wait(timeout = nil)
-					if @waiter
-						Console.debug(self, "Waiting for thread to exit...", child: {thread_id: @thread.object_id}, timeout: timeout)
+				def wait
+					unless @joined
+						Console.debug(self, "Waiting for thread to exit...", child: {thread_id: @thread.object_id})
 						
-						if timeout
-							unless @waiter.join(timeout)
-								Console.warn(self, "Thread is blocking, sending kill signal...", child: {thread_id: @thread.object_id}, timeout: timeout)
-								self.kill!
-								@waiter.join
-							end
+						begin
+							@thread.join
+						rescue Exit => exit
+							finished(exit.error)
+						rescue Interrupt
+							# Graceful shutdown.
+							finished
+						rescue Exception => error
+							finished(error)
 						else
-							until @waiter.join(0)
-								sleep(0.1)
-							end
+							finished
+						ensure
+							@joined = true
 						end
-						
-						@waiter = nil
 					end
 					
 					Console.debug(self, "Thread exited.", child: {thread_id: @thread.object_id, status: @status})
@@ -278,7 +264,7 @@ module Async
 				
 				protected
 				
-				# Invoked by the @waiter thread to indicate the outcome of the child thread.
+				# Record the outcome of the child thread and close the notification channel.
 				def finished(error = nil)
 					if error
 						Console.error(self){error}

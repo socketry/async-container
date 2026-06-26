@@ -235,9 +235,8 @@ module Async
 				# Wait for the child process to exit.
 				# @asynchronous This method may block.
 				#
-				# @parameter timeout [Numeric | Nil] Ignored; retained for compatibility.
 				# @returns [::Process::Status] The process exit status.
-				def wait(timeout = nil)
+				def wait
 					if @pid && @status.nil?
 						Console.debug(self, "Waiting for process to exit...", child: {process_id: @pid})
 						_, @status = ::Process.wait2(@pid)
