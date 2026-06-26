@@ -5,6 +5,8 @@
 
 require "async/container/threaded"
 require "async/container/forked"
+require "async/container/hybrid"
+require "async/container/ordinals"
 require "async/container/best"
 
 # Collect what each worker reports about its own ordinal.
@@ -23,41 +25,41 @@ end
 describe Async::Container::Generic do
 	let(:container) {Async::Container::Threaded.new}
 	
-	with "#acquire_ordinal" do
+	with "ordinal allocation" do
 		it "assigns sequential ordinals starting at 0" do
-			expect(container.send(:acquire_ordinal)).to be == 0
-			expect(container.send(:acquire_ordinal)).to be == 1
-			expect(container.send(:acquire_ordinal)).to be == 2
+			ordinals = collect_worker_ordinals(container, count: 3)
+			
+			expect(ordinals.sort).to be == [0, 1, 2]
 		end
 		
 		it "reuses the lowest released ordinal before extending the range" do
-			3.times{container.send(:acquire_ordinal)}   # => 0, 1, 2
-			container.send(:release_ordinal, 1)
+			first = collect_worker_ordinals(container, count: 3)
+			second = collect_worker_ordinals(container, count: 1)
 			
-			expect(container.send(:acquire_ordinal)).to be == 1   # reused
-			expect(container.send(:acquire_ordinal)).to be == 3   # then extends
-		end
-		
-		it "does not hand out the same ordinal twice when an ordinal is released more than once" do
-			2.times{container.send(:acquire_ordinal)}   # => 0, 1
-			container.send(:release_ordinal, 0)
-			container.send(:release_ordinal, 0)          # double release must be idempotent
-			
-			expect(container.send(:acquire_ordinal)).to be == 0   # the recycled ordinal
-			expect(container.send(:acquire_ordinal)).to be == 2   # not 0 again
+			expect(first.sort).to be == [0, 1, 2]
+			expect(second).to be == [0]
 		end
 	end
 	
 	with "keyed reuse" do
 		it "does not allocate an ordinal for a reused keyed child" do
-			container.spawn(key: :web){sleep}   # allocates 0, registers the key
+			input, output = IO.pipe
+			
+			container.spawn(key: :web) do |instance|
+				output.puts(instance.ordinal)
+				sleep
+			end
+			
+			expect(input.gets.to_i).to be == 0
+			
 			reused = container.spawn(key: :web){sleep}   # mark? hit => returns before allocating
 			
 			expect(reused).to be == false
-			# If the second spawn had allocated, the next free ordinal would be 2:
-			expect(container.send(:acquire_ordinal)).to be == 1
+			expect(container.instance_variable_get(:@ordinals).acquire).to be == 1
 		ensure
 			container.stop(false)
+			input&.close unless input&.closed?
+			output&.close unless output&.closed?
 		end
 	end
 	
@@ -67,6 +69,68 @@ describe Async::Container::Generic do
 				container.run(count: 2, ordinal: 7){sleep}
 			end.to raise_exception(ArgumentError, message: be =~ /unknown keyword: :ordinal/)
 		end
+	end
+end
+
+describe Async::Container::Ordinals::Sequential do
+	let(:ordinals) {subject.new}
+	
+	it "assigns sequential ordinals starting at 0" do
+		expect(ordinals.acquire).to be == 0
+		expect(ordinals.acquire).to be == 1
+		expect(ordinals.acquire).to be == 2
+	end
+	
+	it "can start at an initial ordinal" do
+		ordinals = subject.new(10)
+		
+		expect(ordinals.acquire).to be == 10
+		expect(ordinals.acquire).to be == 11
+	end
+	
+	it "reuses the lowest released ordinal before extending the range" do
+		3.times{ordinals.acquire}   # => 0, 1, 2
+		ordinals.release([1])
+		
+		expect(ordinals.acquire).to be == 1   # reused
+		expect(ordinals.acquire).to be == 3   # then extends
+	end
+	
+	it "does not hand out the same ordinal twice when an ordinal is released more than once" do
+		2.times{ordinals.acquire}   # => 0, 1
+		ordinals.release([0])
+		ordinals.release([0])       # double release must be idempotent
+		
+		expect(ordinals.acquire).to be == 0   # the recycled ordinal
+		expect(ordinals.acquire).to be == 2   # not 0 again
+	end
+	
+	it "reserves ordinals as a fixed allocator" do
+		reserved = ordinals.reserve(3)
+		
+		expect(reserved).to be_a(Async::Container::Ordinals::Fixed)
+		expect(reserved.to_a).to be == [0, 1, 2]
+		expect(ordinals.acquire).to be == 3
+	end
+end
+
+describe Async::Container::Ordinals::Fixed do
+	let(:ordinals) {subject.new([5, 7])}
+	
+	it "allocates from the fixed pool" do
+		expect(ordinals.acquire).to be == 5
+		expect(ordinals.acquire).to be == 7
+		expect{ordinals.acquire}.to raise_exception(Async::Container::Ordinals::Exhausted)
+	end
+	
+	it "can release ordinals back to the fixed pool" do
+		expect(ordinals.acquire).to be == 5
+		ordinals.release([5])
+		expect(ordinals.acquire).to be == 5
+	end
+	
+	it "rejects ordinals outside the fixed pool" do
+		expect{ordinals.release([6])}.to raise_exception(ArgumentError)
 	end
 end
 
@@ -104,6 +168,25 @@ describe Async::Container::Threaded do
 		# Same ordinal allocated for both incarnations (ordinal is captured outside the restart loop):
 		expect(reported).to be == [reported.first, reported.first]
 	end
+	
+	it "does not inherit ordinals into independently managed child containers" do
+		input, output = IO.pipe
+		
+		container.run(count: 1) do |instance|
+			child = subject.new
+			child_ordinals = collect_worker_ordinals(child, count: 2)
+			
+			output.puts("parent=#{instance.ordinal} child=#{child_ordinals.sort.join(",")}")
+		end
+		
+		container.wait
+		output.close
+		reported = input.read.lines.map(&:chomp)
+		
+		expect(reported).to be == ["parent=0 child=0,1"]
+	ensure
+		input&.close unless input&.closed?
+	end
 end
 
 describe Async::Container::Forked do
@@ -113,6 +196,17 @@ describe Async::Container::Forked do
 		ordinals = collect_worker_ordinals(container, count: 3)
 		
 		expect(ordinals.sort).to be == [0, 1, 2]
+		expect(container.statistics).to have_attributes(failures: be == 0)
+	end
+end if Async::Container.fork?
+
+describe Async::Container::Hybrid do
+	let(:container) {subject.new}
+	
+	it "assigns unique worker ordinals across forked threaded workers" do
+		ordinals = collect_worker_ordinals(container, count: 4, forks: 2, threads: 2)
+		
+		expect(ordinals.sort).to be == [0, 1, 2, 3]
 		expect(container.statistics).to have_attributes(failures: be == 0)
 	end
 end if Async::Container.fork?

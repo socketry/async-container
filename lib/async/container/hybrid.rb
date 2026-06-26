@@ -21,10 +21,13 @@ module Async
 				count ||= processor_count ** 2
 				forks ||= [processor_count, count].min
 				threads ||= (count / forks).ceil
+				worker_ordinals = Ordinals::Sequential.new
 				
 				forks.times do
-					self.spawn(**options) do |instance|
-						container = Threaded.new
+					ordinals = worker_ordinals.reserve(threads)
+					
+					self.spawn(ordinals: ordinals, **options) do |instance|
+						container = Threaded.new(ordinals: instance.ordinals)
 						
 						# Link each inner thread worker to this fork, so the thread instance can reach
 						# the durable process ordinal via `instance.parent`.

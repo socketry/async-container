@@ -19,6 +19,9 @@ describe Async::Container::Hybrid do
 		interrupt_count = 0
 		
 		threaded_class = Class.new
+		threaded_class.define_method(:initialize) do |**options|
+			@options = options
+		end
 		threaded_class.define_method(:run) do |**options, &block|
 			self
 		end
@@ -38,8 +41,12 @@ describe Async::Container::Hybrid do
 		end
 		
 		container_class = Class.new(subject) do
-			def spawn(**options, &block)
+			def spawn(ordinals: nil, **options, &block)
 				instance = Object.new
+				instance.define_singleton_method(:ordinals) do
+					ordinals
+				end
+				
 				def instance.ready!
 				end
 				

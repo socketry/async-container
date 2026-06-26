@@ -42,15 +42,14 @@ describe Async::Container::Forked do
 end if Async::Container.fork?
 
 describe Async::Container::Hybrid do
-	it "reaches the durable forked ordinal through instance.parent (not the thread ordinal)" do
+	it "reaches the durable forked ordinal through instance.parent" do
 		reported = report_from_worker(subject.new, count: 2, forks: 2, threads: 1) do |instance|
 			"thread=#{instance.ordinal} parent=#{instance.parent&.ordinal}"
 		end
 		
-		# Both workers are thread ordinal 0 within their fork; the durable forked ordinal is on the parent.
 		expect(reported.sort).to be == [
 			"thread=0 parent=0",
-			"thread=0 parent=1",
+			"thread=1 parent=1",
 		]
 	end
 end if Async::Container.fork?

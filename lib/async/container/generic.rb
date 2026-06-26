@@ -9,6 +9,7 @@ require "async/clock"
 
 require_relative "group"
 require_relative "keyed"
+require_relative "ordinals"
 require_relative "statistics"
 require_relative "policy"
 
@@ -45,7 +46,7 @@ module Async
 			#
 			# @parameter policy [Policy] The policy to use for managing child lifecycle events.
 			# @parameter options [Hash] Options passed to the {Group} instance.
-			def initialize(policy: Policy::DEFAULT, **options)
+			def initialize(policy: Policy::DEFAULT, ordinals: nil, **options)
 				@group = Group.new(**options)
 				@stopping = false
 				
@@ -54,11 +55,7 @@ module Async
 				@policy = policy
 				@statistics = @policy.make_statistics
 				@keyed = {}
-				# Container-scoped allocation of worker ordinals: a monotonic
-				# counter plus a free set, so an ordinal released by a permanently exited worker is
-				# recycled, keeping the range compact (e.g. for multiprocess metric files).
-				@next_ordinal = 0
-				@free_ordinals = Set.new
+				@ordinals = ordinals || Ordinals::Sequential.new
 			end
 			
 			# @attribute [Group] The group of running children instances.
@@ -216,9 +213,10 @@ module Async
 			# @parameter name [String] The name of the child instance.
 			# @parameter restart [Boolean] Whether to restart the child instance if it fails.
 			# @parameter key [Symbol] A key used for reloading child instances.
+			# @parameter ordinals [Ordinals | Nil] An optional ordinal allocator assigned to this worker for implementation-detail child containers.
 			# @parameter health_check_timeout [Numeric | Nil] The maximum time a child instance can run without updating its state, before it is terminated as unhealthy.
 			# @parameter startup_timeout [Numeric | Nil] The maximum time a child instance can run without becoming ready, before it is terminated as unhealthy.
-			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, startup_timeout: nil, &block)
+			def spawn(name: nil, restart: false, key: nil, ordinals: nil, health_check_timeout: nil, startup_timeout: nil, &block)
 				name ||= UNNAMED
 				
 				if mark?(key)
@@ -228,7 +226,7 @@ module Async
 				
 				# Allocate before the fiber so the closure captures the ordinal and it stays
 				# unchanged across a restart (which re-enters `start` in the same fiber).
-				ordinal = acquire_ordinal
+				ordinal = @ordinals.acquire
 				
 				@statistics.spawn!
 				
@@ -236,7 +234,7 @@ module Async
 					until @stopping
 						Console.debug(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
-						child = self.start(name, ordinal: ordinal, &block)
+						child = self.start(name, ordinal: ordinal, ordinals: ordinals, &block)
 						state = insert(key, child)
 						
 						# Notify policy of spawn
@@ -310,31 +308,10 @@ module Async
 						end
 					end
 				ensure
-					release_ordinal(ordinal)
+					@ordinals.release([ordinal])
 				end.resume
 				
 				return true
-			end
-			
-			# Allocate a container-scoped worker ordinal, recycling the lowest released ordinal.
-			# Allocation runs on the single cooperative reactor thread (acquire in the run loop,
-			# release in the fiber's ensure), so no synchronisation is required.
-			protected def acquire_ordinal
-				unless @free_ordinals.empty?
-					ordinal = @free_ordinals.min
-					@free_ordinals.delete(ordinal)
-					return ordinal
-				end
-				
-				ordinal = @next_ordinal
-				@next_ordinal += 1
-				ordinal
-			end
-			
-			# Return a worker ordinal to the free set once its worker has permanently exited. Using a
-			# Set makes release idempotent, so a double release can't hand the same ordinal to two workers.
-			protected def release_ordinal(ordinal)
-				@free_ordinals.add(ordinal)
 			end
 			
 			# Run multiple instances of the same block in the container.
