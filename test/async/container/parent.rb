@@ -22,43 +22,35 @@ ensure
 end
 
 describe Async::Container::Threaded do
-	it "exposes a single :thread frame and no parent via instance.context" do
+	it "has no parent" do
 		reported = report_from_worker(subject.new, count: 1) do |instance|
-			"#{instance.context.map {|f| "#{f.kind}:#{f.num}"}.join(",")}|parent=#{instance.parent.inspect}"
+			"ordinal=#{instance.ordinal} parent=#{instance.parent.inspect}"
 		end
-
-		expect(reported).to be == ["thread:0|parent=nil"]
+		
+		expect(reported).to be == ["ordinal=0 parent=nil"]
 	end
 end
 
 describe Async::Container::Forked do
-	it "exposes a single :process frame and no parent via instance.context" do
+	it "has no parent" do
 		reported = report_from_worker(subject.new, count: 1) do |instance|
-			"#{instance.context.map {|f| "#{f.kind}:#{f.num}"}.join(",")}|parent=#{instance.parent.inspect}"
+			"ordinal=#{instance.ordinal} parent=#{instance.parent.inspect}"
 		end
-
-		expect(reported).to be == ["process:0|parent=nil"]
+		
+		expect(reported).to be == ["ordinal=0 parent=nil"]
 	end
 end if Async::Container.fork?
 
 describe Async::Container::Hybrid do
-	it "exposes [:process, :thread] frames via instance.context" do
-		reported = report_from_worker(subject.new, count: 1, forks: 1, threads: 1) do |instance|
-			instance.context.map {|f| f.kind}.join(",")
-		end
-
-		expect(reported).to be == ["process,thread"]
-	end
-
-	it "reaches the durable forked num through instance.parent (not the thread num)" do
+	it "reaches the durable forked ordinal through instance.parent (not the thread ordinal)" do
 		reported = report_from_worker(subject.new, count: 2, forks: 2, threads: 1) do |instance|
-			"#{instance.kind}/#{instance.num} parent=#{instance.parent&.kind}/#{instance.parent&.num}"
+			"thread=#{instance.ordinal} parent=#{instance.parent&.ordinal}"
 		end
-
-		# Both workers are thread num 0 within their fork; the durable forked num is on the parent.
+		
+		# Both workers are thread ordinal 0 within their fork; the durable forked ordinal is on the parent.
 		expect(reported.sort).to be == [
-			"thread/0 parent=process/0",
-			"thread/0 parent=process/1",
+			"thread=0 parent=0",
+			"thread=0 parent=1",
 		]
 	end
 end if Async::Container.fork?
