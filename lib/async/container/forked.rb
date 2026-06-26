@@ -103,12 +103,12 @@ module Async
 					self.new(**options) do |process|
 						::Thread.new do
 							::Process.fork do
-								# Ensure signal exceptions are delivered promptly in the forked child,
-								# even if the parent controller is masking SignalException.
+								# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 								Signal.trap(:INT){::Thread.current.raise(Interrupt)}
 								Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
 								Signal.trap(:HUP){::Thread.current.raise(Restart)}
 								
+								# This could be a configuration option:
 								::Thread.handle_interrupt(SignalException => :immediate) do
 									yield Instance.for(process)
 								rescue Interrupt
