@@ -111,8 +111,11 @@ module Async
 								# CRuby inherits the `Thread.handle_interrupt` mask stack across `Thread.new`, so reset signal delivery before running user code; Async deliberately masks SignalException.
 								::Thread.handle_interrupt(SignalException => :immediate) do
 									yield Instance.for(process)
+									
+									exit!(0)
 								rescue Interrupt
 									# Graceful exit.
+									exit!(0)
 								rescue Exception => error
 									Console.error(self, error)
 									

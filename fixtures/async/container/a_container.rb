@@ -83,7 +83,7 @@ module Async
 					
 					Async do
 						container.wait
-					end
+					end.wait
 					
 					output.close
 					expect(input.read).to be == "."
@@ -98,10 +98,41 @@ module Async
 						end
 						
 						container.wait
-					end
+					end.wait
 					
 					output.close
 					expect(input.read).to be == "."
+				end
+				
+				it "can wait while a health monitor is active" do
+					container.spawn(health_check_timeout: 10.0) do |instance|
+						instance.ready!
+					end
+					
+					Async::Task.current.with_timeout(2.0) do
+						container.wait
+					end
+					
+					expect(container.statistics).to have_attributes(failures: be == 0)
+				end
+				
+				it "can start, wait until ready, and stop inside Sync" do
+					Sync do
+						begin
+							2.times do |i|
+								container.spawn(name: "worker #{i}") do |instance|
+									instance.ready!
+									sleep
+								end
+							end
+							
+							container.wait_until_ready
+							
+							expect(container.group.running).to have_attributes(size: be == 2)
+						ensure
+							container.stop if container.running?
+						end
+					end
 				end
 			end
 			
@@ -257,14 +288,14 @@ module Async
 					container.run do |instance|
 						Async do
 							instance.ready!
+							sleep 0.1
 						end
 					end
 					
 					expect(container).to be(:running?)
 					
+					container.stop(false)
 					container.wait
-					
-					container.stop
 					
 					expect(container).not.to be(:running?)
 				end

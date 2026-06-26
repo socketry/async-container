@@ -4,8 +4,11 @@
 # Copyright, 2025-2026, by Samuel Williams.
 
 require "async/container/group"
+require "sus/fixtures/async"
 
 describe Async::Container::Group do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	let(:group) {Async::Container::Group.new}
 	
 	class FakeChild

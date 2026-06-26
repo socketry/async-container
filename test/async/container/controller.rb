@@ -7,8 +7,11 @@ require "async/container/controller"
 require "async/container/controllers"
 require "async/container/notify/server"
 require "async/container/notify/socket"
+require "sus/fixtures/async"
 
 describe Async::Container::Controller do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	let(:controller) {subject.new}
 	
 	with "#to_s" do
@@ -228,6 +231,25 @@ describe Async::Container::Controller do
 			expect(pipe.first.gets(chomp: true)).to be == "/"
 		ensure
 			Process.kill(:INT, pid) if pid
+		end
+	end
+end
+
+describe Async::Container::Controller, unique: "run without scheduler" do
+	let(:controller) {subject.new}
+	
+	with "#run" do
+		it "creates a top-level event loop" do
+			def controller.setup(container)
+				container.spawn do |instance|
+					instance.ready!
+					sleep(0.01)
+				end
+			end
+			
+			controller.run
+			
+			expect(controller).not.to be(:running?)
 		end
 	end
 end

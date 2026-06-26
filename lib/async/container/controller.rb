@@ -6,6 +6,8 @@
 require_relative "error"
 require_relative "best"
 
+require "async"
+
 require_relative "statistics"
 require_relative "notify"
 require_relative "policy"
@@ -30,6 +32,7 @@ module Async
 				
 				@container = nil
 				@signals = {}
+				@signal_queue = ::Thread::Queue.new
 				
 				self.trap(SIGHUP) do
 					self.restart
@@ -144,7 +147,7 @@ module Async
 				
 				# Wait for all child processes to enter the ready state.
 				Console.info(self, "Waiting for startup...")
-				container.wait_until_ready
+				wait_until_ready(container)
 				Console.info(self, "Finished startup.")
 				
 				if container.failed?
@@ -160,7 +163,13 @@ module Async
 				
 				if old_container
 					Console.info(self, "Stopping old container...")
-					old_container&.stop(@graceful_stop)
+					
+					begin
+						@stopping_container = old_container
+						old_container&.stop(@graceful_stop)
+					ensure
+						@stopping_container = nil
+					end
 				end
 				
 				@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
@@ -188,7 +197,7 @@ module Async
 				
 				# Wait for all child processes to enter the ready state.
 				Console.info(self, "Waiting for startup...")
-				@container.wait_until_ready
+				wait_until_ready(@container)
 				Console.info(self, "Finished startup.")
 				
 				if @container.failed?
@@ -202,24 +211,20 @@ module Async
 			
 			# Enter the controller run loop, trapping `SIGINT` and `SIGTERM`.
 			def run
-				@notify&.status!("Initializing controller...")
-				
-				with_signal_handlers do
-					self.start
+				Sync do
+					@notify&.status!("Initializing controller...")
 					
-					while @container&.running?
-						begin
-							@container.wait
-						rescue SignalException => exception
-							if handler = @signals[exception.signo]
-								begin
-									handler.call
-								rescue SetupError => error
-									Console.error(self, error)
-								end
-							else
-								raise
+					with_signal_handlers do
+						self.start
+						
+						while @container&.running?
+							process_signals(@container)
+							
+							if container = @container
+								container.sleep
 							end
+							
+							process_signals(@container) if @container
 						end
 					end
 				end
@@ -231,29 +236,69 @@ module Async
 				self.stop(false)
 			end
 			
+			private def wait_until_ready(container)
+				@waiting_container = container
+				
+				begin
+					until container.status?(:ready)
+						process_signals(container, graceful: container.status?(:ready))
+						
+						break unless container.running?
+						
+						container.sleep
+					end
+				ensure
+					@waiting_container = nil
+				end
+			end
+			
+			private def process_signals(container = @container, graceful: @graceful_stop)
+				while signal = @signal_queue.pop(timeout: 0)
+					if handler = @signals[signal]
+						begin
+							handler.call
+						rescue SetupError => error
+							Console.error(self, error)
+						end
+					elsif signal == SIGINT || signal == SIGTERM
+						target = @container || container
+						
+						if target.equal?(@container)
+							self.stop
+						else
+							target&.stop(graceful)
+						end
+					else
+						raise SignalException.new(signal)
+					end
+				end
+			end
+			
 			private def with_signal_handlers
 				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
+				wake_containers = proc do
+					@container&.group&.health_check!
+					@waiting_container&.group&.health_check!
+					@stopping_container&.group&.health_check!
+				end
 				
 				interrupt_action = Signal.trap(:INT) do
-					# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
-					# $stderr.puts "Received INT signal, interrupting...", caller
-					::Thread.current.raise(Interrupt)
+					@signal_queue << SIGINT
+					wake_containers.call
 				end
 				
 				# SIGTERM behaves the same as SIGINT by default.
 				terminate_action = Signal.trap(:TERM) do
-					# $stderr.puts "Received TERM signal, interrupting...", caller
-					::Thread.current.raise(Interrupt)  # Same as SIGINT
+					@signal_queue << SIGTERM
+					wake_containers.call
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
-					# $stderr.puts "Received HUP signal, restarting...", caller
-					::Thread.current.raise(Restart)
+					@signal_queue << SIGHUP
+					wake_containers.call
 				end
 				
-				::Thread.handle_interrupt(SignalException => :never) do
-					yield
-				end
+				yield
 			ensure
 				# Restore the interrupt handler:
 				Signal.trap(:INT, interrupt_action)

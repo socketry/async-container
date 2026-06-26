@@ -7,8 +7,11 @@
 require "async/container/best"
 require "async/container/forked"
 require "async/container/a_container"
+require "sus/fixtures/async"
 
 describe Async::Container::Forked do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	let(:container) {subject.new}
 	
 	it_behaves_like Async::Container::AContainer
@@ -17,7 +20,7 @@ describe Async::Container::Forked do
 		trigger = IO.pipe
 		pids = IO.pipe
 		
-		thread = Thread.new do
+		task = Async do
 			container.async(restart: true) do
 				trigger.first.gets
 				pids.last.puts Process.pid.to_s
@@ -31,8 +34,8 @@ describe Async::Container::Forked do
 			_child_pid = pids.first.gets
 		end
 		
-		thread.kill
-		thread.join
+		task.stop
+		task.wait
 		
 		expect(container.statistics.spawns).to be == 1
 		expect(container.statistics.restarts).to be == 2

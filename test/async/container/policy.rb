@@ -5,8 +5,11 @@
 
 require "async/container/policy"
 require "async/container/best"
+require "sus/fixtures/async"
 
 describe Async::Container::Policy do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	let(:policy) {subject.new}
 	
 	with "interface" do

@@ -3,6 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2017-2025, by Samuel Williams.
 
+require_relative "container/best"
 require_relative "container/controller"
 
 # @namespace

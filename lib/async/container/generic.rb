@@ -362,22 +362,23 @@ module Async
 			def wait_for(child, state, age_clock, health_check_timeout, startup_timeout)
 				parent = Async::Task.current
 				result = Async::Queue.new
+				health = ::Thread::Queue.new if age_clock
+				
+				reader = parent.async do
+					read_notifications(child, state, age_clock, health)
+				end
+				
+				monitor = if age_clock
+					parent.async do
+						monitor_health(child, state, age_clock, health, health_check_timeout, startup_timeout)
+					end
+				end
 				
 				waiter = parent.async do
 					begin
 						result << child.wait
 					rescue Exception => error
 						result << error
-					end
-				end
-				
-				reader = parent.async do
-					read_notifications(child, state, age_clock)
-				end
-				
-				monitor = if age_clock
-					parent.async do
-						monitor_health(child, state, age_clock, health_check_timeout, startup_timeout)
 					end
 				end
 				
@@ -391,7 +392,7 @@ module Async
 				waiter&.stop
 			end
 			
-			def read_notifications(child, state, age_clock)
+			def read_notifications(child, state, age_clock, health)
 				while true
 					child.in.wait_readable
 					
@@ -403,6 +404,7 @@ module Async
 							age_clock&.reset!
 						end
 						
+						health&.push(true)
 						@group.health_check!
 					else
 						break
@@ -414,18 +416,14 @@ module Async
 				# The notification pipe was closed while the child waiter was exiting.
 			end
 			
-			def monitor_health(child, state, age_clock, health_check_timeout, startup_timeout)
+			def monitor_health(child, state, age_clock, health, health_check_timeout, startup_timeout)
 				while true
 					if timeout = next_timeout(state, age_clock, health_check_timeout, startup_timeout)
-						sleep(timeout)
+						health.pop(timeout: timeout)
 						
 						break if check_timeout(child, state, age_clock, health_check_timeout, startup_timeout)
 					else
-						sleep(@group.health_check_interval || 1.0)
-					end
-					
-					if @group.health_check_interval
-						@group.health_check!
+						health.pop(timeout: @group.health_check_interval || 1.0)
 					end
 				end
 			end

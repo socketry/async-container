@@ -6,8 +6,11 @@
 
 require "async/container/controller"
 require "async/container/controllers"
+require "sus/fixtures/async"
 
 describe Async::Container::Notify::Pipe do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	let(:notify_script) {Async::Container::Controllers.path_for("notify")}
 	
 	it "receives notification of child status" do

@@ -40,9 +40,6 @@ module Async
 				@children = {}
 				@supervisors = 0
 				@events = ::Thread::Queue.new
-				
-				@jobs = ::Thread::Queue.new
-				@thread = nil
 			end
 			
 			# @attribute [Numeric | Nil] The interval used to wake waiters for periodic health checks.
@@ -86,11 +83,11 @@ module Async
 			
 			# Run a child supervisor block in the group's Async task context.
 			# @yields {...} The supervisor block to execute.
-			# @returns [Object] The queued supervisor job.
+			# @returns [Async::Task] The supervisor task.
 			def supervise(&block)
 				@mutex.synchronize{@supervisors += 1}
 				
-				schedule do
+				Async::Task.current.async(transient: true) do
 					begin
 						block.call
 					ensure
@@ -181,29 +178,6 @@ module Async
 			end
 			
 			private
-			
-			def schedule(&block)
-				start_reactor
-				
-				@jobs << proc do |parent|
-					parent.async(&block)
-				end
-			end
-			
-			def start_reactor
-				return if @thread&.alive?
-				
-				@thread = ::Thread.new do
-					Sync do |parent|
-						while job = @jobs.pop
-							job.call(parent)
-						end
-					end
-				end
-				
-				@thread.report_on_exception = false
-				@thread.name = "async-container supervisor"
-			end
 			
 			def each_child
 				children = @mutex.synchronize{@children.keys}
