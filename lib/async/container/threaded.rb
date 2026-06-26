@@ -114,7 +114,7 @@ module Async
 				def self.fork(**options)
 					self.new(**options) do |thread|
 						::Thread.new do
-							# CRuby inherits the `Thread.handle_interrupt` mask stack across Thread.new, so reset signal delivery before running user code.
+							# CRuby inherits the `Thread.handle_interrupt` mask stack across `Thread.new`, so reset signal delivery before running user code.
 							::Thread.handle_interrupt(SignalException => :immediate) do
 								yield Instance.for(thread)
 							end

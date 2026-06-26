@@ -108,7 +108,7 @@ module Async
 								Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
 								Signal.trap(:HUP){::Thread.current.raise(Restart)}
 								
-								# CRuby inherits the `Thread.handle_interrupt` mask stack across Thread.new, so reset signal delivery before running user code.
+								# CRuby inherits the `Thread.handle_interrupt` mask stack across `Thread.new`, so reset signal delivery before running user code.
 								::Thread.handle_interrupt(SignalException => :immediate) do
 									yield Instance.for(process)
 								rescue Interrupt
