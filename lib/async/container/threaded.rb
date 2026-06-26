@@ -62,9 +62,6 @@ module Async
 					# @returns [Integer | Nil] The container-scoped ordinal of this worker.
 					attr :ordinal
 					
-					# @returns [Object | Nil] The worker this one is nested inside.
-					attr_accessor :parent
-					
 					# Generate a hash representation of the thread.
 					#
 					# @returns [Hash] The thread as a hash, including `process_id`, `thread_id`, and `name`.

@@ -90,7 +90,7 @@ describe Async::Container::Ordinals::Sequential do
 	
 	it "reuses the lowest released ordinal before extending the range" do
 		3.times{ordinals.acquire}   # => 0, 1, 2
-		ordinals.release([1])
+		ordinals.release(1)
 		
 		expect(ordinals.acquire).to be == 1   # reused
 		expect(ordinals.acquire).to be == 3   # then extends
@@ -98,8 +98,8 @@ describe Async::Container::Ordinals::Sequential do
 	
 	it "does not hand out the same ordinal twice when an ordinal is released more than once" do
 		2.times{ordinals.acquire}   # => 0, 1
-		ordinals.release([0])
-		ordinals.release([0])       # double release must be idempotent
+		ordinals.release(0)
+		ordinals.release(0)         # double release must be idempotent
 		
 		expect(ordinals.acquire).to be == 0   # the recycled ordinal
 		expect(ordinals.acquire).to be == 2   # not 0 again
@@ -117,6 +117,12 @@ end
 describe Async::Container::Ordinals::Fixed do
 	let(:ordinals) {subject.new([5, 7])}
 	
+	it "creates a fixed allocator from a range" do
+		ordinals = subject.range(5, 3)
+		
+		expect(ordinals.to_a).to be == [5, 6, 7]
+	end
+	
 	it "allocates from the fixed pool" do
 		expect(ordinals.acquire).to be == 5
 		expect(ordinals.acquire).to be == 7
@@ -125,12 +131,27 @@ describe Async::Container::Ordinals::Fixed do
 	
 	it "can release ordinals back to the fixed pool" do
 		expect(ordinals.acquire).to be == 5
-		ordinals.release([5])
+		ordinals.release(5)
 		expect(ordinals.acquire).to be == 5
 	end
 	
+	it "reserves ordinals as a fixed allocator" do
+		reserved = ordinals.reserve(2)
+		
+		expect(reserved).to be_a(Async::Container::Ordinals::Fixed)
+		expect(reserved.to_a).to be == [5, 7]
+		expect{ordinals.acquire}.to raise_exception(Async::Container::Ordinals::Exhausted)
+	end
+	
+	it "does not partially reserve ordinals if the pool is too small" do
+		expect{ordinals.reserve(3)}.to raise_exception(Async::Container::Ordinals::Exhausted)
+		
+		expect(ordinals.acquire).to be == 5
+		expect(ordinals.acquire).to be == 7
+	end
+	
 	it "rejects ordinals outside the fixed pool" do
-		expect{ordinals.release([6])}.to raise_exception(ArgumentError)
+		expect{ordinals.release(6)}.to raise_exception(ArgumentError)
 	end
 end
 
@@ -176,14 +197,14 @@ describe Async::Container::Threaded do
 			child = subject.new
 			child_ordinals = collect_worker_ordinals(child, count: 2)
 			
-			output.puts("parent=#{instance.ordinal} child=#{child_ordinals.sort.join(",")}")
+			output.puts("outer=#{instance.ordinal} child=#{child_ordinals.sort.join(",")}")
 		end
 		
 		container.wait
 		output.close
 		reported = input.read.lines.map(&:chomp)
 		
-		expect(reported).to be == ["parent=0 child=0,1"]
+		expect(reported).to be == ["outer=0 child=0,1"]
 	ensure
 		input&.close unless input&.closed?
 	end
@@ -207,6 +228,14 @@ describe Async::Container::Hybrid do
 		ordinals = collect_worker_ordinals(container, count: 4, forks: 2, threads: 2)
 		
 		expect(ordinals.sort).to be == [0, 1, 2, 3]
+		expect(container.statistics).to have_attributes(failures: be == 0)
+	end
+	
+	it "anchors worker ordinal ranges to the fork ordinal" do
+		container = subject.new(ordinals: Async::Container::Ordinals::Sequential.new(3))
+		ordinals = collect_worker_ordinals(container, count: 4, forks: 2, threads: 2)
+		
+		expect(ordinals.sort).to be == [6, 7, 8, 9]
 		expect(container.statistics).to have_attributes(failures: be == 0)
 	end
 end if Async::Container.fork?

@@ -13,30 +13,21 @@ module Async
 			class Exhausted < RuntimeError
 			end
 			
-			# Base class for ordinal allocators.
-			class Allocator
+			# A sequential ordinal allocator with lowest-released ordinal reuse.
+			class Sequential
+				def initialize(initial = 0)
+					@next = initial
+					@free = Set.new
+				end
+				
 				# Reserve a fixed pool of ordinals from this allocator.
 				# @parameter count [Integer] The number of ordinals to reserve.
 				# @returns [Fixed] The reserved ordinals as a fixed allocator.
 				def reserve(count)
-					ordinals = []
+					first = @next
+					@next += count
 					
-					count.times do
-						ordinals << acquire
-					end
-					
-					return Fixed.new(ordinals)
-				rescue
-					release(ordinals) unless ordinals.empty?
-					raise
-				end
-			end
-			
-			# A sequential ordinal allocator with lowest-released ordinal reuse.
-			class Sequential < Allocator
-				def initialize(initial = 0)
-					@next = initial
-					@free = Set.new
+					return Fixed.new(first...@next)
 				end
 				
 				# Allocate the next available ordinal.
@@ -52,18 +43,24 @@ module Async
 					return ordinal
 				end
 				
-				# Return ordinals to the allocator.
-				# @parameter ordinals [Enumerable(Integer)] The ordinals to release.
-				def release(ordinals)
-					ordinals.each do |ordinal|
-						@free.add(ordinal)
-					end
+				# Return an ordinal to the allocator.
+				# @parameter ordinal [Integer] The ordinal to release.
+				def release(ordinal)
+					@free.add(ordinal)
 				end
 			end
 			
 			# An allocator backed by a fixed set of ordinals.
-			class Fixed < Allocator
+			class Fixed
 				include Enumerable
+				
+				# Create a fixed pool from a contiguous range of ordinals.
+				# @parameter initial [Integer] The first ordinal in the range.
+				# @parameter count [Integer] The number of ordinals in the range.
+				# @returns [Fixed] The fixed allocator for the range.
+				def self.range(initial, count)
+					self.new(initial...(initial + count))
+				end
 				
 				def initialize(ordinals)
 					@ordinals = ordinals.to_set.freeze
@@ -78,6 +75,22 @@ module Async
 					@ordinals.each(&block)
 				end
 				
+				# Reserve a fixed pool of ordinals from this allocator.
+				# @parameter count [Integer] The number of ordinals to reserve.
+				# @returns [Fixed] The reserved ordinals as a fixed allocator.
+				def reserve(count)
+					if count > @free.size
+						raise Exhausted, "No ordinals available!"
+					end
+					
+					ordinals = @free.min(count)
+					ordinals.each do |ordinal|
+						@free.delete(ordinal)
+					end
+					
+					return Fixed.new(ordinals)
+				end
+				
 				# Allocate the lowest available ordinal from the fixed pool.
 				def acquire
 					unless @free.empty?
@@ -89,16 +102,14 @@ module Async
 					raise Exhausted, "No ordinals available!"
 				end
 				
-				# Return ordinals to the fixed pool.
-				# @parameter ordinals [Enumerable(Integer)] The ordinals to release.
-				def release(ordinals)
-					ordinals.each do |ordinal|
-						unless @ordinals.include?(ordinal)
-							raise ArgumentError, "Cannot release ordinal #{ordinal.inspect} to #{self.class}!"
-						end
-						
-						@free.add(ordinal)
+				# Return an ordinal to the fixed pool.
+				# @parameter ordinal [Integer] The ordinal to release.
+				def release(ordinal)
+					unless @ordinals.include?(ordinal)
+						raise ArgumentError, "Cannot release ordinal #{ordinal.inspect} to #{self.class}!"
 					end
+					
+					@free.add(ordinal)
 				end
 			end
 		end

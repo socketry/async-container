@@ -307,7 +307,7 @@ module Async
 						end
 					end
 				ensure
-					@ordinals.release([ordinal])
+					@ordinals.release(ordinal)
 				end.resume
 				
 				return true

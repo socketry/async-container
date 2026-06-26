@@ -24,14 +24,13 @@ module Async
 				
 				forks.times do
 					self.spawn(**options) do |instance|
+						# Fork ordinals are unique and stable across restart; each fork owns a
+						# deterministic fixed range for its inner threaded workers.
 						first_ordinal = instance.ordinal * threads
-						ordinals = Ordinals::Fixed.new(first_ordinal...(first_ordinal + threads))
+						ordinals = Ordinals::Fixed.range(first_ordinal, threads)
 						container = Threaded.new(ordinals: ordinals)
 						
-						# Link each inner thread worker to this fork, so the thread instance can reach
-						# the durable process ordinal via `instance.parent`.
 						container.run(count: threads, health_check_timeout: health_check_timeout, **options) do |worker|
-							worker.parent = instance
 							block.call(worker)
 						end
 						

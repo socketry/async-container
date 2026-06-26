@@ -48,9 +48,6 @@ module Async
 					# @returns [Integer | Nil] The container-scoped ordinal of this worker.
 					attr :ordinal
 					
-					# @returns [Object | Nil] The worker this one is nested inside.
-					attr_accessor :parent
-					
 					# Generate a hash representation of the process.
 					#
 					# @returns [Hash] The process as a hash, including `process_id` and `name`.
