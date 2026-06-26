@@ -73,7 +73,7 @@ module Async
 				end
 			end
 			
-			with "Async compatibility" do
+			with "Async{}" do
 				it "can wait inside an Async task after spawning outside Async" do
 					input, output = IO.pipe
 					
