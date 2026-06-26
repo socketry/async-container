@@ -153,21 +153,6 @@ module Async
 					self.close_write
 				end
 				
-				# A minimal status for children reaped outside this object.
-				class Status
-					def success?
-						true
-					end
-					
-					def to_i
-						0
-					end
-					
-					def to_s
-						"\#<#{self.class} success>"
-					end
-				end
-				
 				# Convert the child process to a hash, suitable for serialization.
 				#
 				# @returns [Hash] The request as a hash.
@@ -253,13 +238,9 @@ module Async
 				# @parameter timeout [Numeric | Nil] Ignored; retained for compatibility.
 				# @returns [::Process::Status] The process exit status.
 				def wait(timeout = nil)
-					begin
-						if @pid && @status.nil?
-							Console.debug(self, "Waiting for process to exit...", child: {process_id: @pid})
-							_, @status = ::Process.wait2(@pid)
-						end
-					rescue Errno::ECHILD
-						@status = Status.new
+					if @pid && @status.nil?
+						Console.debug(self, "Waiting for process to exit...", child: {process_id: @pid})
+						_, @status = ::Process.wait2(@pid)
 					end
 					
 					Console.debug(self, "Process exited.", child: {process_id: @pid, status: @status})
