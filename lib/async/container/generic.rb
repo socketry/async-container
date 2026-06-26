@@ -213,10 +213,9 @@ module Async
 			# @parameter name [String] The name of the child instance.
 			# @parameter restart [Boolean] Whether to restart the child instance if it fails.
 			# @parameter key [Symbol] A key used for reloading child instances.
-			# @parameter ordinals [Ordinals | Nil] An optional ordinal allocator assigned to this worker for implementation-detail child containers.
 			# @parameter health_check_timeout [Numeric | Nil] The maximum time a child instance can run without updating its state, before it is terminated as unhealthy.
 			# @parameter startup_timeout [Numeric | Nil] The maximum time a child instance can run without becoming ready, before it is terminated as unhealthy.
-			def spawn(name: nil, restart: false, key: nil, ordinals: nil, health_check_timeout: nil, startup_timeout: nil, &block)
+			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, startup_timeout: nil, &block)
 				name ||= UNNAMED
 				
 				if mark?(key)
@@ -234,7 +233,7 @@ module Async
 					until @stopping
 						Console.debug(self, "Starting child...", child: {key: key, name: name, restart: restart, health_check_timeout: health_check_timeout}, statistics: @statistics)
 						
-						child = self.start(name, ordinal: ordinal, ordinals: ordinals, &block)
+						child = self.start(name, ordinal: ordinal, &block)
 						state = insert(key, child)
 						
 						# Notify policy of spawn

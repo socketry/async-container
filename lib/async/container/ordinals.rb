@@ -66,12 +66,11 @@ module Async
 				include Enumerable
 				
 				def initialize(ordinals)
-					@ordinals = ordinals.to_a.freeze
-					@set = @ordinals.to_set.freeze
-					@free = @ordinals.to_set
+					@ordinals = ordinals.to_set.freeze
+					@free = @ordinals.dup
 				end
 				
-				# @attribute [Array(Integer)] The ordinals managed by this allocator.
+				# @attribute [Set(Integer)] The ordinals managed by this allocator.
 				attr :ordinals
 				
 				# Enumerate the ordinals managed by this allocator.
@@ -94,7 +93,7 @@ module Async
 				# @parameter ordinals [Enumerable(Integer)] The ordinals to release.
 				def release(ordinals)
 					ordinals.each do |ordinal|
-						unless @set.include?(ordinal)
+						unless @ordinals.include?(ordinal)
 							raise ArgumentError, "Cannot release ordinal #{ordinal.inspect} to #{self.class}!"
 						end
 						

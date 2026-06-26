@@ -41,10 +41,10 @@ describe Async::Container::Hybrid do
 		end
 		
 		container_class = Class.new(subject) do
-			def spawn(ordinals: nil, **options, &block)
+			def spawn(**options, &block)
 				instance = Object.new
-				instance.define_singleton_method(:ordinals) do
-					ordinals
+				instance.define_singleton_method(:ordinal) do
+					0
 				end
 				
 				def instance.ready!
