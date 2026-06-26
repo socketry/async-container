@@ -33,7 +33,6 @@ module Async
 				
 				@container = nil
 				@signals = {}
-				@signal_queue = ::Thread::Queue.new
 				@event_queue = ::Thread::Queue.new
 				
 				self.trap(SIGHUP) do
@@ -169,7 +168,9 @@ module Async
 					stop_container(old_container, @graceful_stop)
 				end
 				
-				@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
+				if @container
+					@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
+				end
 			rescue => error
 				raise
 			ensure
@@ -215,13 +216,9 @@ module Async
 						self.start
 						
 						while @container&.running?
-							process_signals(@container)
-							
 							if container = @container
 								controller_sleep(container)
 							end
-							
-							process_signals(@container) if @container
 						end
 					end
 				end
@@ -240,9 +237,7 @@ module Async
 				end
 				
 				while task.running?
-					process_signals(@container)
 					controller_sleep(container)
-					process_signals(@container) if @container
 				end
 				
 				task.wait
@@ -250,73 +245,68 @@ module Async
 			
 			private def wait_until_ready(container)
 				until container.status?(:ready)
-					process_signals(container, graceful: container.status?(:ready))
-					
 					break unless container.running?
 					
-					controller_sleep(container)
+					controller_sleep(container, graceful: container.status?(:ready))
 				end
 			end
 			
-			private def controller_sleep(container = nil)
+			private def controller_sleep(container = nil, graceful: @graceful_stop)
 				parent = Async::Task.current
 				result = Async::Queue.new
 				
 				event_task = parent.async(transient: true) do
-					result << @event_queue.pop
+					result << [:signal, @event_queue.pop]
 				end
 				
 				container_task = if container
 					parent.async(transient: true) do
-						result << container.sleep
+						result << [:container, container.sleep]
 					end
 				end
 				
-				result.pop
+				source, signal = result.pop
+				
+				if source == :signal
+					process_signal(signal, container, graceful)
+				end
 			ensure
 				event_task&.stop
 				container_task&.stop
 			end
 			
-			private def process_signals(container = @container, graceful: @graceful_stop)
-				while signal = @signal_queue.pop(timeout: 0)
-					if handler = @signals[signal]
-						begin
-							handler.call
-						rescue SetupError => error
-							Console.error(self, error)
-						end
-					elsif signal == SIGINT || signal == SIGTERM
-						target = @container || container
-						
-						if target.equal?(@container)
-							self.stop
-						else
-							target&.stop(graceful)
-						end
-					else
-						raise SignalException.new(signal)
+			private def process_signal(signal, container = @container, graceful = @graceful_stop)
+				if handler = @signals[signal]
+					begin
+						handler.call
+					rescue SetupError => error
+						Console.error(self, error)
 					end
+				elsif signal == SIGINT || signal == SIGTERM
+					target = @container || container
+					
+					if target.equal?(@container)
+						self.stop
+					else
+						target&.stop(graceful)
+					end
+				else
+					raise SignalException.new(signal)
 				end
 			end
 			
 			private def with_signal_handlers
-				queue_signal = proc do |signal|
-					@signal_queue << signal
-					@event_queue << true
-				end
-				
 				interrupt_action = Signal.trap(:INT) do
-					queue_signal.call(SIGINT)
+					@event_queue << SIGINT
 				end
 				
 				# SIGTERM behaves the same as SIGINT by default.
 				terminate_action = Signal.trap(:TERM) do
-					queue_signal.call(SIGTERM)
+					@event_queue << SIGTERM
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
-					queue_signal.call(SIGHUP)
+					@event_queue << SIGHUP
 				end
 				
 				yield
