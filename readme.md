@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.37.0
+
+  - Rename `ASYNC_CONTAINER_GRACEFUL_TIMEOUT` to `ASYNC_CONTAINER_GRACEFUL_STOP` and apply it at the controller level as `GRACEFUL_STOP`. `Group#stop` now only applies the shutdown policy it is given.
+
 ### v0.36.0
 
   - Forked containers now fork child processes from a short-lived thread, reducing inherited scheduler and parent stack state in children.
@@ -63,10 +67,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.33.0
 
   - Add `Policy#make_statistics` to allow policies to customize statistics initialization.
-
-### v0.32.1
-
-  - Expose `Async::Container::Controller` `#notify`, `#container_class`, and `#graceful_stop` for testing.
 
 ## Contributing
 
