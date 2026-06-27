@@ -18,11 +18,33 @@ module Async
 		# Manages the life-cycle of one or more containers in order to support a persistent system.
 		# e.g. a web server, job server or some other long running system.
 		class Controller
+			class SignalEvent
+				def initialize(signal)
+					@signal = signal
+				end
+				
+				attr :signal
+				
+				def apply(controller, container: nil, graceful: controller.graceful_stop)
+					controller.__send__(:process_signal, @signal, container, graceful)
+				end
+			end
+			
+			module ContainerEvent
+				def self.apply(controller, **options)
+					# The container state has changed; callers will re-check their predicates.
+				end
+			end
+			
 			SIGHUP = Signal.list["HUP"]
 			SIGINT = Signal.list["INT"]
 			SIGTERM = Signal.list["TERM"]
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
+			
+			HANGUP_EVENT = SignalEvent.new(SIGHUP).freeze
+			INTERRUPT_EVENT = SignalEvent.new(SIGINT).freeze
+			TERMINATE_EVENT = SignalEvent.new(SIGTERM).freeze
 			
 			# Initialize the controller.
 			# @parameter notify [Notify::Client] A client used for process readiness notifications.
@@ -256,20 +278,17 @@ module Async
 				result = Async::Queue.new
 				
 				event_task = parent.async(transient: true) do
-					result << [:signal, @event_queue.pop]
+					result << @event_queue.pop
 				end
 				
 				container_task = if container
 					parent.async(transient: true) do
-						result << [:container, container.sleep]
+						container.sleep
+						result << ContainerEvent
 					end
 				end
 				
-				source, signal = result.pop
-				
-				if source == :signal
-					process_signal(signal, container, graceful)
-				end
+				result.pop.apply(self, container: container, graceful: graceful)
 			ensure
 				event_task&.stop
 				container_task&.stop
@@ -297,16 +316,16 @@ module Async
 			
 			private def with_signal_handlers
 				interrupt_action = Signal.trap(:INT) do
-					@event_queue << SIGINT
+					@event_queue << INTERRUPT_EVENT
 				end
 				
 				# SIGTERM behaves the same as SIGINT by default.
 				terminate_action = Signal.trap(:TERM) do
-					@event_queue << SIGTERM
+					@event_queue << TERMINATE_EVENT
 				end
 				
 				hangup_action = Signal.trap(:HUP) do
-					@event_queue << SIGHUP
+					@event_queue << HANGUP_EVENT
 				end
 				
 				yield
