@@ -114,7 +114,7 @@ module Async
 				def self.fork(**options)
 					self.new(**options) do |thread|
 						::Thread.new do
-							# This could be a configuration option (see forked implementation too):
+							# Reset `SignalException` delivery because CRuby inherits the `Thread.handle_interrupt` mask stack across `Thread.new`. Async deliberately masks signal exceptions, and signal-driven thread control should be delivered promptly:
 							::Thread.handle_interrupt(SignalException => :immediate) do
 								yield Instance.for(thread)
 							end
