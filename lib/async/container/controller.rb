@@ -143,7 +143,7 @@ module Async
 				unless @container
 					Console.info(self, "Controller starting...")
 					
-					if self.restart(@events) == :event
+					if self.restart == :event
 						return
 					end
 				end
@@ -162,7 +162,7 @@ module Async
 			
 			# Restart the container. A new container is created, and if successful, any old container is terminated gracefully.
 			# This is equivalent to a blue-green deployment.
-			def restart(events = nil)
+			def restart
 				if @container
 					@notify&.restarting!
 					
@@ -184,7 +184,7 @@ module Async
 				# Wait for all child processes to enter the ready state.
 				Console.info(self, "Waiting for startup...")
 				
-				if container.wait_until_ready(events) == :event
+				if container.wait_until_ready(@events) == :event
 					return :event
 				end
 				
