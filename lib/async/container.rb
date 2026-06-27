@@ -5,10 +5,4 @@
 
 require_relative "container/best"
 require_relative "container/controller"
-
-# @namespace
-module Async
-	# @namespace
-	module Container
-	end
-end
+require_relative "container/version"
