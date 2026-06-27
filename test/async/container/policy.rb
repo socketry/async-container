@@ -5,8 +5,11 @@
 
 require "async/container/policy"
 require "async/container/best"
+require "sus/fixtures/async"
 
 describe Async::Container::Policy do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	let(:policy) {subject.new}
 	
 	with "interface" do
@@ -232,6 +235,37 @@ describe Async::Container::Policy do
 			expect(exits.size).to be == 1
 			expect(exits.first).to have_keys(name: be == "failing-worker", success: be_falsey)
 			expect(container.statistics.failures).to be == 1
+		end
+		
+		it "can stop the container from child_exit" do
+			stop_policy = Class.new(Async::Container::Policy) do
+				def initialize
+					@stop_count = 0
+				end
+				
+				attr :stop_count
+				
+				def child_exit(container, child, status, name:, key:, **options)
+					unless container.stopping?
+						@stop_count += 1
+						container.stop
+					end
+				end
+			end.new
+			
+			container = Async::Container.best_container_class.new(policy: stop_policy)
+			
+			3.times do |i|
+				container.spawn(name: "worker-#{i}") do |instance|
+					instance.ready!
+					exit(1)
+				end
+			end
+			
+			container.wait
+			
+			expect(stop_policy.stop_count).to be == 1
+			expect(container).not.to be(:running?)
 		end
 		
 		it "invokes callbacks for multiple children" do

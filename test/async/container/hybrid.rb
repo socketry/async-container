@@ -6,8 +6,11 @@
 require "async/container/hybrid"
 require "async/container/best"
 require "async/container/a_container"
+require "sus/fixtures/async"
 
 describe Async::Container::Hybrid do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	it_behaves_like Async::Container::AContainer
 	
 	it "should be multiprocess" do
@@ -85,14 +88,10 @@ describe Async::Container::Hybrid do
 		Process.kill(signal, fork_pid)
 		
 		# The fork must drain its inner threads and exit, rather than respawning them forever:
-		8.times do
-			reaped, _status = Process.waitpid2(fork_pid, Process::WNOHANG)
-			if reaped
-				exited = true
-				break
-			end
+		20.times do
+			Process.kill(0, fork_pid)
 			sleep(0.1)
-		rescue Errno::ECHILD
+		rescue Errno::ESRCH
 			exited = true
 			break
 		end

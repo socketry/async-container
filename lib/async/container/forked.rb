@@ -101,23 +101,28 @@ module Async
 				def self.fork(**options)
 					# $stderr.puts fork: caller
 					self.new(**options) do |process|
-						::Process.fork do
-							# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
-							Signal.trap(:INT){::Thread.current.raise(Interrupt)}
-							Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
-							Signal.trap(:HUP){::Thread.current.raise(Restart)}
-							
-							# This could be a configuration option:
-							::Thread.handle_interrupt(SignalException => :immediate) do
-								yield Instance.for(process)
-							rescue Interrupt
-								# Graceful exit.
-							rescue Exception => error
-								Console.error(self, error)
+						# Fork from a dedicated thread so the child does not inherit the parent fiber scheduler or the current caller's fiber stack; only this short-lived thread is copied into the child process.
+						::Thread.new do
+							::Process.fork do
+								Signal.trap(:INT){::Thread.current.raise(Interrupt)}
+								Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
+								Signal.trap(:HUP){::Thread.current.raise(Restart)}
 								
-								exit!(1)
+								# CRuby inherits the `Thread.handle_interrupt` mask stack across `Thread.new`, so reset signal delivery before running user code; Async deliberately masks SignalException.
+								::Thread.handle_interrupt(SignalException => :immediate) do
+									yield Instance.for(process)
+									
+									exit!(0)
+								rescue Interrupt
+									# Graceful exit.
+									exit!(0)
+								rescue Exception => error
+									Console.error(self, error)
+									
+									exit!(1)
+								end
 							end
-						end
+						end.value
 					end
 				end
 				
@@ -233,27 +238,11 @@ module Async
 				# Wait for the child process to exit.
 				# @asynchronous This method may block.
 				#
-				# @parameter timeout [Numeric | Nil] Maximum time to wait before forceful termination.
 				# @returns [::Process::Status] The process exit status.
-				def wait(timeout = 0.1)
+				def wait
 					if @pid && @status.nil?
-						Console.debug(self, "Waiting for process to exit...", child: {process_id: @pid}, timeout: timeout)
-						
-						_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
-						
-						if @status.nil?
-							sleep(timeout) if timeout
-							
-							_, @status = ::Process.wait2(@pid, ::Process::WNOHANG)
-							
-							if @status.nil?
-								Console.warn(self, "Process is blocking, sending kill signal...", child: {process_id: @pid}, timeout: timeout)
-								self.kill!
-								
-								# Wait for the process to exit:
-								_, @status = ::Process.wait2(@pid)
-							end
-						end
+						Console.debug(self, "Waiting for process to exit...", child: {process_id: @pid})
+						_, @status = ::Process.wait2(@pid)
 					end
 					
 					Console.debug(self, "Process exited.", child: {process_id: @pid, status: @status})

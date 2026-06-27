@@ -24,22 +24,29 @@ module Async
 				
 				forks.times do
 					self.spawn(**options) do |instance|
-						container = Threaded.new
+						Signal.trap(:INT){exit!(0)}
+						Signal.trap(:TERM){exit!(0)}
 						
-						container.run(count: threads, health_check_timeout: health_check_timeout, **options, &block)
-						
-						container.wait_until_ready
-						instance.ready!
-						
-						begin
-							container.wait
-						rescue Interrupt
-							# Gracefully interrupt child threads; parent process handles escalation.
-							container.interrupt
-							retry
+						Sync do
+							container = Threaded.new
+							
+							begin
+								container.run(count: threads, health_check_timeout: health_check_timeout, **options, &block)
+								
+								container.wait_until_ready
+								instance.ready!
+								
+								begin
+									container.wait
+								rescue Interrupt
+									container.interrupt
+								end
+							ensure
+								container&.stop(false)
+							end
 						end
-					ensure
-						container.stop(false)
+						
+						exit!(0)
 					end
 				end
 				

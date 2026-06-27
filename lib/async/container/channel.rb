@@ -25,12 +25,14 @@ module Async
 			
 			# Close the input end of the pipe.
 			def close_read
-				@in.close
+				@in.close unless @in.closed?
+			rescue IOError, Errno::EBADF
 			end
 			
 			# Close the output end of the pipe.
 			def close_write
-				@out.close
+				@out.close unless @out.closed?
+			rescue IOError, Errno::EBADF
 			end
 			
 			# Close both ends of the pipe.

@@ -73,6 +73,69 @@ module Async
 				end
 			end
 			
+			with "Async{}" do
+				it "can wait inside an Async task after spawning outside Async" do
+					input, output = IO.pipe
+					
+					container.spawn do
+						output.write(".")
+					end
+					
+					Async do
+						container.wait
+					end.wait
+					
+					output.close
+					expect(input.read).to be == "."
+				end
+				
+				it "can spawn and wait inside the same Async task" do
+					input, output = IO.pipe
+					
+					Async do
+						container.spawn do
+							output.write(".")
+						end
+						
+						container.wait
+					end.wait
+					
+					output.close
+					expect(input.read).to be == "."
+				end
+				
+				it "can wait while a health monitor is active" do
+					container.spawn(health_check_timeout: 10.0) do |instance|
+						instance.ready!
+					end
+					
+					Async::Task.current.with_timeout(2.0) do
+						container.wait
+					end
+					
+					expect(container.statistics).to have_attributes(failures: be == 0)
+				end
+				
+				it "can start, wait until ready, and stop inside Sync" do
+					Sync do
+						begin
+							2.times do |i|
+								container.spawn(name: "worker #{i}") do |instance|
+									instance.ready!
+									sleep
+								end
+							end
+							
+							container.wait_until_ready
+							
+							expect(container.group.running).to have_attributes(size: be == 2)
+						ensure
+							container.stop if container.running?
+						end
+					end
+				end
+			end
+			
 			it "should be blocking" do
 				skip "Fiber.blocking? is not supported!" unless Fiber.respond_to?(:blocking?)
 				
@@ -225,14 +288,14 @@ module Async
 					container.run do |instance|
 						Async do
 							instance.ready!
+							sleep 0.1
 						end
 					end
 					
 					expect(container).to be(:running?)
 					
+					container.stop(false)
 					container.wait
-					
-					container.stop
 					
 					expect(container).not.to be(:running?)
 				end
