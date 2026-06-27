@@ -18,19 +18,31 @@ module Async
 		# Manages the life-cycle of one or more containers in order to support a persistent system.
 		# e.g. a web server, job server or some other long running system.
 		class Controller
+			# Represents a signal delivered through the controller event queue.
 			class SignalEvent
+				# Initialize a signal event.
+				# @parameter signal [Integer] The signal number to process.
 				def initialize(signal)
 					@signal = signal
 				end
 				
+				# @attribute [Integer] The signal number to process.
 				attr :signal
 				
+				# Apply this signal event to the controller.
+				# @parameter controller [Controller] The controller which should process the signal.
+				# @parameter container [Generic | Nil] The container associated with the current wait operation.
+				# @parameter graceful [Boolean | Float] Whether to stop the container gracefully, or the duration to wait for graceful shutdown.
 				def apply(controller, container: nil, graceful: controller.graceful_stop)
 					controller.__send__(:process_signal, @signal, container, graceful)
 				end
 			end
 			
+			# Represents a container state change in the controller event queue.
 			module ContainerEvent
+				# Apply this container event to the controller.
+				# @parameter controller [Controller] The controller currently waiting for an event.
+				# @parameter options [Hash] Additional event context.
 				def self.apply(controller, **options)
 					# The container state has changed; callers will re-check their predicates.
 				end
