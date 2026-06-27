@@ -6,8 +6,11 @@
 require "async/container/hybrid"
 require "async/container/best"
 require "async/container/a_container"
+require "sus/fixtures/async/scheduler_context"
 
 describe Async::Container::Hybrid do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	it_behaves_like Async::Container::AContainer
 	
 	it "should be multiprocess" do

@@ -5,8 +5,11 @@
 
 require "async/container/threaded"
 require "async/container/a_container"
+require "sus/fixtures/async/scheduler_context"
 
 describe Async::Container::Threaded do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	it_behaves_like Async::Container::AContainer
 	
 	it "should not be multiprocess" do
