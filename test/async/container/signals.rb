@@ -23,6 +23,25 @@ describe Async::Container::Signals do
 		end
 	end
 	
+	with Async::Container::Events do
+		let(:events) {Async::Container::Events.new}
+		
+		it "wakes IO.select when an event is queued" do
+			event = Object.new
+			
+			events << event
+			
+			readable, _, _ = IO.select([events.io], nil, nil, 0)
+			
+			expect(readable).to be == [events.io]
+			expect(events.pop(timeout: 0)).to be == event
+		end
+		
+		it "returns nil when no event is queued" do
+			expect(events.pop(timeout: 0)).to be_nil
+		end
+	end
+	
 	with "#events" do
 		it "exposes the event queue" do
 			expect(signals.events).to be == events

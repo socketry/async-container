@@ -3,6 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2017-2025, by Samuel Williams.
 
+require_relative "container/events"
 require_relative "container/signals"
 require_relative "container/controller"
 

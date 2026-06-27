@@ -3,6 +3,8 @@
 # Released under the MIT License.
 # Copyright, 2026, by Samuel Williams.
 
+require_relative "events"
+
 module Async
 	module Container
 		# Represents a collection of process signal handlers which enqueue events.
@@ -27,13 +29,13 @@ module Async
 			end
 			
 			# Initialize the signal handler collection.
-			# @parameter events [Thread::Queue] The queue used to receive signal events.
-			def initialize(events = ::Thread::Queue.new)
+			# @parameter events [Events] The queue used to receive signal events.
+			def initialize(events = Events.new)
 				@events = events
 				@handlers = {}
 			end
 			
-			# @attribute [Thread::Queue] The queue used to receive signal events.
+			# @attribute [Events] The queue used to receive signal events.
 			attr :events
 			
 			# Register a signal handler.
