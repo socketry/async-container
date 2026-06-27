@@ -101,23 +101,25 @@ module Async
 				def self.fork(**options)
 					# $stderr.puts fork: caller
 					self.new(**options) do |process|
-						::Process.fork do
-							# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
-							Signal.trap(:INT){::Thread.current.raise(Interrupt)}
-							Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
-							Signal.trap(:HUP){::Thread.current.raise(Restart)}
-							
-							# This could be a configuration option:
-							::Thread.handle_interrupt(SignalException => :immediate) do
-								yield Instance.for(process)
-							rescue Interrupt
-								# Graceful exit.
-							rescue Exception => error
-								Console.error(self, error)
+						::Thread.new do
+							::Process.fork do
+								# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
+								Signal.trap(:INT){::Thread.current.raise(Interrupt)}
+								Signal.trap(:TERM){::Thread.current.raise(Interrupt)}  # Same as SIGINT.
+								Signal.trap(:HUP){::Thread.current.raise(Restart)}
 								
-								exit!(1)
+								# This could be a configuration option:
+								::Thread.handle_interrupt(SignalException => :immediate) do
+									yield Instance.for(process)
+								rescue Interrupt
+									# Graceful exit.
+								rescue Exception => error
+									Console.error(self, error)
+									
+									exit!(1)
+								end
 							end
-						end
+						end.value
 					end
 				end
 				

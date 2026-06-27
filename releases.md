@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Forked containers now fork child processes from a short-lived thread, reducing inherited scheduler and parent stack state in children.
+
 ## v0.35.1
 
   - **Fixed**: `Hybrid` container now stops on interrupt instead of restarting indefinitely.
