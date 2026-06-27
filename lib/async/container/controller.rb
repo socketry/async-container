@@ -12,6 +12,18 @@ require_relative "policy"
 
 module Async
 	module Container
+		# The default graceful stop policy for controllers.
+		GRACEFUL_STOP = ENV.fetch("ASYNC_CONTAINER_GRACEFUL_STOP", "true").then do |value|
+			case value
+			when "true"
+				true # Default timeout for graceful termination.
+			when "false"
+				false # Immediately kill the processes.
+			else
+				value.to_f
+			end
+		end
+		
 		# Manages the life-cycle of one or more containers in order to support a persistent system.
 		# e.g. a web server, job server or some other long running system.
 		class Controller
@@ -23,7 +35,7 @@ module Async
 			
 			# Initialize the controller.
 			# @parameter notify [Notify::Client] A client used for process readiness notifications.
-			def initialize(notify: Notify.open!, container_class: Container, graceful_stop: true)
+			def initialize(notify: Notify.open!, container_class: Container, graceful_stop: GRACEFUL_STOP)
 				@notify = notify
 				@container_class = container_class
 				@graceful_stop = graceful_stop

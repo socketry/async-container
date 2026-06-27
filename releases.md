@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Rename `ASYNC_CONTAINER_GRACEFUL_TIMEOUT` to `ASYNC_CONTAINER_GRACEFUL_STOP` and apply it at the controller level as `GRACEFUL_STOP`. `Group#stop` now only applies the shutdown policy it is given.
+
 ## v0.36.0
 
   - Forked containers now fork child processes from a short-lived thread, reducing inherited scheduler and parent stack state in children.

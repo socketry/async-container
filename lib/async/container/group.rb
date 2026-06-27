@@ -10,19 +10,7 @@ require_relative "error"
 
 module Async
 	module Container
-		# The default timeout for terminating processes, before escalating to killing.
-		GRACEFUL_TIMEOUT = ENV.fetch("ASYNC_CONTAINER_GRACEFUL_TIMEOUT", "true").then do |value|
-			case value
-			when "true"
-				true # Default timeout for graceful termination.
-			when "false"
-				false # Immediately kill the processes.
-			else
-				value.to_f
-			end
-		end
-		
-		# The default timeout for graceful termination.
+		# The default timeout for graceful termination, used when the `graceful` argument is true.
 		DEFAULT_GRACEFUL_TIMEOUT = 10.0
 		
 		# Manages a group of running processes.
@@ -163,7 +151,7 @@ module Async
 			# If `graceful` is false, skip the SIGINT phase and go directly to SIGKILL.
 			#
 			# @parameter graceful [Boolean | Numeric] Whether to send SIGINT first or skip directly to SIGKILL.
-			def stop(graceful = GRACEFUL_TIMEOUT)
+			def stop(graceful = true)
 				Console.debug(self, "Stopping all processes...", graceful: graceful)
 				
 				# If a timeout is specified, interrupt the children first:

@@ -17,6 +17,33 @@ describe Async::Container::Controller do
 		end
 	end
 	
+	with "#graceful_stop" do
+		def read_graceful_stop(value)
+			command = [
+				"bundle", "exec", "ruby", "-Ilib", "-e",
+				"require 'async/container/controller'; puts Async::Container::Controller.new(notify: nil).graceful_stop.inspect"
+			]
+			
+			output = IO.popen({"ASYNC_CONTAINER_GRACEFUL_STOP" => value}, command, &:read)
+			
+			expect($?.success?).to be == true
+			
+			return output
+		end
+		
+		it "uses the configured graceful timeout by default" do
+			output = read_graceful_stop("0.001")
+			
+			expect(output).to be == "0.001\n"
+		end
+		
+		it "can disable graceful stop by default" do
+			output = read_graceful_stop("false")
+			
+			expect(output).to be == "false\n"
+		end
+	end
+	
 	with "#reload" do
 		it "can reuse keyed child" do
 			input, output = IO.pipe
