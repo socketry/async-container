@@ -7,8 +7,11 @@
 require "async/container/best"
 require "async/container/forked"
 require "async/container/a_container"
+require "sus/fixtures/async/scheduler_context"
 
 describe Async::Container::Forked do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	let(:container) {subject.new}
 	
 	it_behaves_like Async::Container::AContainer
