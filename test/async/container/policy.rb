@@ -237,6 +237,37 @@ describe Async::Container::Policy do
 			expect(container.statistics.failures).to be == 1
 		end
 		
+		it "can stop the container from child_exit" do
+			stop_policy = Class.new(Async::Container::Policy) do
+				def initialize
+					@stop_count = 0
+				end
+				
+				attr :stop_count
+				
+				def child_exit(container, child, status, name:, key:, **options)
+					unless container.stopping?
+						@stop_count += 1
+						container.stop
+					end
+				end
+			end.new
+			
+			container = Async::Container.best_container_class.new(policy: stop_policy)
+			
+			3.times do |i|
+				container.spawn(name: "worker-#{i}") do |instance|
+					instance.ready!
+					exit(1)
+				end
+			end
+			
+			container.wait
+			
+			expect(stop_policy.stop_count).to be == 1
+			expect(container).not.to be(:running?)
+		end
+		
 		it "invokes callbacks for multiple children" do
 			container = Async::Container.best_container_class.new(policy: tracking_policy)
 			

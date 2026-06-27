@@ -38,8 +38,9 @@ module Async
 				
 				@mutex = Mutex.new
 				@children = {}
-				@supervisors = 0
-				@events = ::Thread::Queue.new
+				@supervisors = {}
+				@pending_events = 0
+				@waiters = []
 			end
 			
 			# @attribute [Numeric | Nil] The interval used to wake waiters for periodic health checks.
@@ -58,9 +59,10 @@ module Async
 			end
 			
 			# Check whether any supervisor tasks are still running.
+			# @parameter except [Async::Task | Nil] The supervisor task to ignore.
 			# @returns [Boolean] Whether any supervisor tasks are running.
-			def running?
-				@mutex.synchronize{@supervisors.positive?}
+			def running?(except: nil)
+				running_supervisors?(except: except)
 			end
 			
 			# Check whether any supervisor tasks are still running.
@@ -85,13 +87,16 @@ module Async
 			# @yields {...} The supervisor block to execute.
 			# @returns [Async::Task] The supervisor task.
 			def supervise(&block)
-				@mutex.synchronize{@supervisors += 1}
+				parent = Async::Task.current
 				
-				Async::Task.current.async(transient: true) do
+				parent.async(transient: true) do
+					task = Async::Task.current
+					@mutex.synchronize{@supervisors[task] = true}
+					
 					begin
 						block.call
 					ensure
-						@mutex.synchronize{@supervisors -= 1}
+						@mutex.synchronize{@supervisors.delete(task)}
 						signal!
 					end
 				end
@@ -116,15 +121,29 @@ module Async
 			# @parameter duration [Numeric | Nil] The maximum duration to sleep.
 			# @returns [Object | Nil] The queued signal value, or `nil` if the sleep timed out.
 			def sleep(duration = nil)
-				::Thread.handle_interrupt(SignalException => :immediate) do
-					@events.pop(timeout: duration)
+				events = ::Thread::Queue.new
+				
+				@mutex.synchronize do
+					if @pending_events.positive?
+						@pending_events -= 1
+						return true
+					end
+					
+					@waiters << events
 				end
+				
+				::Thread.handle_interrupt(SignalException => :immediate) do
+					events.pop(timeout: duration)
+				end
+			ensure
+				@mutex.synchronize{@waiters.delete(events)} if events
 			end
 			
-			# Wait until all supervisor tasks have stopped.
+			# Wait until all other supervisor tasks have stopped.
+			# @parameter except [Async::Task | Nil] The supervisor task to ignore while waiting.
 			# @returns [Nil]
-			def wait
-				sleep while running?
+			def wait(except: current_supervisor)
+				sleep while running_supervisors?(except: except)
 			end
 			
 			# Wake any waiters so they can re-check child health or state.
@@ -159,21 +178,26 @@ module Async
 			# @returns [Nil]
 			def stop(graceful = GRACEFUL_TIMEOUT)
 				Console.debug(self, "Stopping all children...", graceful: graceful)
+				except = current_supervisor
 				
 				if graceful
 					interrupt
 					
 					graceful = DEFAULT_GRACEFUL_TIMEOUT if graceful == true
-					wait_for_exit(Clock.start, graceful)
+					wait_for_children(Clock.start, graceful)
 				end
 			ensure
-				if running?
+				if size.positive?
 					if graceful
 						Console.warn(self, "Killing children after graceful shutdown failed...", size: size)
 					end
 					
 					kill
-					wait
+					sleep while size.positive?
+				end
+				
+				if running_supervisors?(except: except)
+					wait(except: except)
 				end
 			end
 			
@@ -189,8 +213,8 @@ module Async
 				end
 			end
 			
-			def wait_for_exit(clock, timeout)
-				while running?
+			def wait_for_children(clock, timeout)
+				while size.positive?
 					duration = timeout - clock.total
 					
 					break if duration.negative?
@@ -199,8 +223,40 @@ module Async
 				end
 			end
 			
+			def current_supervisor
+				task = Async::Task.current
+				
+				@mutex.synchronize do
+					@supervisors.key?(task) ? task : nil
+				end
+			rescue RuntimeError
+				nil
+			end
+			
+			def running_supervisors?(except: nil)
+				@mutex.synchronize do
+					if except
+						@supervisors.any?{|task, _| task != except}
+					else
+						@supervisors.any?
+					end
+				end
+			end
+			
 			def signal!
-				@events << true
+				waiters = @mutex.synchronize do
+					if @waiters.empty?
+						@pending_events += 1
+					end
+					
+					@waiters.dup
+				end
+				
+				waiters.each do |events|
+					events << true
+				end
+				
+				return true
 			end
 		end
 	end

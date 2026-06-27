@@ -173,7 +173,7 @@ module Async
 				@stopping = true
 				@group.stop(timeout)
 				
-				if @group.running?
+				if @group.running?(except: current_task)
 					Console.warn(self, "Group is still running after stopping it!")
 				else
 					Console.info(self, "Group has stopped.")
@@ -181,6 +181,12 @@ module Async
 			rescue => error
 				Console.error(self, "Error while stopping container!", exception: error)
 				raise
+			end
+			
+			private def current_task
+				Async::Task.current
+			rescue RuntimeError
+				nil
 			end
 			
 			protected def health_check_failed(child, age_clock, health_check_timeout)
