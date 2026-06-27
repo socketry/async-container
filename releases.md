@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-  - Add `Async::Container::Signals` for installing scoped signal traps that enqueue signal events.
+  - Use `async-signals` to coordinate controller signal traps while queueing signal events through the controller event loop.
 
 ## v0.37.0
 

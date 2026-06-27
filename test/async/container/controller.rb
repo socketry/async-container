@@ -210,6 +210,27 @@ describe Async::Container::Controller do
 	with "signals" do
 		include_context Async::Container::AController, "dots"
 		
+		it "queues trapped signal events" do
+			controller = Async::Container::Controller.new(notify: nil)
+			applied = false
+			
+			controller.trap(:USR1) do
+				applied = true
+			end
+			
+			Async::Signals.install(controller.instance_variable_get(:@signals)) do
+				Process.kill(:USR1, Process.pid)
+				
+				event = controller.instance_variable_get(:@events).pop(timeout: 1)
+				
+				expect(event.signal).to be == :USR1
+				
+				event.call
+			end
+			
+			expect(applied).to be == true
+		end
+		
 		it "restarts children when receiving SIGHUP" do
 			expect(input.read(1)).to be == "."
 			

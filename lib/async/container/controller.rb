@@ -10,7 +10,8 @@ require_relative "statistics"
 require_relative "notify"
 require_relative "policy"
 require_relative "events"
-require_relative "signals"
+
+require "async/signals"
 
 module Async
 	module Container
@@ -29,6 +30,25 @@ module Async
 		# Manages the life-cycle of one or more containers in order to support a persistent system.
 		# e.g. a web server, job server or some other long running system.
 		class Controller
+			# Represents a trapped process signal as a queued controller event.
+			class SignalEvent
+				# Initialize the signal event.
+				# @parameter signal [Symbol | String | Integer] The signal that was received.
+				# @parameter handler [Proc] The handler to invoke when the event is processed.
+				def initialize(signal, handler)
+					@signal = signal
+					@handler = handler
+				end
+				
+				# @attribute [Symbol | String | Integer] The signal that was received.
+				attr :signal
+				
+				# Process the signal event by invoking the registered handler.
+				def call
+					@handler.call
+				end
+			end
+			
 			SIGHUP = Signal.list["HUP"]
 			SIGINT = Signal.list["INT"]
 			SIGTERM = Signal.list["TERM"]
@@ -44,7 +64,7 @@ module Async
 				
 				@container = nil
 				@events = Events.new
-				@signals = Signals.new(@events)
+				@signals = Async::Signals::Handlers.new
 				
 				self.trap(SIGHUP) do
 					self.restart
@@ -101,7 +121,15 @@ module Async
 			# @parameters signal [Symbol] The signal to trap, e.g. `:INT`.
 			# @parameters block [Proc] The signal handler to invoke.
 			def trap(signal, &block)
-				@signals.trap(signal, &block)
+				if block
+					event = SignalEvent.new(signal, block).freeze
+					
+					@signals.trap(signal) do
+						@events << event
+					end
+				else
+					@signals.ignore(signal)
+				end
 			end
 			
 			# Create a policy for managing child lifecycle events.
@@ -247,7 +275,7 @@ module Async
 			def run
 				@notify&.status!("Initializing controller...")
 				
-				@signals.trapped do
+				Async::Signals.install(@signals) do
 					self.start
 					
 					while event = @events.pop(timeout: 0)
