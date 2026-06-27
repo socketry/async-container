@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### v0.36.0
+
+  - Forked containers now fork child processes from a short-lived thread, reducing inherited scheduler and parent stack state in children.
+
 ### v0.35.1
 
   - **Fixed**: `Hybrid` container now stops on interrupt instead of restarting indefinitely.
@@ -63,11 +67,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.32.1
 
   - Expose `Async::Container::Controller` `#notify`, `#container_class`, and `#graceful_stop` for testing.
-
-### v0.32.0
-
-  - Minor **breaking** changes to `Async::Container::Policy` interface.
-  - Expose `Async::Container::Statistics::Rate#window`.
 
 ## Contributing
 

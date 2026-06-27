@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.36.0
 
   - Forked containers now fork child processes from a short-lived thread, reducing inherited scheduler and parent stack state in children.
 
