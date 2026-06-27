@@ -51,18 +51,18 @@ module Async
 				rescue SetupError => error
 					Console.error(self, error)
 				end
-
+				
 				self.trap(SIGUSR1) do
 					self.reload
 				rescue SetupError => error
 					Console.error(self, error)
 				end
-
+				
 				self.trap(SIGINT) do
 					self.stop
 					:stop
 				end
-
+				
 				self.trap(SIGTERM) do
 					self.stop
 					:stop
@@ -149,7 +149,7 @@ module Async
 				end
 				
 				Console.info(self, "Controller started.")
-
+				
 				return @container
 			end
 			
