@@ -79,6 +79,20 @@ describe Async::Container::Signals do
 			expect(applied).to be == true
 		end
 		
+		it "reuses a frozen event for trapped signals" do
+			signals.trap(:USR1){}
+			
+			signals.trapped do
+				::Process.kill(:USR1, ::Process.pid)
+				event = signals.wait
+				
+				expect(event.frozen?).to be == true
+				
+				::Process.kill(:USR1, ::Process.pid)
+				expect(signals.wait).to be == event
+			end
+		end
+		
 		it "ignores signals without a handler" do
 			signals.trap(:USR1)
 			

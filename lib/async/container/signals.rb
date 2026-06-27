@@ -32,7 +32,7 @@ module Async
 			# @parameter events [Events] The queue used to receive signal events.
 			def initialize(events = Events.new)
 				@events = events
-				@handlers = {}
+				@traps = {}
 			end
 			
 			# @attribute [Events] The queue used to receive signal events.
@@ -42,7 +42,11 @@ module Async
 			# If no block is provided, the signal will be ignored while trapped.
 			# @parameter signal [Symbol | String | Integer] The signal to trap.
 			def trap(signal, &block)
-				@handlers[signal] = block
+				if block
+					@traps[signal] = Event.new(signal, block).freeze
+				else
+					@traps[signal] = nil
+				end
 			end
 			
 			# Ignore a signal while trapped.
@@ -62,8 +66,8 @@ module Async
 			def trapped
 				previous = {}
 				
-				@handlers.each do |signal, handler|
-					previous[signal] = install(signal, handler)
+				@traps.each do |signal, event|
+					previous[signal] = install(signal, event)
 				end
 				
 				yield self
@@ -75,10 +79,10 @@ module Async
 			
 			private
 			
-			def install(signal, handler)
-				if handler
+			def install(signal, event)
+				if event
 					::Signal.trap(signal) do
-						@events << Event.new(signal, handler)
+						@events << event
 					end
 				else
 					::Signal.trap(signal, "IGNORE")
