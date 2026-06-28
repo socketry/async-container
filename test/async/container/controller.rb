@@ -230,6 +230,14 @@ describe Async::Container::Controller do
 			expect(signals.handlers).to be == controller.instance_variable_get(:@signals)
 		end
 		
+		it "can ignore trapped signals" do
+			controller.trap(:USR2)
+			
+			handlers = controller.instance_variable_get(:@signals).to_h
+			
+			expect(handlers.fetch("USR2")).to be_nil
+		end
+		
 		it "queues trapped signal events" do
 			controller = Async::Container::Controller.new(notify: nil)
 			applied = false
@@ -249,6 +257,65 @@ describe Async::Container::Controller do
 			end
 			
 			expect(applied).to be == true
+		end
+		
+		it "handles setup errors when restarting from a signal" do
+			def controller.restart
+				raise Async::Container::SetupError, nil
+			end
+			
+			Async::Signals.install(controller.instance_variable_get(:@signals)) do
+				Process.kill(:HUP, Process.pid)
+				
+				event = controller.instance_variable_get(:@events).pop(timeout: 1)
+				
+				expect{event.call}.not.to raise_exception
+			end
+		end
+		
+		it "handles setup errors when reloading from a signal" do
+			def controller.reload
+				raise Async::Container::SetupError, nil
+			end
+			
+			Async::Signals.install(controller.instance_variable_get(:@signals)) do
+				Process.kill(:USR1, Process.pid)
+				
+				event = controller.instance_variable_get(:@events).pop(timeout: 1)
+				
+				expect{event.call}.not.to raise_exception
+			end
+		end
+		
+		it "notifies when reload fails" do
+			notify = Object.new
+			
+			def notify.reloading!
+			end
+			
+			def notify.error!(message)
+				@message = message
+			end
+			
+			def notify.message
+				@message
+			end
+			
+			container = Object.new
+			
+			def container.wait_until_ready
+			end
+			
+			def container.failed?
+				true
+			end
+			
+			controller = Async::Container::Controller.new(notify: notify)
+			
+			controller.instance_variable_set(:@container, container)
+			
+			expect{controller.reload}.to raise_exception(Async::Container::SetupError)
+			expect(notify.message).to be == "Container failed to reload!"
 		end
 		
 		it "restarts children when receiving SIGHUP" do
