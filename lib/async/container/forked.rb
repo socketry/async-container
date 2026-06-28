@@ -111,9 +111,6 @@ module Async
 								
 								# Reset `SignalException` delivery because CRuby inherits the `Thread.handle_interrupt` mask stack across `Thread.new`. Async deliberately masks signal exceptions, and the signal traps above should be delivered promptly:
 								::Thread.handle_interrupt(SignalException => :immediate) do
-									# Collect inherited, unreachable parent objects before user code can create a new scheduler or other descriptors which might reuse inherited descriptor numbers.
-									GC.start
-									
 									yield Instance.for(process)
 								rescue Interrupt
 									# Graceful exit.
