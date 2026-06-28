@@ -210,6 +210,26 @@ describe Async::Container::Controller do
 	with "signals" do
 		include_context Async::Container::AController, "dots"
 		
+		it "uses the provided signal backend" do
+			signals = Module.new do
+				def self.install(handlers)
+					@handlers = handlers
+					yield
+				end
+				
+				def self.handlers
+					@handlers
+				end
+			end
+			
+			def controller.setup(container)
+			end
+			
+			controller.run(signals: signals)
+			
+			expect(signals.handlers).to be == controller.instance_variable_get(:@signals)
+		end
+		
 		it "queues trapped signal events" do
 			controller = Async::Container::Controller.new(notify: nil)
 			applied = false

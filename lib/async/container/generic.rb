@@ -106,13 +106,13 @@ module Async
 			# Sleep until some state change occurs or the specified duration elapses.
 			#
 			# @parameter duration [Numeric] the maximum amount of time to sleep for.
-			def sleep(duration = nil, events = nil)
-				@group.sleep(duration, events)
+			def sleep(duration = nil)
+				@group.sleep(duration)
 			end
 			
 			# Wait until all spawned tasks are completed.
-			def wait(events = nil)
-				@group.wait(events)
+			def wait
+				@group.wait
 			end
 			
 			# Gracefully interrupt all child instances.
@@ -135,7 +135,7 @@ module Async
 			
 			# Wait until all the children instances have indicated that they are ready.
 			# @returns [Boolean] The children all became ready.
-			def wait_until_ready(events = nil)
+			def wait_until_ready
 				while true
 					Console.debug(self) do |buffer|
 						buffer.puts "Waiting for ready:"
@@ -144,9 +144,7 @@ module Async
 						end
 					end
 					
-					if self.sleep(nil, events) == :event
-						return :event
-					end
+					self.sleep
 					
 					if self.status?(:ready)
 						Console.debug(self) do |buffer|

@@ -57,16 +57,14 @@ module Async
 			end
 			
 			# Sleep for at most the specified duration until some state change occurs.
-			def sleep(duration, events = nil)
-				self.wait_for_children(duration, events)
+			def sleep(duration)
+				self.wait_for_children(duration)
 			end
 			
 			# Begin any outstanding queued processes and wait for them indefinitely.
-			def wait(events = nil)
+			def wait
 				with_health_checks do |duration|
-					if self.wait_for_children(duration, events) == :event
-						return
-					end
+					self.wait_for_children(duration)
 				end
 			end
 			
@@ -213,38 +211,26 @@ module Async
 			
 			protected
 			
-			def wait_for_children(duration = nil, events = nil)
+			def wait_for_children(duration = nil)
 				# This log is a bit noisy and doesn't really provide a lot of useful information:
 				Console.debug(self, "Waiting for children...", duration: duration, running: @running)
 				
 				unless @running.empty?
 					# Maybe consider using a proper event loop here:
-					if ready = self.select(duration, events)
-						if events && ready.delete(events.io)
-							result = :event
-						end
-						
+					if ready = self.select(duration)
 						ready.each do |io|
 							if fiber = @running[io]
 								# This method can be re-entered. While resuming a fiber, a policy hook may be invoked, which may invoke operations on the container. In that case, select may be called again on the same set of waiting fibers. On returning, those fibers may have already completed and removed themselves from @running, so we need to check for that.
 								fiber.resume
 							end
 						end
-						
-						return result
 					end
 				end
 			end
 			
 			# Wait for a child process to exit OR a signal to be received.
-			def select(duration, events = nil)
-				waiting = @running.keys
-				
-				if events
-					waiting << events.io
-				end
-				
-				readable, _, _ = ::IO.select(waiting, nil, nil, duration)
+			def select(duration)
+				readable, _, _ = ::IO.select(@running.keys, nil, nil, duration)
 				
 				return readable
 			end
