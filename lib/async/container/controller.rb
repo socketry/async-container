@@ -309,7 +309,7 @@ module Async
 					end
 				end
 			rescue Interrupt
-				# Ignore - normal shutdown - can propagate from top level Sync.
+				self.stop(false)
 			end
 		end
 	end
