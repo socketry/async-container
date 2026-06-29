@@ -12,6 +12,7 @@ require_relative "policy"
 
 require "async"
 require "async/signals"
+require "async/signals/graceful"
 
 module Async
 	module Container
@@ -50,8 +51,6 @@ module Async
 			end
 			
 			SIGHUP = Signal.list["HUP"]
-			SIGINT = Signal.list["INT"]
-			SIGTERM = Signal.list["TERM"]
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
 			
@@ -68,14 +67,6 @@ module Async
 				
 				# Serializes lifecycle transitions such as start, restart and reload. `Container#stop` (which can also take time) is performed outside this guard, so that live container events are not blocked by the stop operation (e.g. restarting).
 				@guard = ::Thread::Mutex.new
-				
-				@signals.trap(SIGINT) do |_signal, context|
-					context.raise(Interrupt)
-				end
-				
-				@signals.trap(SIGTERM) do |_signal, context|
-					context.raise(Interrupt)
-				end
 				
 				self.trap(SIGHUP) do
 					self.restart

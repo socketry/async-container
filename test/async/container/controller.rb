@@ -261,42 +261,6 @@ describe Async::Container::Controller do
 			expect(handlers.fetch("USR2")).to be_nil
 		end
 		
-		it "raises interrupt for SIGINT" do
-			context = Object.new
-			
-			def context.raise(exception)
-				@exception = exception
-			end
-			
-			def context.exception
-				@exception
-			end
-			
-			handlers = controller.instance_variable_get(:@signals).to_h
-			
-			handlers.fetch("INT").call(Async::Container::Controller::SIGINT, context)
-			
-			expect(context.exception).to be == Interrupt
-		end
-		
-		it "raises interrupt for SIGTERM" do
-			context = Object.new
-			
-			def context.raise(exception)
-				@exception = exception
-			end
-			
-			def context.exception
-				@exception
-			end
-			
-			handlers = controller.instance_variable_get(:@signals).to_h
-			
-			handlers.fetch("TERM").call(Async::Container::Controller::SIGTERM, context)
-			
-			expect(context.exception).to be == Interrupt
-		end
-		
 		it "queues trapped signal events" do
 			controller = Async::Container::Controller.new(notify: nil)
 			applied = false
