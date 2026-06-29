@@ -225,9 +225,32 @@ describe Async::Container::Controller do
 			def controller.setup(container)
 			end
 			
-			controller.run(signals: signals)
+			Sync do
+				controller.run(signals: signals)
+			end
 			
 			expect(signals.handlers).to be == controller.instance_variable_get(:@signals)
+		end
+		
+		it "uses the default ignored signal backend inside an async scheduler" do
+			original = Async::Signals::Ignore.method(:install)
+			installed = nil
+			
+			Async::Signals::Ignore.define_singleton_method(:install) do |handlers, &block|
+				installed = handlers
+				block.call
+			end
+			
+			def controller.setup(container)
+			end
+			
+			Sync do
+				controller.run
+			end
+			
+			expect(installed).to be == controller.instance_variable_get(:@signals)
+		ensure
+			Async::Signals::Ignore.define_singleton_method(:install, original) if original
 		end
 		
 		it "can ignore trapped signals" do
@@ -236,6 +259,42 @@ describe Async::Container::Controller do
 			handlers = controller.instance_variable_get(:@signals).to_h
 			
 			expect(handlers.fetch("USR2")).to be_nil
+		end
+		
+		it "raises interrupt for SIGINT" do
+			context = Object.new
+			
+			def context.raise(exception)
+				@exception = exception
+			end
+			
+			def context.exception
+				@exception
+			end
+			
+			handlers = controller.instance_variable_get(:@signals).to_h
+			
+			handlers.fetch("INT").call(Async::Container::Controller::SIGINT, context)
+			
+			expect(context.exception).to be == Interrupt
+		end
+		
+		it "raises interrupt for SIGTERM" do
+			context = Object.new
+			
+			def context.raise(exception)
+				@exception = exception
+			end
+			
+			def context.exception
+				@exception
+			end
+			
+			handlers = controller.instance_variable_get(:@signals).to_h
+			
+			handlers.fetch("TERM").call(Async::Container::Controller::SIGTERM, context)
+			
+			expect(context.exception).to be == Interrupt
 		end
 		
 		it "queues trapped signal events" do

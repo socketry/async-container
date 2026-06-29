@@ -3,6 +3,7 @@
 ## Unreleased
 
   - Use `async-signals` to coordinate controller signal traps while queueing signal events through the controller event loop.
+  - Require `async-signals` v0.5 so controller signal handling is implicit only when running on the main thread without an existing fiber scheduler.
 
 ## v0.37.0
 

@@ -69,11 +69,11 @@ module Async
 				# Serializes lifecycle transitions such as start, restart and reload. `Container#stop` (which can also take time) is performed outside this guard, so that live container events are not blocked by the stop operation (e.g. restarting).
 				@guard = ::Thread::Mutex.new
 				
-				@signals.trap(SIGINT) do |signal, context|
+				@signals.trap(SIGINT) do |_signal, context|
 					context.raise(Interrupt)
 				end
 				
-				@signals.trap(SIGTERM) do |signal, context|
+				@signals.trap(SIGTERM) do |_signal, context|
 					context.raise(Interrupt)
 				end
 				
