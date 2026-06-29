@@ -260,8 +260,12 @@ describe Async::Container::Policy do
 				container.spawn(name: "worker-#{i}") do |instance|
 					instance.ready!
 					
-					trigger.first.gets
-					exit(1)
+					if i.zero?
+						trigger.first.gets
+						exit(1)
+					else
+						sleep
+					end
 				end
 			end
 			
