@@ -104,6 +104,10 @@ module Async
 						# Fork from `Thread.new` so the child does not inherit the parent fiber scheduler or the current caller's fiber stack. Only this short-lived thread is copied into the child process:
 						::Thread.new do
 							::Process.fork do
+								# Convert process signals into pending interrupts on the surviving fork thread so they respect `Thread.handle_interrupt` in the child:
+								::Signal.trap(:INT){::Thread.current.raise(::Interrupt)}
+								::Signal.trap(:TERM){::Thread.current.raise(::Interrupt)}
+								
 								# Reset interrupt masking - `Exception` is a fast path:
 								::Thread.handle_interrupt(Exception => :immediate) do
 									yield Instance.for(process)
