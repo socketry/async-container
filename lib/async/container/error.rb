@@ -31,16 +31,6 @@ module Async
 			end
 		end
 		
-		# Similar to {Interrupt}, but represents `SIGHUP`.
-		class Restart < SignalException
-			SIGHUP = Signal.list["HUP"]
-			
-			# Create a new restart error.
-			def initialize
-				super(SIGHUP)
-			end
-		end
-		
 		# Represents the error which occured when a container failed to start up correctly.
 		class SetupError < Error
 			# Create a new setup error.
