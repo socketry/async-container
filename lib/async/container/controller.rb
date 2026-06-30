@@ -181,16 +181,21 @@ module Async
 			# This is equivalent to a blue-green deployment.
 			def start(restart: false)
 				old_container = nil
+				new_container = nil
 				
 				@guard.synchronize do
-					if @container && restart
-						@notify&.restarting!
-						
-						Console.info(self, "Restarting container...")
+					if @container
+						if restart
+							@notify&.restarting!
+							
+							Console.info(self, "Restarting container...")
+						else
+							return @container
+						end
 					else
 						Console.info(self, "Starting container...")
 					end
-					
+						
 					container = self.create_container
 					
 					begin
@@ -217,6 +222,7 @@ module Async
 					# The following swap should be atomic:
 					old_container = @container
 					@container = container
+					new_container = container
 					container = nil
 					
 					@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
@@ -234,6 +240,8 @@ module Async
 					Console.info(self, "Stopping old container...")
 					old_container.stop(@graceful_stop)
 				end
+				
+				return new_container
 			end
 			
 			# Reload the existing container. Children instances will be reloaded using `SIGHUP`.

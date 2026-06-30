@@ -155,6 +155,27 @@ describe Async::Container::Controller do
 			controller.stop
 		end
 		
+		it "does not restart an already running container" do
+			count = 0
+			
+			controller.define_singleton_method(:setup) do |container|
+				count += 1
+				
+				container.spawn do |instance|
+					instance.ready!
+					sleep
+				end
+			end
+			
+			first = controller.start
+			second = controller.start
+			
+			expect(second).to be == first
+			expect(count).to be == 1
+			
+			controller.stop(false)
+		end
+		
 		it "propagates exceptions" do
 			def controller.setup(container)
 				raise "Boom!"
