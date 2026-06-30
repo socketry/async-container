@@ -10,6 +10,10 @@ require_relative "statistics"
 require_relative "notify"
 require_relative "policy"
 
+require "async"
+require "async/signals"
+require "async/signals/graceful"
+
 module Async
 	module Container
 		# The default graceful stop policy for controllers.
@@ -27,9 +31,35 @@ module Async
 		# Manages the life-cycle of one or more containers in order to support a persistent system.
 		# e.g. a web server, job server or some other long running system.
 		class Controller
+			# Represents a trapped process signal as a queued controller event.
+			class SignalEvent
+				# Initialize the signal event.
+				# @parameter signal [Symbol | String | Integer] The signal that was received.
+				# @parameter handler [Proc] The handler to invoke when the event is processed.
+				def initialize(signal, handler)
+					@signal = signal
+					@handler = handler
+				end
+				
+				# @attribute [Symbol | String | Integer] The signal that was received.
+				attr :signal
+				
+				# Process the signal event by invoking the registered handler.
+				def call
+					@handler.call
+				end
+			end
+			
+			# Represents the end of the active container lifecycle.
+			class StopEvent
+				# Process the stop event.
+				def call
+				end
+			end
+			
+			STOP_EVENT = StopEvent.new.freeze
+			
 			SIGHUP = Signal.list["HUP"]
-			SIGINT = Signal.list["INT"]
-			SIGTERM = Signal.list["TERM"]
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
 			
@@ -41,10 +71,23 @@ module Async
 				@graceful_stop = graceful_stop
 				
 				@container = nil
-				@signals = {}
+				@events = ::Thread::Queue.new
+				@signals = Async::Signals::Handlers.new
+				@running = false
+				
+				# Serializes lifecycle transitions such as start, restart and reload. `Container#stop` (which can also take time) is performed outside this guard, so that live container events are not blocked by the stop operation (e.g. restarting).
+				@guard = ::Thread::Mutex.new
 				
 				self.trap(SIGHUP) do
 					self.restart
+				rescue SetupError => error
+					Console.error(self, error)
+				end
+				
+				self.trap(SIGUSR1) do
+					self.reload
+				rescue SetupError => error
+					Console.error(self, error)
 				end
 			end
 			
@@ -80,7 +123,15 @@ module Async
 			# @parameters signal [Symbol] The signal to trap, e.g. `:INT`.
 			# @parameters block [Proc] The signal handler to invoke.
 			def trap(signal, &block)
-				@signals[signal] = block
+				if block
+					event = SignalEvent.new(signal, block).freeze
+					
+					@signals.trap(signal) do
+						enqueue_event(event)
+					end
+				else
+					@signals.ignore(signal)
+				end
 			end
 			
 			# Create a policy for managing child lifecycle events.
@@ -100,12 +151,12 @@ module Async
 			# Whether the controller has a running container.
 			# @returns [Boolean]
 			def running?
-				!!@container
+				@guard.synchronize{!!@container}
 			end
 			
 			# Wait for the underlying container to start.
 			def wait
-				@container&.wait
+				@guard.synchronize{@container}&.wait
 			end
 			
 			# Spawn container instances into the given container.
@@ -117,160 +168,199 @@ module Async
 			end
 			
 			# Start the container unless it's already running.
-			def start
-				unless @container
-					Console.info(self, "Controller starting...")
-					self.restart
-				end
-				
-				Console.info(self, "Controller started.")
+			# @returns [Generic] The container.
+			def restart
+				self.start(restart: true)
 			end
 			
 			# Stop the container if it's running.
-			# @parameter graceful [Boolean] Whether to give the children instances time to shut down or to kill them immediately.
+			# @parameter graceful [Boolean | Numeric] Whether to give the children instances time to shut down or to kill them immediately.
 			def stop(graceful = @graceful_stop)
-				@container&.stop(graceful)
-				@container = nil
+				container = nil
+				
+				@guard.synchronize do
+					if container = @container
+						@container = nil
+					end
+				end
+				
+				container&.stop(graceful)
 			end
 			
 			# Restart the container. A new container is created, and if successful, any old container is terminated gracefully.
 			# This is equivalent to a blue-green deployment.
-			def restart
-				if @container
-					@notify&.restarting!
+			def start(restart: false)
+				old_container = nil
+				new_container = nil
+				
+				@guard.synchronize do
+					if @container
+						if restart
+							@notify&.restarting!
+							
+							Console.info(self, "Restarting container...")
+						else
+							return @container
+						end
+					else
+						Console.info(self, "Starting container...")
+					end
 					
-					Console.info(self, "Restarting container...")
-				else
-					Console.info(self, "Starting container...")
-				end
-				
-				container = self.create_container
-				
-				begin
-					self.setup(container)
+					container = self.create_container
+					
+					begin
+						self.setup(container)
+					rescue => error
+						@notify&.error!(error.to_s)
+						
+						raise SetupError, container
+					end
+					
+					# Wait for all child processes to enter the ready state.
+					Console.info(self, "Waiting for startup...")
+					
+					container.wait_until_ready
+					
+					Console.info(self, "Finished startup.")
+					
+					if container.failed?
+						@notify&.error!("Container failed to start!")
+						
+						raise SetupError, container
+					end
+					
+					# The following swap should be atomic:
+					old_container = @container
+					@container = container
+					new_container = container
+					container = nil
+					
+					@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
 				rescue => error
-					@notify&.error!(error.to_s)
-					
-					raise SetupError, container
+					raise
+				ensure
+					# If we are leaving this function with an exception, kill the container:
+					if container
+						Console.warn(self, "Stopping failed container...", exception: error)
+						container.stop(false)
+					end
 				end
-				
-				# Wait for all child processes to enter the ready state.
-				Console.info(self, "Waiting for startup...")
-				container.wait_until_ready
-				Console.info(self, "Finished startup.")
-				
-				if container.failed?
-					@notify&.error!("Container failed to start!")
-					
-					raise SetupError, container
-				end
-				
-				# The following swap should be atomic:
-				old_container = @container
-				@container = container
-				container = nil
 				
 				if old_container
 					Console.info(self, "Stopping old container...")
-					old_container&.stop(@graceful_stop)
+					old_container.stop(@graceful_stop)
 				end
 				
-				@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
-			rescue => error
-				raise
-			ensure
-				# If we are leaving this function with an exception, kill the container:
-				if container
-					Console.warn(self, "Stopping failed container...", exception: error)
-					container.stop(false)
-				end
+				return new_container
 			end
 			
 			# Reload the existing container. Children instances will be reloaded using `SIGHUP`.
 			def reload
-				@notify&.reloading!
-				
-				Console.info(self){"Reloading container: #{@container}..."}
-				
-				begin
-					self.setup(@container)
-				rescue
-					raise SetupError, container
-				end
-				
-				# Wait for all child processes to enter the ready state.
-				Console.info(self, "Waiting for startup...")
-				@container.wait_until_ready
-				Console.info(self, "Finished startup.")
-				
-				if @container.failed?
-					@notify.error!("Container failed to reload!")
+				@guard.synchronize do
+					@notify&.reloading!
 					
-					raise SetupError, @container
-				else
-					@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
+					Console.info(self){"Reloading container: #{@container}..."}
+					
+					begin
+						self.setup(@container)
+					rescue
+						raise SetupError, @container
+					end
+					
+					# Wait for all child processes to enter the ready state.
+					Console.info(self, "Waiting for startup...")
+					@container.wait_until_ready
+					Console.info(self, "Finished startup.")
+					
+					if @container.failed?
+						@notify.error!("Container failed to reload!")
+						
+						raise SetupError, @container
+					else
+						@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
+					end
 				end
 			end
 			
-			# Enter the controller run loop, trapping `SIGINT` and `SIGTERM`.
-			def run
-				@notify&.status!("Initializing controller...")
-				
-				with_signal_handlers do
-					self.start
+			private def enqueue_event(event)
+				@events << event
+			end
+			
+			private def open_event_queue
+				@guard.synchronize do
+					if @running
+						raise RuntimeError, "Controller is already running."
+					end
 					
-					while @container&.running?
-						begin
-							@container.wait
-						rescue SignalException => exception
-							if handler = @signals[exception.signo]
-								begin
-									handler.call
-								rescue SetupError => error
-									Console.error(self, error)
-								end
-							else
-								raise
-							end
+					@running = true
+					@events = ::Thread::Queue.new
+				end
+			end
+			
+			private def stop_event_queue(events)
+				events << STOP_EVENT
+			end
+			
+			private def finish_event_queue(events)
+				@guard.synchronize do
+					if @events.equal?(events)
+						@running = false
+						@events = ::Thread::Queue.new
+					end
+				end
+			end
+			
+			private def wait_for_container(events)
+				while true
+					container = @guard.synchronize{@container}
+					
+					if container.nil?
+						stop_event_queue(events)
+						return
+					end
+					
+					container.wait
+					
+					@guard.synchronize do
+						# If this is still the active container, it completed naturally. Clear it and close the event queue so the controller run loop can finish. If it was replaced by a restart, keep waiting for the new active container.
+						if @container.equal?(container)
+							@container = nil
+							stop_event_queue(events)
+							return
 						end
 					end
 				end
-			rescue Interrupt
-				self.stop
-			rescue Terminate
-				self.stop(false)
-			ensure
-				self.stop(false)
 			end
 			
-			private def with_signal_handlers
-				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
+			# Enter the controller run loop.
+			# @parameter signals [#install] The signal backend to use while running the controller.
+			def run(signals: Async::Signals.default)
+				@notify&.status!("Initializing controller...")
+				events = open_event_queue
 				
-				interrupt_action = Signal.trap(:INT) do
-					# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
-					# $stderr.puts "Received INT signal, interrupting...", caller
-					::Thread.current.raise(Interrupt)
+				signals.install(@signals) do
+					Sync do |task|
+						self.start
+						
+						task.async{wait_for_container(events)}
+						
+						while event = events.pop
+							event.call
+							
+							break if event.equal?(STOP_EVENT)
+						end
+					rescue Async::Cancel
+						# Graceful shutdown:
+						self.stop
+					ensure
+						# Forced shutdown:
+						self.stop(false)
+					end
 				end
-				
-				# SIGTERM behaves the same as SIGINT by default.
-				terminate_action = Signal.trap(:TERM) do
-					# $stderr.puts "Received TERM signal, interrupting...", caller
-					::Thread.current.raise(Interrupt)  # Same as SIGINT
-				end
-				
-				hangup_action = Signal.trap(:HUP) do
-					# $stderr.puts "Received HUP signal, restarting...", caller
-					::Thread.current.raise(Restart)
-				end
-				
-				::Thread.handle_interrupt(SignalException => :never) do
-					yield
-				end
+			rescue Interrupt
+				self.stop(false)
 			ensure
-				# Restore the interrupt handler:
-				Signal.trap(:INT, interrupt_action)
-				Signal.trap(:TERM, terminate_action)
-				Signal.trap(:HUP, hangup_action)
+				finish_event_queue(events) if events
 			end
 		end
 	end

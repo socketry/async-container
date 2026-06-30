@@ -254,13 +254,24 @@ describe Async::Container::Policy do
 			end.new
 			
 			container = Async::Container.best_container_class.new(policy: stop_policy)
+			trigger = IO.pipe
 			
 			3.times do |i|
 				container.spawn(name: "worker-#{i}") do |instance|
 					instance.ready!
-					exit(1)
+					
+					if i.zero?
+						trigger.first.gets
+						exit(1)
+					else
+						sleep
+					end
 				end
 			end
+			
+			container.wait_until_ready
+			
+			trigger.last.puts("exit")
 			
 			container.wait
 			

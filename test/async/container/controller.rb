@@ -155,6 +155,27 @@ describe Async::Container::Controller do
 			controller.stop
 		end
 		
+		it "does not restart an already running container" do
+			count = 0
+			
+			controller.define_singleton_method(:setup) do |container|
+				count += 1
+				
+				container.spawn do |instance|
+					instance.ready!
+					sleep
+				end
+			end
+			
+			first = controller.start
+			second = controller.start
+			
+			expect(second).to be == first
+			expect(count).to be == 1
+			
+			controller.stop(false)
+		end
+		
 		it "propagates exceptions" do
 			def controller.setup(container)
 				raise "Boom!"
@@ -163,6 +184,35 @@ describe Async::Container::Controller do
 			expect do
 				controller.run
 			end.to raise_exception(Async::Container::SetupError)
+		end
+	end
+	
+	with "#run" do
+		it "can run the same controller more than once" do
+			input, output = IO.pipe
+			
+			controller.instance_variable_set(:@output, output)
+			
+			def controller.setup(container)
+				container.spawn do |instance|
+					instance.ready!
+					
+					sleep(0.01)
+					
+					@output.puts("done")
+					@output.flush
+				end
+			end
+			
+			2.times do
+				controller.run(signals: Async::Signals::Ignore)
+				
+				expect(IO.select([input], nil, nil, 1)).not.to be_nil
+				expect(input.gets).to be == "done\n"
+			end
+		ensure
+			input&.close
+			output&.close
 		end
 	end
 	
@@ -209,6 +259,137 @@ describe Async::Container::Controller do
 	
 	with "signals" do
 		include_context Async::Container::AController, "dots"
+		
+		it "uses the provided signal backend" do
+			signals = Module.new do
+				def self.install(handlers)
+					@handlers = handlers
+					yield
+				end
+				
+				def self.handlers
+					@handlers
+				end
+			end
+			
+			def controller.setup(container)
+			end
+			
+			Sync do
+				controller.run(signals: signals)
+			end
+			
+			expect(signals.handlers).to be == controller.instance_variable_get(:@signals)
+		end
+		
+		it "uses the default ignored signal backend inside an async scheduler" do
+			original = Async::Signals::Ignore.method(:install)
+			installed = nil
+			
+			Async::Signals::Ignore.define_singleton_method(:install) do |handlers, &block|
+				installed = handlers
+				block.call
+			end
+			
+			def controller.setup(container)
+			end
+			
+			Sync do
+				controller.run
+			end
+			
+			expect(installed).to be == controller.instance_variable_get(:@signals)
+		ensure
+			Async::Signals::Ignore.define_singleton_method(:install, original) if original
+		end
+		
+		it "can ignore trapped signals" do
+			controller.trap(:USR2)
+			
+			handlers = controller.instance_variable_get(:@signals).to_h
+			
+			expect(handlers.fetch("USR2")).to be_nil
+		end
+		
+		it "queues trapped signal events" do
+			controller = Async::Container::Controller.new(notify: nil)
+			applied = false
+			
+			controller.trap(:USR1) do
+				applied = true
+			end
+			
+			Async::Signals.install(controller.instance_variable_get(:@signals)) do
+				Process.kill(:USR1, Process.pid)
+				
+				event = controller.instance_variable_get(:@events).pop(timeout: 1)
+				
+				expect(event.signal).to be == :USR1
+				
+				event.call
+			end
+			
+			expect(applied).to be == true
+		end
+		
+		it "handles setup errors when restarting from a signal" do
+			def controller.restart
+				raise Async::Container::SetupError, nil
+			end
+			
+			Async::Signals.install(controller.instance_variable_get(:@signals)) do
+				Process.kill(:HUP, Process.pid)
+				
+				event = controller.instance_variable_get(:@events).pop(timeout: 1)
+				
+				expect{event.call}.not.to raise_exception
+			end
+		end
+		
+		it "handles setup errors when reloading from a signal" do
+			def controller.reload
+				raise Async::Container::SetupError, nil
+			end
+			
+			Async::Signals.install(controller.instance_variable_get(:@signals)) do
+				Process.kill(:USR1, Process.pid)
+				
+				event = controller.instance_variable_get(:@events).pop(timeout: 1)
+				
+				expect{event.call}.not.to raise_exception
+			end
+		end
+		
+		it "notifies when reload fails" do
+			notify = Object.new
+			
+			def notify.reloading!
+			end
+			
+			def notify.error!(message)
+				@message = message
+			end
+			
+			def notify.message
+				@message
+			end
+			
+			container = Object.new
+			
+			def container.wait_until_ready
+			end
+			
+			def container.failed?
+				true
+			end
+			
+			controller = Async::Container::Controller.new(notify: notify)
+			
+			controller.instance_variable_set(:@container, container)
+			
+			expect{controller.reload}.to raise_exception(Async::Container::SetupError)
+			expect(notify.message).to be == "Container failed to reload!"
+		end
 		
 		it "restarts children when receiving SIGHUP" do
 			expect(input.read(1)).to be == "."

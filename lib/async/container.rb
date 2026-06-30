@@ -3,11 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2017-2025, by Samuel Williams.
 
-require_relative "container/controller"
+# This sets up graceful handling of SIGINT and SIGTERM.
+require "async/signals/graceful"
 
-# @namespace
-module Async
-	# @namespace
-	module Container
-	end
-end
+require_relative "container/controller"
