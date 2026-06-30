@@ -196,7 +196,7 @@ module Async
 					else
 						Console.info(self, "Starting container...")
 					end
-						
+					
 					container = self.create_container
 					
 					begin
