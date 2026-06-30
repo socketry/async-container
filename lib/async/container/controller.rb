@@ -64,6 +64,7 @@ module Async
 				@container = nil
 				@events = ::Thread::Queue.new
 				@signals = Async::Signals::Handlers.new
+				@running = false
 				
 				# Serializes lifecycle transitions such as start, restart and reload. `Container#stop` (which can also take time) is performed outside this guard, so that live container events are not blocked by the stop operation (e.g. restarting).
 				@guard = ::Thread::Mutex.new
@@ -117,7 +118,7 @@ module Async
 					event = SignalEvent.new(signal, block).freeze
 					
 					@signals.trap(signal) do
-						@events << event
+						enqueue_event(event)
 					end
 				else
 					@signals.ignore(signal)
@@ -272,12 +273,44 @@ module Async
 				end
 			end
 			
-			private def wait_for_container
+			private def enqueue_event(event)
+				@events << event
+			rescue ::ClosedQueueError
+				# The controller run loop has already stopped.
+			end
+			
+			private def open_event_queue
+				@guard.synchronize do
+					if @running
+						raise RuntimeError, "Controller is already running."
+					end
+					
+					@running = true
+					@events = ::Thread::Queue.new
+				end
+			end
+			
+			private def close_event_queue(events)
+				events.close
+			end
+			
+			private def finish_event_queue(events)
+				events.close
+				
+				@guard.synchronize do
+					if @events.equal?(events)
+						@running = false
+						@events = ::Thread::Queue.new
+					end
+				end
+			end
+			
+			private def wait_for_container(events)
 				while true
 					container = @guard.synchronize{@container}
 					
 					if container.nil?
-						@events.close
+						close_event_queue(events)
 						return
 					end
 					
@@ -287,7 +320,7 @@ module Async
 						# If this is still the active container, it completed naturally. Clear it and close the event queue so the controller run loop can finish. If it was replaced by a restart, keep waiting for the new active container.
 						if @container.equal?(container)
 							@container = nil
-							@events.close
+							close_event_queue(events)
 							return
 						end
 					end
@@ -298,14 +331,15 @@ module Async
 			# @parameter signals [#install] The signal backend to use while running the controller.
 			def run(signals: Async::Signals.default)
 				@notify&.status!("Initializing controller...")
+				events = open_event_queue
 				
 				signals.install(@signals) do
 					Sync do |task|
 						self.start
 						
-						waiter = task.async{wait_for_container}
+						task.async{wait_for_container(events)}
 						
-						while event = @events.pop
+						while event = events.pop
 							event.call
 						end
 					rescue Async::Cancel
@@ -318,6 +352,8 @@ module Async
 				end
 			rescue Interrupt
 				self.stop(false)
+			ensure
+				finish_event_queue(events) if events
 			end
 		end
 	end

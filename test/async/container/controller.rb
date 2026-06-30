@@ -187,6 +187,35 @@ describe Async::Container::Controller do
 		end
 	end
 	
+	with "#run" do
+		it "can run the same controller more than once" do
+			input, output = IO.pipe
+			
+			controller.instance_variable_set(:@output, output)
+			
+			def controller.setup(container)
+				container.spawn do |instance|
+					instance.ready!
+					
+					sleep(0.01)
+					
+					@output.puts("done")
+					@output.flush
+				end
+			end
+			
+			2.times do
+				controller.run(signals: Async::Signals::Ignore)
+				
+				expect(IO.select([input], nil, nil, 1)).not.to be_nil
+				expect(input.gets).to be == "done\n"
+			end
+		ensure
+			input&.close
+			output&.close
+		end
+	end
+	
 	with "graceful controller" do
 		include_context Async::Container::AController, "graceful"
 		
