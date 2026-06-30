@@ -50,6 +50,15 @@ module Async
 				end
 			end
 			
+			# Represents the end of the active container lifecycle.
+			class StopEvent
+				# Process the stop event.
+				def call
+				end
+			end
+			
+			STOP_EVENT = StopEvent.new.freeze
+			
 			SIGHUP = Signal.list["HUP"]
 			SIGUSR1 = Signal.list["USR1"]
 			SIGUSR2 = Signal.list["USR2"]
@@ -275,8 +284,6 @@ module Async
 			
 			private def enqueue_event(event)
 				@events << event
-			rescue ::ClosedQueueError
-				# The controller run loop has already stopped.
 			end
 			
 			private def open_event_queue
@@ -290,13 +297,11 @@ module Async
 				end
 			end
 			
-			private def close_event_queue(events)
-				events.close
+			private def stop_event_queue(events)
+				events << STOP_EVENT
 			end
 			
 			private def finish_event_queue(events)
-				events.close
-				
 				@guard.synchronize do
 					if @events.equal?(events)
 						@running = false
@@ -310,7 +315,7 @@ module Async
 					container = @guard.synchronize{@container}
 					
 					if container.nil?
-						close_event_queue(events)
+						stop_event_queue(events)
 						return
 					end
 					
@@ -320,7 +325,7 @@ module Async
 						# If this is still the active container, it completed naturally. Clear it and close the event queue so the controller run loop can finish. If it was replaced by a restart, keep waiting for the new active container.
 						if @container.equal?(container)
 							@container = nil
-							close_event_queue(events)
+							stop_event_queue(events)
 							return
 						end
 					end
@@ -341,6 +346,8 @@ module Async
 						
 						while event = events.pop
 							event.call
+							
+							break if event.equal?(STOP_EVENT)
 						end
 					rescue Async::Cancel
 						# Graceful shutdown:
