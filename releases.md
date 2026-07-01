@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - **Fixed**: Reloading a container now correctly stops keyed children whose keys are no longer configured. Previously this raised `NoMethodError` (the child has no `stop` method) and would not have stopped `restart: true` children even if it had. `Generic#reload` now stops obsolete children via a new `Group#stop_child`, and a per-child stopping flag prevents them from being respawned.
+
 ## v0.37.0
 
   - Rename `ASYNC_CONTAINER_GRACEFUL_TIMEOUT` to `ASYNC_CONTAINER_GRACEFUL_STOP` and apply it at the controller level as `GRACEFUL_STOP`. `Group#stop` now only applies the shutdown policy it is given.

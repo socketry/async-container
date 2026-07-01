@@ -38,16 +38,6 @@ module Async
 			def clear!
 				@marked = false
 			end
-			
-			# Stop the instance if it was not marked.
-			#
-			# @returns [Boolean] True if the instance was stopped.
-			def stop?
-				unless @marked
-					@value.stop
-					return true
-				end
-			end
 		end
 	end
 end

@@ -180,6 +180,48 @@ module Async
 				end
 			end
 			
+			# Stop a single running child, gracefully if possible, then forcefully.
+			#
+			# Mirrors the multi-phase sequence of {stop}, but scoped to one child: send SIGINT and
+			# wait up to `graceful` seconds, then send SIGKILL and wait for it to exit.
+			#
+			# @parameter channel [Channel] The channel of the child to stop.
+			# @parameter graceful [Boolean | Numeric] Whether to interrupt first, or a specific timeout.
+			def stop_child(channel, graceful = true)
+				io = channel.in
+				fiber = @running[io]
+				
+				return unless fiber
+				
+				if graceful
+					# Send SIGINT to the child:
+					fiber.resume(Interrupt)
+					
+					if graceful == true
+						graceful = DEFAULT_GRACEFUL_TIMEOUT
+					end
+					
+					clock = Clock.start
+					
+					# Wait for the child to exit:
+					while @running.key?(io)
+						duration = graceful - clock.total
+						break if duration < 0
+						
+						wait_for_children(duration)
+					end
+				end
+			ensure
+				# Force kill if it's still running:
+				if fiber && @running.key?(io)
+					fiber.resume(Kill)
+					
+					while @running.key?(io)
+						wait_for_children(nil)
+					end
+				end
+			end
+			
 			# Wait for a message in the specified {Channel}.
 			def wait_for(channel)
 				io = channel.in

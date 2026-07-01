@@ -13,6 +13,7 @@ module Async
 			def initialize(timeout: 1.0)
 				@in, @out = ::IO.pipe
 				@in.timeout = timeout
+				@stopping = false
 			end
 			
 			# The input end of the pipe.
@@ -22,6 +23,17 @@ module Async
 			# The output end of the pipe.
 			# @attribute [IO]
 			attr :out
+			
+			# Whether this child is being deliberately stopped and should not be restarted.
+			# @returns [Boolean]
+			def stopping?
+				@stopping
+			end
+			
+			# Mark this child as being deliberately stopped, so its supervising fiber will not restart it.
+			def stopping!
+				@stopping = true
+			end
 			
 			# Close the input end of the pipe.
 			def close_read

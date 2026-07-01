@@ -144,8 +144,7 @@ module Async
 						end
 					end
 					
-					self.sleep
-					
+					# Check readiness before sleeping: after a reload that only reuses or removes children, no new child sends a readiness message, so `sleep` would otherwise block indefinitely even though everything is already ready.
 					if self.status?(:ready)
 						Console.debug(self) do |buffer|
 							buffer.puts "All ready:"
@@ -156,6 +155,8 @@ module Async
 						
 						return true
 					end
+					
+					self.sleep
 				end
 			end
 			
@@ -294,7 +295,7 @@ module Async
 							Console.error(self, "Policy error in child_exit!", exception: error)
 						end
 						
-						if restart && !@stopping
+						if restart && !@stopping && !child.stopping?
 							@statistics.restart!
 						else
 							break
@@ -327,6 +328,11 @@ module Async
 			end
 			
 			# Reload the container's keyed instances.
+			#
+			# Any keyed child which is not re-marked during {yield} is considered obsolete and is
+			# stopped. Its supervising fiber removes it from {@keyed} once it has exited.
+			#
+			# @returns [Boolean] Whether any keyed instances were stopped.
 			def reload
 				@keyed.each_value(&:clear!)
 				
@@ -334,11 +340,25 @@ module Async
 				
 				dirty = false
 				
-				@keyed.delete_if do |key, value|
-					value.stop? && (dirty = true)
+				# Snapshot the values so we can stop obsolete children without mutating `@keyed` mid-iteration (the supervising fiber deletes the entry when the child exits):
+				@keyed.values.each do |keyed|
+					unless keyed.marked?
+						stop_child(keyed.value)
+						dirty = true
+					end
 				end
 				
 				return dirty
+			end
+			
+			# Stop a single child instance and prevent it from being restarted.
+			# @parameter child [Channel] The child instance to stop.
+			# @parameter graceful [Boolean | Numeric] Whether to stop the child gracefully.
+			def stop_child(child, graceful = true)
+				# Prevent the supervising fiber from restarting the child once it exits:
+				child.stopping!
+				
+				@group.stop_child(child, graceful)
 			end
 			
 			# Mark the container's keyed instance which ensures that it won't be discarded.

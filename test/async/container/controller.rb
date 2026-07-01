@@ -82,6 +82,64 @@ describe Async::Container::Controller do
 			
 			controller.wait
 		end
+		
+		it "spawns a newly configured keyed child on reload" do
+			keys = ["a"]
+			
+			controller.define_singleton_method(:setup) do |container|
+				container.reload do
+					keys.each do |key|
+						container.spawn(key: key) do |instance|
+							instance.ready!
+							sleep
+						end
+					end
+				end
+			end
+			
+			controller.start
+			
+			expect(controller.container["a"]).not.to be_nil
+			expect(controller.container["b"]).to be_nil
+			
+			# The configuration now includes an additional keyed child:
+			keys << "b"
+			controller.reload
+			
+			expect(controller.container["a"]).not.to be_nil
+			expect(controller.container["b"]).not.to be_nil
+		ensure
+			controller.stop(false)
+		end
+		
+		it "stops a keyed child that is no longer configured on reload" do
+			keys = ["a", "b"]
+			
+			controller.define_singleton_method(:setup) do |container|
+				container.reload do
+					keys.each do |key|
+						container.spawn(key: key) do |instance|
+							instance.ready!
+							sleep
+						end
+					end
+				end
+			end
+			
+			controller.start
+			
+			expect(controller.container["a"]).not.to be_nil
+			expect(controller.container["b"]).not.to be_nil
+			
+			# The configuration no longer includes "b", so reload should stop it:
+			keys.delete("b")
+			controller.reload
+			
+			expect(controller.container["a"]).not.to be_nil
+			expect(controller.container["b"]).to be_nil
+		ensure
+			controller.stop(false)
+		end
 	end
 	
 	with "notify" do
