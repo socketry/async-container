@@ -139,6 +139,21 @@ describe Async::Container::Controller do
 			expect(controller.container).to be_nil
 		end
 		
+		it "doesn't restart a container if it's already running" do
+			expect(controller).to receive(:setup)
+			
+			expect(controller.start).to be == true
+			expect(controller).to be(:running?)
+			
+			container = controller.container
+			
+			# Starting again is idempotent: it returns false and the container is not replaced.
+			expect(controller.start).to be == false
+			expect(controller.container).to be_equal(container)
+		ensure
+			controller.stop
+		end
+		
 		it "can spawn a reactor" do
 			def controller.setup(container)
 				container.async do |task|
