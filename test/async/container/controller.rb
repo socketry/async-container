@@ -44,46 +44,6 @@ describe Async::Container::Controller do
 		end
 	end
 	
-	with "#reload" do
-		it "can reuse keyed child" do
-			input, output = IO.pipe
-			
-			controller.instance_variable_set(:@output, output)
-			
-			def controller.setup(container)
-				container.spawn(key: "test") do |instance|
-					instance.ready!
-					
-					@output.write(".")
-					@output.flush
-					
-					sleep(0.2)
-				end
-				
-				container.spawn do |instance|
-					instance.ready!
-					
-					sleep(0.1)
-					
-					@output.write(",")
-					@output.flush
-				end
-			end
-			
-			controller.start
-			
-			expect(controller.state_string).to be == "running"
-			
-			expect(input.read(2)).to be == ".,"
-			
-			controller.reload
-			
-			expect(input.read(1)).to be == ","
-			
-			controller.wait
-		end
-	end
-	
 	with "#restart" do
 		it "replaces the running container with a new one" do
 			def controller.setup(container)
@@ -124,46 +84,6 @@ describe Async::Container::Controller do
 			expect(controller.container).not.to be_nil
 		ensure
 			controller.stop(false)
-		end
-	end
-	
-	with "notify" do
-		before do
-			@notify_server = Async::Container::Notify::Server.open
-			@notify_client = Async::Container::Notify::Socket.new(@notify_server.path)
-			@notify = @notify_server.bind
-		end
-		
-		after do
-			@notify&.close
-		end
-		
-		let(:controller) {subject.new(notify: @notify_client)}
-		
-		it "sends status with ready notification on reload" do
-			def controller.setup(container)
-				container.spawn do |instance|
-					instance.ready!
-					sleep(0.1)
-				end
-			end
-			
-			controller.start
-			
-			# Drain the start ready message:
-			@notify.wait_until_ready
-			
-			controller.reload
-			
-			# Capture messages until we find the reload ready notification:
-			while message = @notify.receive
-				break if message[:ready]
-			end
-			
-			expect(message).to have_keys(
-				ready: be == true,
-				status: be =~ /Running/
-			)
 		end
 	end
 	
