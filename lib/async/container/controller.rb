@@ -120,13 +120,18 @@ module Async
 			end
 			
 			# Start the container unless it's already running.
+			# @returns [Boolean] Whether a new container was started.
 			def start
 				unless @container
 					Console.info(self, "Controller starting...")
 					self.restart
+					
+					Console.info(self, "Controller started.")
+					
+					return true
 				end
 				
-				Console.info(self, "Controller started.")
+				return false
 			end
 			
 			# Stop the container if it's running.
