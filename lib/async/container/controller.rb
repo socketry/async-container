@@ -10,6 +10,9 @@ require_relative "statistics"
 require_relative "notify"
 require_relative "policy"
 
+# This sets up graceful handling of SIGINT and SIGTERM.
+require "async/signals/graceful"
+
 module Async
 	module Container
 		# The default graceful stop policy for controllers.
