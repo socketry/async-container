@@ -84,6 +84,49 @@ describe Async::Container::Controller do
 		end
 	end
 	
+	with "#restart" do
+		it "replaces the running container with a new one" do
+			def controller.setup(container)
+				container.spawn do |instance|
+					instance.ready!
+					sleep
+				end
+			end
+			
+			controller.start
+			first = controller.container
+			
+			expect(first).not.to be_nil
+			expect(controller).to be(:running?)
+			
+			# A restart is a blue-green swap: a new container is created and the old one is stopped.
+			controller.restart
+			
+			expect(controller.container).not.to be_equal(first)
+			expect(controller).to be(:running?)
+		ensure
+			controller.stop(false)
+		end
+		
+		it "starts a new container if not already running" do
+			def controller.setup(container)
+				container.spawn do |instance|
+					instance.ready!
+					sleep
+				end
+			end
+			
+			expect(controller).not.to be(:running?)
+			
+			controller.restart
+			
+			expect(controller).to be(:running?)
+			expect(controller.container).not.to be_nil
+		ensure
+			controller.stop(false)
+		end
+	end
+	
 	with "notify" do
 		before do
 			@notify_server = Async::Container::Notify::Server.open
