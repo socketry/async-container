@@ -194,32 +194,6 @@ module Async
 				end
 			end
 			
-			# Reload the existing container. Children instances will be reloaded using `SIGHUP`.
-			def reload
-				@notify&.reloading!
-				
-				Console.info(self){"Reloading container: #{@container}..."}
-				
-				begin
-					self.setup(@container)
-				rescue
-					raise SetupError, container
-				end
-				
-				# Wait for all child processes to enter the ready state.
-				Console.info(self, "Waiting for startup...")
-				@container.wait_until_ready
-				Console.info(self, "Finished startup.")
-				
-				if @container.failed?
-					@notify.error!("Container failed to reload!")
-					
-					raise SetupError, @container
-				else
-					@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
-				end
-			end
-			
 			# Enter the controller run loop, trapping `SIGINT` and `SIGTERM`.
 			def run
 				@notify&.status!("Initializing controller...")
