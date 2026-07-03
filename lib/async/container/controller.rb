@@ -10,8 +10,12 @@ require_relative "statistics"
 require_relative "notify"
 require_relative "policy"
 
+require "async"
+
 # This sets up graceful handling of SIGINT and SIGTERM.
+require "async/signals"
 require "async/signals/graceful"
+require "async/signals/handlers"
 
 module Async
 	module Container
@@ -44,10 +48,18 @@ module Async
 				@graceful_stop = graceful_stop
 				
 				@container = nil
-				@signals = {}
+				@handlers = Async::Signals::Handlers.new
 				
-				self.trap(SIGHUP) do
-					self.restart
+				@handlers.trap(SIGHUP) do |_signal, context|
+					context.raise(Restart)
+				end
+				
+				@handlers.trap(SIGINT) do |_signal, context|
+					context.raise(Interrupt)
+				end
+				
+				@handlers.trap(SIGTERM) do |_signal, context|
+					context.raise(Interrupt)
 				end
 			end
 			
@@ -83,7 +95,7 @@ module Async
 			# @parameters signal [Symbol] The signal to trap, e.g. `:INT`.
 			# @parameters block [Proc] The signal handler to invoke.
 			def trap(signal, &block)
-				@signals[signal] = block
+				@handlers.trap(signal, &block)
 			end
 			
 			# Create a policy for managing child lifecycle events.
@@ -195,64 +207,30 @@ module Async
 			end
 			
 			# Enter the controller run loop, trapping `SIGINT` and `SIGTERM`.
-			def run
+			def run(signals: Async::Signals.default)
 				@notify&.status!("Initializing controller...")
 				
-				with_signal_handlers do
-					self.start
-					
-					while @container&.running?
-						begin
-							@container.wait
-						rescue SignalException => exception
-							if handler = @signals[exception.signo]
-								begin
-									handler.call
-								rescue SetupError => error
-									Console.error(self, error)
+				begin
+					Sync do |task|
+						self.start
+						
+						while @container&.running?
+							begin
+								signals.install(@handlers) do
+									@container.wait
 								end
-							else
-								raise
+							rescue Restart
+								self.restart
+							rescue Interrupt
+								self.stop(@graceful_stop)
 							end
 						end
 					end
+				rescue Interrupt
+					self.stop(@graceful_stop)
+				ensure
+					self.stop(false)
 				end
-			rescue Interrupt
-				self.stop
-			rescue Terminate
-				self.stop(false)
-			ensure
-				self.stop(false)
-			end
-			
-			private def with_signal_handlers
-				# I thought this was the default... but it doesn't always raise an exception unless you do this explicitly.
-				
-				interrupt_action = Signal.trap(:INT) do
-					# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
-					# $stderr.puts "Received INT signal, interrupting...", caller
-					::Thread.current.raise(Interrupt)
-				end
-				
-				# SIGTERM behaves the same as SIGINT by default.
-				terminate_action = Signal.trap(:TERM) do
-					# $stderr.puts "Received TERM signal, interrupting...", caller
-					::Thread.current.raise(Interrupt)  # Same as SIGINT
-				end
-				
-				hangup_action = Signal.trap(:HUP) do
-					# $stderr.puts "Received HUP signal, restarting...", caller
-					::Thread.current.raise(Restart)
-				end
-				
-				::Thread.handle_interrupt(SignalException => :never) do
-					yield
-				end
-			ensure
-				# Restore the interrupt handler:
-				Signal.trap(:INT, interrupt_action)
-				Signal.trap(:TERM, terminate_action)
-				Signal.trap(:HUP, hangup_action)
 			end
 		end
 	end
