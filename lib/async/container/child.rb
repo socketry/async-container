@@ -10,11 +10,16 @@ require_relative "error"
 
 module Async
 	module Container
+		# Represents a child execution unit managed by a container.
 		class Child
 			# The default amount of time to wait for a child to be reaped after its
 			# notification channel closes.
 			REAP_TIMEOUT = 1.0
 			
+			# Initialize the child with the given notification channel.
+			# @parameter channel [Channel] The channel used to receive child notifications.
+			# @parameter name [String | Nil] The optional child name.
+			# @parameter options [Hash] Additional child options.
 			def initialize(channel, name: nil, **options)
 				@channel = channel
 				@name = name
@@ -73,6 +78,11 @@ module Async
 				return status
 			end
 			
+			# Receive notification messages from the child until a message is available, the channel closes, or the timeout expires.
+			# @parameter timeout [Numeric | Nil] The maximum time to wait for a message.
+			# @yields {|message| ...} Each received notification message.
+			# 	@parameter message [Hash] The notification message from the child.
+			# @returns [Hash | Boolean | Nil] The message, `false` on timeout, or `nil` when the channel closes.
 			def receive(timeout = nil, &block)
 				deadline = Deadline.new(timeout) if timeout
 				

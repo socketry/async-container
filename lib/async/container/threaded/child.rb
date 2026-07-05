@@ -9,7 +9,15 @@ require_relative "instance"
 module Async
 	module Container
 		module Threaded
+			# Represents a child thread managed by a threaded container.
 			class Child < Container::Child
+				# Start a child thread.
+				# @parameter channel [Channel] The notification channel for the child.
+				# @parameter name [String | Nil] The optional child name.
+				# @parameter options [Hash] Additional child options.
+				# @yields {|instance| ...} The child thread body.
+				# 	@parameter instance [Instance] The child-side instance interface.
+				# @returns [Child] The threaded child.
 				def self.call(channel: Channel.new, name: nil, **options, &block)
 					thread = ::Thread.new do
 						begin
@@ -32,6 +40,10 @@ module Async
 					return self.new(thread, channel, name: name, **options)
 				end
 				
+				# Initialize the child thread wrapper.
+				# @parameter thread [Thread] The child thread.
+				# @parameter channel [Channel] The notification channel for the child.
+				# @parameter options [Hash] Additional child options.
 				def initialize(thread, channel, **options)
 					@thread = thread
 					@status = nil
@@ -61,6 +73,9 @@ module Async
 					@thread.raise(Restart)
 				end
 				
+				# Reap the child thread.
+				# @parameter timeout [Numeric | Nil] The maximum time to wait for the thread to exit.
+				# @returns [Status | Nil] The thread status, or `nil` if the timeout expired.
 				def reap(timeout = nil)
 					if timeout
 						return nil unless @thread.join(timeout)

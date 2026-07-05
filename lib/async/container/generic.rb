@@ -35,10 +35,18 @@ module Async
 		class Generic
 			UNNAMED = "Unnamed"
 			
+			# Create and run a generic container.
+			# @parameter arguments [Array] Positional arguments for {#run}.
+			# @parameter options [Hash] Keyword options for {#run}.
+			# @returns [Generic] The running container.
 			def self.run(...)
 				self.new.run(...)
 			end
 			
+			# Initialize the generic container.
+			# @parameter child_type [Class] The child type used to spawn children.
+			# @parameter policy [Policy] The policy for managing child lifecycle events.
+			# @parameter options [Hash] Additional group options.
 			def initialize(child_type, policy: Policy::DEFAULT, **options)
 				@child_type = child_type
 				@group = Group.new(**options)

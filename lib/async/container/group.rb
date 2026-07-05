@@ -19,6 +19,7 @@ module Async
 			# Emitted when a child exits the group.
 			Exit = Data.define(:child, :status)
 			
+			# Initialize the group.
 			def initialize
 				@children = Set.new
 				@events = Thread::Queue.new

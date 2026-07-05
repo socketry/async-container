@@ -9,7 +9,15 @@ require_relative "instance"
 module Async
 	module Container
 		module Forked
+			# Represents a child process managed by a forked container.
 			class Child < Container::Child
+				# Start a child process using `fork`.
+				# @parameter channel [Channel] The notification channel for the child.
+				# @parameter name [String | Nil] The optional child name.
+				# @parameter options [Hash] Additional child options.
+				# @yields {|instance| ...} The child process body.
+				# 	@parameter instance [Instance] The child-side instance interface.
+				# @returns [Child] The forked child process.
 				def self.call(channel: Channel.new, name: nil, **options, &block)
 					process_id = ::Thread.new do
 						::Process.fork do
@@ -39,6 +47,10 @@ module Async
 					return self.new(process_id, channel, name: name, **options)
 				end
 				
+				# Initialize the child process wrapper.
+				# @parameter process_id [Integer] The process identifier.
+				# @parameter channel [Channel] The notification channel for the child.
+				# @parameter options [Hash] Additional child options.
 				def initialize(process_id, channel, **options)
 					@process_id = process_id
 					@status = nil
@@ -78,6 +90,9 @@ module Async
 					end
 				end
 				
+				# Reap the child process.
+				# @parameter timeout [Numeric | Nil] The maximum time to wait for the process to exit.
+				# @returns [::Process::Status | Nil] The process status, or `nil` if the timeout expired.
 				def reap(timeout = nil)
 					unless @status
 						if timeout
