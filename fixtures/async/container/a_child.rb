@@ -6,7 +6,7 @@
 module Async
 	module Container
 		AChild = Sus::Shared("a child") do
-			def wait_until_ready(input)
+			def wait_for_child_started(input)
 				input.gets
 			end
 			
@@ -17,43 +17,43 @@ module Async
 			end
 			
 			def start_sleeping_child
-				ready = ::IO.pipe
-				
-				child = subject.call(name: "test-child") do
-					ready.last.puts "ready"
-					sleep
-				rescue Interrupt
-					# Graceful shutdown.
+				::IO.pipe do |input, output|
+					child = subject.call(name: "test-child") do
+						output.puts "ready"
+						sleep
+					rescue Interrupt
+						# Graceful shutdown.
+					end
+					
+					wait_for_child_started(input)
+					
+					return child
 				end
-				
-				wait_until_ready(ready.first)
-				
-				return child
 			end
 			
 			def start_uncooperative_child
-				ready = ::IO.pipe
-				
-				child = subject.call(name: "test-child") do
-					ready_sent = false
-					
-					loop do
-						begin
-							unless ready_sent
-								ready.last.puts "ready"
-								ready_sent = true
+				::IO.pipe do |input, output|
+					child = subject.call(name: "test-child") do
+						ready_sent = false
+						
+						loop do
+							begin
+								unless ready_sent
+									output.puts "ready"
+									ready_sent = true
+								end
+								
+								sleep
+							rescue Interrupt
+								# Ignore graceful shutdown.
 							end
-							
-							sleep
-						rescue Interrupt
-							# Ignore graceful shutdown.
 						end
 					end
+					
+					wait_for_child_started(input)
+					
+					return child
 				end
-				
-				wait_until_ready(ready.first)
-				
-				return child
 			end
 			
 			it "receives notifications and returns a successful status" do
