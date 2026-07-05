@@ -35,10 +35,15 @@ module Async
 				ready = ::IO.pipe
 				
 				child = subject.call(name: "test-child") do
-					ready.last.puts "ready"
+					ready_sent = false
 					
 					loop do
 						begin
+							unless ready_sent
+								ready.last.puts "ready"
+								ready_sent = true
+							end
+							
 							sleep
 						rescue Interrupt
 							# Ignore graceful shutdown.
