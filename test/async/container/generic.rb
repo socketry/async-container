@@ -9,6 +9,26 @@ require "async/container/threaded/child"
 describe Async::Container::Generic do
 	let(:container) {subject.new(Async::Container::Threaded::Child)}
 	
+	class RecordingPolicy < Async::Container::Policy
+		def initialize
+			@events = []
+		end
+		
+		attr :events
+		
+		def startup_failed(container, child, age:, timeout:, **options)
+			@events << [:startup_failed, age, timeout]
+			
+			super
+		end
+		
+		def health_check_failed(container, child, age:, timeout:, **options)
+			@events << [:health_check_failed, age, timeout]
+			
+			super
+		end
+	end
+	
 	it "spawns children and waits until they are ready" do
 		container.spawn do |instance|
 			instance.ready!(status: "ready")
@@ -89,5 +109,47 @@ describe Async::Container::Generic do
 		expect(container[:worker]).not.to be_nil
 		
 		container.stop(false)
+	end
+	
+	it "fails startup when the child sends status messages but never becomes ready" do
+		policy = RecordingPolicy.new
+		container = subject.new(Async::Container::Threaded::Child, policy: policy)
+		
+		container.spawn(startup_timeout: 0.05) do |instance|
+			loop do
+				instance.status!("Still starting...")
+				sleep 0.01
+			end
+		end
+		
+		container.wait
+		
+		expect(container).not.to be(:running?)
+		expect(container).to be(:failed?)
+		expect(container.statistics.failures).to be == 1
+		expect(policy.events).to have_attributes(size: be == 1)
+		
+		event, age, timeout = policy.events.first
+		expect(event).to be == :startup_failed
+		expect(age).to be >= timeout
+		expect(timeout).to be == 0.05
+	end
+	
+	it "does not fail startup if the child becomes ready before the startup timeout" do
+		policy = RecordingPolicy.new
+		container = subject.new(Async::Container::Threaded::Child, policy: policy)
+		
+		container.spawn(startup_timeout: 1.0) do |instance|
+			instance.status!("Starting...")
+			sleep 0.01
+			instance.ready!
+		end
+		
+		container.wait
+		
+		expect(container).not.to be(:running?)
+		expect(container).not.to be(:failed?)
+		expect(container.statistics.failures).to be == 0
+		expect(policy.events).to be(:empty?)
 	end
 end

@@ -300,16 +300,28 @@ module Async
 			end
 			
 			def monitor_child_with_timeouts(child, health_check_timeout:, startup_timeout:)
+				startup_deadline = Deadline.new(startup_timeout) if startup_timeout
+				startup_started_at = Clock.now if startup_timeout
+				
 				loop do
-					timeout = child.ready? ? health_check_timeout : startup_timeout
-					result = child.receive(timeout)
+					timeout = if child.ready?
+						health_check_timeout
+					elsif startup_deadline
+						if startup_deadline.expired?
+							false
+						else
+							startup_deadline.remaining
+						end
+					end
+					
+					result = timeout == false ? false : child.receive(timeout)
 					
 					case result
 					when false
 						if child.ready?
 							health_check_failed(child, health_check_timeout)
 						else
-							startup_failed(child, startup_timeout)
+							startup_failed(child, startup_timeout, age: Clock.now - startup_started_at)
 						end
 						
 						child.kill!
@@ -352,8 +364,8 @@ module Async
 				child.kill!
 			end
 			
-			def startup_failed(child, timeout)
-				@policy.startup_failed(self, child, age: Clock.now - child.last_updated_at, timeout: timeout)
+			def startup_failed(child, timeout, age: Clock.now - child.last_updated_at)
+				@policy.startup_failed(self, child, age: age, timeout: timeout)
 			rescue => error
 				Console.error(self, "Policy error in startup_failed!", exception: error) if defined?(Console)
 				child.kill!
