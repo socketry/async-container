@@ -59,8 +59,10 @@ describe Async::Container::Channel do
 	with "timeout" do
 		let(:channel) {subject.new(timeout: 0.001)}
 		
-		it "fails gracefully on timeout" do
-			expect(channel.receive).to be_nil
+		it "does not treat timeouts as channel closure" do
+			expect do
+				channel.receive
+			end.to raise_exception(IO::TimeoutError)
 		end
 	end
 end

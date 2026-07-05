@@ -98,7 +98,7 @@ module Async
 			
 			# Whether the container is stopping.
 			def stopping?
-				@stopping
+				@mutex.synchronize{@stopping}
 			end
 			
 			# Sleep until a group event occurs or the specified duration elapses.
@@ -139,7 +139,7 @@ module Async
 			
 			# Interrupt all children and enter the stopping state.
 			def interrupt
-				@stopping = true
+				stopping!
 				@group.interrupt!
 			end
 			
@@ -155,15 +155,15 @@ module Async
 					return false if failed? && !lifecycle_running?
 					return true if !running? && !lifecycle_running?
 					
-					@group.wait
+					@group.wait(0.1)
 				end
 			end
 			
 			# Stop all children.
 			def stop(timeout = true)
-				return if @stopping && !running?
+				return if stopping? && !running?
 				
-				@stopping = true
+				stopping!
 				@group.stop(timeout)
 				self.wait
 			end
@@ -229,6 +229,10 @@ module Async
 				@mutex.synchronize{@threads.any?(&:alive?)}
 			end
 			
+			def stopping!
+				@mutex.synchronize{@stopping = true}
+			end
+			
 			def start_child(name:, **options, &block)
 				@child_type.call(name: name, **options, &block)
 			end
@@ -265,7 +269,7 @@ module Async
 					unregister_child(child, status, key: key)
 					notify_child_exit(child, status, name: name, key: key)
 					
-					if restart && !@stopping
+					if restart && !stopping?
 						@statistics.restart!
 						
 						child = start_child(name: name, **options, &block)
@@ -275,7 +279,7 @@ module Async
 					end
 				end
 			rescue => error
-				Console.error(self, "Error during child lifecycle management!", exception: error, stopping: @stopping) if defined?(Console)
+				Console.error(self, "Error during child lifecycle management!", exception: error, stopping: stopping?) if defined?(Console)
 			ensure
 				if @group.children.include?(child)
 					begin
@@ -322,13 +326,15 @@ module Async
 			end
 			
 			def record_exit(child, status, name:, key:)
+				stopping = stopping?
+				
 				if status&.success?
-					Console.debug(self, "Child exited successfully.", status: status, stopping: @stopping) if defined?(Console)
-				elsif @stopping
-					Console.debug(self, "Child exited while stopping.", status: status, stopping: @stopping) if defined?(Console)
+					Console.debug(self, "Child exited successfully.", status: status, stopping: stopping) if defined?(Console)
+				elsif stopping
+					Console.debug(self, "Child exited while stopping.", status: status, stopping: stopping) if defined?(Console)
 				else
 					@statistics.failure!
-					Console.error(self, "Child exited with error!", status: status, stopping: @stopping) if defined?(Console)
+					Console.error(self, "Child exited with error!", status: status, stopping: stopping) if defined?(Console)
 				end
 			end
 			

@@ -37,6 +37,15 @@ describe Async::Container::Generic do
 		expect(container).to be(:failed?)
 	end
 	
+	it "does not block waiting for readiness after a child fails to start" do
+		container.spawn do
+			raise "boom"
+		end
+		
+		expect(container.wait_until_ready).to be == false
+		expect(container).not.to be(:running?)
+	end
+	
 	it "restarts children when requested" do
 		count = 0
 		
@@ -52,6 +61,21 @@ describe Async::Container::Generic do
 		container.stop(false)
 		
 		expect(container.statistics).to have_attributes(spawns: be == 2, restarts: be == 1, failures: be == 1)
+	end
+	
+	it "does not restart children while stopping" do
+		container.spawn(restart: true) do |instance|
+			instance.ready!
+			sleep
+		rescue Interrupt
+			# Graceful shutdown.
+		end
+		
+		expect(container.wait_until_ready).to be == true
+		
+		container.stop(true)
+		
+		expect(container.statistics).to have_attributes(spawns: be == 1, restarts: be == 0)
 	end
 	
 	it "supports keyed children" do
