@@ -27,6 +27,11 @@ module Async
 			# @attribute [Set(Child)] The children currently in the group.
 			attr :children
 			
+			# @returns [Set(Child)] The children currently running.
+			def running
+				@children
+			end
+			
 			# @returns [Integer] The number of children in the group.
 			def size
 				@children.size

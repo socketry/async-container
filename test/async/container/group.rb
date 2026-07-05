@@ -40,6 +40,7 @@ describe Async::Container::Group do
 			group.add(child)
 			
 			expect(group.children).to be(:include?, child)
+			expect(group.running).to be == group.children
 			expect(group.size).to be == 1
 			expect(group).to be(:running?)
 			

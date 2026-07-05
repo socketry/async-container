@@ -164,7 +164,7 @@ module Async
 				end).to be == true
 				
 				expect(container.wait_until_ready).to be == true
-				expect(container.spawn(key: :worker) {sleep}).to be == false
+				expect(container.spawn(key: :worker){sleep}).to be == false
 				expect(container[:worker]).not.to be_nil
 				
 				container.stop(false)

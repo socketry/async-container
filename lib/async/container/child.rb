@@ -72,7 +72,7 @@ module Async
 				
 				return status
 			end
-
+			
 			def receive(timeout = nil, &block)
 				deadline = Deadline.new(timeout) if timeout
 				
@@ -88,7 +88,7 @@ module Async
 					else
 						@channel.in.wait_readable
 					end
-
+					
 					if message = @channel.receive
 						self.update(message)
 						if block_given?

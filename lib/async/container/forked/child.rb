@@ -97,7 +97,7 @@ module Async
 							_, @status = ::Process.waitpid2(@process_id)
 						end
 					end
-	
+					
 					return @status
 				end
 			end
