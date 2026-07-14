@@ -155,6 +155,28 @@ describe Async::Container::Generic do
 		expect(container.statistics.failures).to be == 0
 		expect(policy.events).to be(:empty?)
 	end
+	
+	it "fails health checks when a ready child stops sending updates" do
+		policy = RecordingPolicy.new
+		container = subject.new(Async::Container::Threaded::Child, policy: policy)
+		
+		container.spawn(health_check_timeout: 0.05) do |instance|
+			instance.ready!
+			sleep
+		end
+		
+		container.wait
+		
+		expect(container).not.to be(:running?)
+		expect(container).to be(:failed?)
+		expect(container.statistics.failures).to be == 1
+		expect(policy.events).to have_attributes(size: be == 1)
+		
+		event, age, timeout = policy.events.first
+		expect(event).to be == :health_check_failed
+		expect(age).to be >= timeout
+		expect(timeout).to be == 0.05
+	end
 end
 
 describe Async::Container::Generic do
