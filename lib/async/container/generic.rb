@@ -258,10 +258,12 @@ module Async
 			
 			def unregister_child(child, status, key:)
 				@mutex.synchronize do
-					@keyed.delete(key) if key
+					@keyed.delete(key) if key && @keyed[key].equal?(child)
 				end
 				
-				@group.remove(child, status)
+				if @group.children.include?(child)
+					@group.remove(child, status)
+				end
 			end
 			
 			def manage_child(child, name:, key:, restart:, health_check_timeout:, startup_timeout:, options:, block:)
@@ -278,17 +280,20 @@ module Async
 						child = start_child(name: name, **options, &block)
 						register_child(child, name: name, key: key)
 					else
+						child = nil
 						break
 					end
 				end
 			rescue => error
 				Console.error(self, "Error during child lifecycle management!", exception: error, stopping: stopping?) if defined?(Console)
 			ensure
-				if @group.children.include?(child)
-					begin
-						@group.remove(child)
-					rescue ArgumentError
-					end
+				cleanup_child(child, key: key) if child
+			end
+			
+			def cleanup_child(child, key:)
+				Async::Task.current.defer_cancel do
+					status = child.stop(false)
+					unregister_child(child, status, key: key)
 				end
 			end
 			

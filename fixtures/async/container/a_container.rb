@@ -172,6 +172,42 @@ module Async
 				
 				container.stop(false)
 			end
+			
+			it "stops children when the lifecycle task is cancelled" do
+				next unless subject.multiprocess?
+				
+				reader, writer = IO.pipe
+				
+				owner = Async::Task.current.async do |task|
+					container.spawn(parent: task) do
+						writer.puts(Process.pid)
+						sleep
+					end
+					
+					sleep
+				end
+				
+				child_pid = reader.gets.to_i
+				
+				owner.cancel
+				owner.wait rescue nil
+				container.wait
+				
+				expect do
+					Process.kill(0, child_pid)
+				end.to raise_exception(Errno::ESRCH)
+			ensure
+				reader&.close unless reader&.closed?
+				writer&.close unless writer&.closed?
+				
+				if child_pid
+					begin
+						Process.kill(:KILL, child_pid)
+						Process.wait(child_pid)
+					rescue Errno::ECHILD, Errno::ESRCH
+					end
+				end
+			end
 		end
 	end
 end
