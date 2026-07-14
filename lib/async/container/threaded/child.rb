@@ -54,11 +54,13 @@ module Async
 				# Raise {Interrupt} in the child thread.
 				def interrupt!
 					@thread.raise(Interrupt)
+					@thread.wakeup
 				end
 				
 				# Raise {Terminate} in the child thread.
 				def terminate!
 					@thread.raise(Terminate)
+					@thread.wakeup
 				end
 				
 				# Invoke {Thread#kill} on the child thread.
@@ -71,6 +73,7 @@ module Async
 				# Raise {Restart} in the child thread.
 				def restart!
 					@thread.raise(Restart)
+					@thread.wakeup
 				end
 				
 				# Reap the child thread.
