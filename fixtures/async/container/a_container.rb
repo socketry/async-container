@@ -36,8 +36,16 @@ module Async
 				File.exist?(path) ? File.readlines(path, chomp: true) : []
 			end
 			
-			def exited_or_reaped?(pid)
-				!!Process.waitpid2(pid, Process::WNOHANG)
+			def wait_until_exited_or_reaped(pid, timeout = 1.0)
+				deadline = ::Process.clock_gettime(::Process::CLOCK_MONOTONIC) + timeout
+				
+				while ::Process.clock_gettime(::Process::CLOCK_MONOTONIC) < deadline
+					return true if ::Process.waitpid2(pid, ::Process::WNOHANG)
+					
+					sleep 0.01
+				end
+				
+				false
 			rescue Errno::ECHILD
 				true
 			end
@@ -199,7 +207,7 @@ module Async
 				owner.wait rescue nil
 				container.wait
 				
-				expect(exited_or_reaped?(child_pid)).to be == true
+				expect(wait_until_exited_or_reaped(child_pid)).to be == true
 			ensure
 				reader&.close unless reader&.closed?
 				writer&.close unless writer&.closed?
