@@ -173,5 +173,23 @@ describe Async::Container::Generic do
 			
 			expect(container).not.to be(:running?)
 		end
+		
+		it "runs lifecycle blocks in an internal scheduler" do
+			ready = Thread::Queue.new
+			finish = Thread::Queue.new
+			
+			thread = subject::LifecycleThread.new do |task|
+				ready.push(Async::Task.current?)
+				finish.pop
+			end
+			
+			expect(ready.pop).to be_a(Async::Task)
+			expect(thread.status).to be == :running
+			
+			finish.push(true)
+			thread.wait
+			
+			expect(thread.status).not.to be == :running
+		end
 	end
 end
