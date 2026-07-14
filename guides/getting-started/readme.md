@@ -26,17 +26,19 @@ require "async/container"
 
 Console.logger.debug!
 
-container = Async::Container.new
-
-container.spawn do |task|
-	Console.debug task, "Sleeping..."
-	sleep(1)
-	Console.debug task, "Waking up!"
+Sync do
+	container = Async::Container.new
+	
+	container.spawn do |instance|
+		Console.debug instance, "Sleeping..."
+		sleep(1)
+		Console.debug instance, "Waking up!"
+	end
+	
+	Console.debug "Waiting for container..."
+	container.wait
+	Console.debug "Finished."
 end
-
-Console.debug "Waiting for container..."
-container.wait
-Console.debug "Finished."
 ```
 
 ### Stopping Child Processes
@@ -70,32 +72,34 @@ Both timeouts use a single clock that starts when the process starts. The clock 
 ``` ruby
 require "async/container"
 
-container = Async::Container.new
-
-container.run(
-	count: 2,
-	restart: true,
-	# Allow up to 60 seconds for startup:
-	startup_timeout: 60,
-	# Require health checks every 30 seconds after ready:
-	health_check_timeout: 30
-) do |instance|
-	# Send status updates during startup:
-	instance.status!("Preparing...")
+Sync do
+	container = Async::Container.new
 	
-	# Do initialization work...
-	
-	# Signal readiness:
-	instance.ready!
-	
-	# After ready, send periodic health checks:
-	while true
+	container.run(
+		count: 2,
+		restart: true,
+		# Allow up to 60 seconds for startup:
+		startup_timeout: 60,
+		# Require health checks every 30 seconds after ready:
+		health_check_timeout: 30
+	) do |instance|
+		# Send status updates during startup:
+		instance.status!("Preparing...")
+		
+		# Do initialization work...
+		
+		# Signal readiness:
 		instance.ready!
-		sleep(10)
+		
+		# After ready, send periodic health checks:
+		while true
+			instance.ready!
+			sleep(10)
+		end
 	end
+	
+	container.wait
 end
-
-container.wait
 ```
 
 **Note:** Any message sent through the notification pipe (including `status!` and `ready!`) resets the timeout clock. This allows processes to take time during startup while still detecting hung processes.
