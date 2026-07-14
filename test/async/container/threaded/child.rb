@@ -35,4 +35,14 @@ describe Async::Container::Threaded::Child do
 		expect(status).not.to be(:success?)
 		expect(status.error).to be == :killed
 	end
+	
+	it "serializes status values" do
+		success = subject::Status.new
+		failure = subject::Status.new(:killed)
+		
+		expect(success.as_json).to be == true
+		expect(failure.as_json).to be == ":killed"
+		expect(success.to_s).to be == "#<Async::Container::Threaded::Child::Status success>"
+		expect(failure.to_s).to be == "#<Async::Container::Threaded::Child::Status failure>"
+	end
 end
