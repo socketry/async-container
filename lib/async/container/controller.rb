@@ -210,31 +210,29 @@ module Async
 			def run(signals: Async::Signals.default)
 				@notify&.status!("Initializing controller...")
 				
-				begin
-					Sync do |task|
-						begin
-							self.start
-							
-							while @container&.running?
-								begin
-									signals.install(@handlers) do
-										@container.wait
-									end
-								rescue Restart
-									self.restart
-								rescue Interrupt
-									self.stop(@graceful_stop)
+				Sync do |task|
+					begin
+						self.start
+						
+						while @container&.running?
+							begin
+								signals.install(@handlers) do
+									@container.wait
 								end
+							rescue Restart
+								self.restart
+							rescue Interrupt
+								self.stop(@graceful_stop)
 							end
-						rescue Interrupt
-							self.stop(@graceful_stop)
-						ensure
-							self.stop(false)
 						end
+					rescue Interrupt
+						self.stop(@graceful_stop)
+					ensure
+						self.stop(false)
 					end
-				rescue Interrupt
-					# The signal may be delivered after in-reactor cleanup has completed.
 				end
+			rescue Interrupt
+				# The signal may be delivered after in-reactor cleanup has completed.
 			end
 		end
 	end
