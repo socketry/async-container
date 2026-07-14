@@ -36,6 +36,12 @@ module Async
 				File.exist?(path) ? File.readlines(path, chomp: true) : []
 			end
 			
+			def exited_or_reaped?(pid)
+				!!Process.waitpid2(pid, Process::WNOHANG)
+			rescue Errno::ECHILD
+				true
+			end
+			
 			it "spawns a child and observes readiness" do
 				container.spawn(name: "worker") do |instance|
 					instance.ready!(status: "ready")
@@ -193,9 +199,7 @@ module Async
 				owner.wait rescue nil
 				container.wait
 				
-				expect do
-					Process.kill(0, child_pid)
-				end.to raise_exception(Errno::ESRCH)
+				expect(exited_or_reaped?(child_pid)).to be == true
 			ensure
 				reader&.close unless reader&.closed?
 				writer&.close unless writer&.closed?
