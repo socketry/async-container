@@ -210,25 +210,25 @@ module Async
 			def run(signals: Async::Signals.default)
 				@notify&.status!("Initializing controller...")
 				
-				Sync do |task|
-					begin
-						self.start
-						
-						while @container&.running?
-							begin
-								signals.install(@handlers) do
+				Sync do
+					signals.install(@handlers) do
+						begin
+							self.start
+							
+							while @container&.running?
+								begin
 									@container.wait
+								rescue Restart
+									self.restart
+								rescue Interrupt
+									self.stop(@graceful_stop)
 								end
-							rescue Restart
-								self.restart
-							rescue Interrupt
-								self.stop(@graceful_stop)
 							end
+						rescue Interrupt
+							self.stop(@graceful_stop)
+						ensure
+							self.stop(false)
 						end
-					rescue Interrupt
-						self.stop(@graceful_stop)
-					ensure
-						self.stop(false)
 					end
 				end
 			rescue Interrupt

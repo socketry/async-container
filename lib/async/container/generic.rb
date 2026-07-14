@@ -4,6 +4,7 @@
 # Copyright, 2019-2026, by Samuel Williams.
 
 require "etc"
+require "async"
 require "async/clock"
 require "async/deadline"
 require "async/task"
@@ -35,7 +36,9 @@ module Async
 		class Generic
 			UNNAMED = "Unnamed"
 			
+			# Runs child lifecycle supervision in an internal thread when no Async task is available.
 			class LifecycleThread
+				# Create a lifecycle thread which runs the given block within a scheduler.
 				def initialize(&block)
 					@thread = ::Thread.new do
 						Sync do
@@ -44,10 +47,12 @@ module Async
 					end
 				end
 				
+				# The lifecycle status, compatible with {Async::Task#status}.
 				def status
 					@thread.alive? ? :running : @thread.status
 				end
 				
+				# Wait for the lifecycle thread to finish.
 				def wait
 					@thread.value
 				end
