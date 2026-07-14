@@ -156,3 +156,22 @@ describe Async::Container::Generic do
 		expect(policy.events).to be(:empty?)
 	end
 end
+
+describe Async::Container::Generic do
+	let(:container) {subject.new(Async::Container::Threaded::Child)}
+	
+	with "without an async task" do
+		it "spawns children using an internal lifecycle task" do
+			container.spawn do |instance|
+				instance.ready!
+				sleep
+			end
+			
+			expect(container.wait_until_ready).to be == true
+			
+			container.stop(false)
+			
+			expect(container).not.to be(:running?)
+		end
+	end
+end

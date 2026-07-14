@@ -3,7 +3,7 @@
 ## Unreleased
 
   - **Removed** `Controller#reload` and the container-level keyed reconciliation (`Keyed`, mark/sweep, and stopping of obsolete keyed children on reload). This functionality was incomplete and not correctly wired, and will be revisited with a simpler design. Keyed `spawn(key:)` registration and `container[key]` lookup are retained, and `Container#reload` now simply re-runs the given block (reusing existing keyed children).
-  - Container `spawn` and `run` now require an Async task context so child lifecycle supervision is attached to the caller's scheduler. Use `Sync` at the top level when managing containers directly.
+  - Container `spawn` and `run` now attach child lifecycle supervision to the current Async task when available, otherwise they use an internal lifecycle thread for direct synchronous use.
 
 ## v0.37.0
 
