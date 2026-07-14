@@ -212,24 +212,28 @@ module Async
 				
 				begin
 					Sync do |task|
-						self.start
-						
-						while @container&.running?
-							begin
-								signals.install(@handlers) do
-									@container.wait
+						begin
+							self.start
+							
+							while @container&.running?
+								begin
+									signals.install(@handlers) do
+										@container.wait
+									end
+								rescue Restart
+									self.restart
+								rescue Interrupt
+									self.stop(@graceful_stop)
 								end
-							rescue Restart
-								self.restart
-							rescue Interrupt
-								self.stop(@graceful_stop)
 							end
+						rescue Interrupt
+							self.stop(@graceful_stop)
+						ensure
+							self.stop(false)
 						end
 					end
 				rescue Interrupt
-					self.stop(@graceful_stop)
-				ensure
-					self.stop(false)
+					# The signal may be delivered after in-reactor cleanup has completed.
 				end
 			end
 		end
