@@ -5,8 +5,11 @@
 
 require "async/container/generic"
 require "async/container/threaded/child"
+require "sus/fixtures/async/scheduler_context"
 
 describe Async::Container::Generic do
+	include Sus::Fixtures::Async::SchedulerContext
+	
 	let(:container) {subject.new(Async::Container::Threaded::Child)}
 	
 	class RecordingPolicy < Async::Container::Policy

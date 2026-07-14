@@ -46,91 +46,101 @@ describe Async::Container::Controller do
 	
 	with "#restart" do
 		it "replaces the running container with a new one" do
-			def controller.setup(container)
-				container.spawn do |instance|
-					instance.ready!
-					sleep
+			Sync do
+				def controller.setup(container)
+					container.spawn do |instance|
+						instance.ready!
+						sleep
+					end
 				end
+				
+				controller.start
+				first = controller.container
+				
+				expect(first).not.to be_nil
+				expect(controller).to be(:running?)
+				
+				# A restart is a blue-green swap: a new container is created and the old one is stopped.
+				controller.restart
+				
+				expect(controller.container).not.to be_equal(first)
+				expect(controller).to be(:running?)
+			ensure
+				controller.stop(false)
 			end
-			
-			controller.start
-			first = controller.container
-			
-			expect(first).not.to be_nil
-			expect(controller).to be(:running?)
-			
-			# A restart is a blue-green swap: a new container is created and the old one is stopped.
-			controller.restart
-			
-			expect(controller.container).not.to be_equal(first)
-			expect(controller).to be(:running?)
-		ensure
-			controller.stop(false)
 		end
 		
 		it "starts a new container if not already running" do
-			def controller.setup(container)
-				container.spawn do |instance|
-					instance.ready!
-					sleep
+			Sync do
+				def controller.setup(container)
+					container.spawn do |instance|
+						instance.ready!
+						sleep
+					end
 				end
+				
+				expect(controller).not.to be(:running?)
+				
+				controller.restart
+				
+				expect(controller).to be(:running?)
+				expect(controller.container).not.to be_nil
+			ensure
+				controller.stop(false)
 			end
-			
-			expect(controller).not.to be(:running?)
-			
-			controller.restart
-			
-			expect(controller).to be(:running?)
-			expect(controller.container).not.to be_nil
-		ensure
-			controller.stop(false)
 		end
 	end
 	
 	with "#start" do
 		it "can start up a container" do
-			expect(controller).to receive(:setup)
-			
-			controller.start
-			
-			expect(controller).to be(:running?)
-			expect(controller.container).not.to be_nil
-			
-			controller.stop
-			
-			expect(controller).not.to be(:running?)
-			expect(controller.container).to be_nil
+			Sync do
+				expect(controller).to receive(:setup)
+				
+				controller.start
+				
+				expect(controller).to be(:running?)
+				expect(controller.container).not.to be_nil
+				
+				controller.stop
+				
+				expect(controller).not.to be(:running?)
+				expect(controller.container).to be_nil
+			end
 		end
 		
 		it "doesn't restart a container if it's already running" do
-			expect(controller).to receive(:setup)
-			
-			expect(controller.start).to be == true
-			expect(controller).to be(:running?)
-			
-			container = controller.container
-			
-			# Starting again is idempotent: it returns false and the container is not replaced.
-			expect(controller.start).to be == false
-			expect(controller.container).to be_equal(container)
-		ensure
-			controller.stop
+			Sync do
+				expect(controller).to receive(:setup)
+				
+				expect(controller.start).to be == true
+				expect(controller).to be(:running?)
+				
+				container = controller.container
+				
+				# Starting again is idempotent: it returns false and the container is not replaced.
+				expect(controller.start).to be == false
+				expect(controller.container).to be_equal(container)
+			ensure
+				controller.stop
+			end
 		end
 		
 		it "can spawn a reactor" do
-			def controller.setup(container)
-				container.async do |task|
-					task.sleep 0.001
+			Sync do
+				def controller.setup(container)
+					container.async do |task|
+						task.sleep 0.001
+					end
 				end
+				
+				controller.start
+				
+				statistics = controller.container.statistics
+				
+				expect(statistics.spawns).to be == 1
+				
+				controller.stop
 			end
-			
-			controller.start
-			
-			statistics = controller.container.statistics
-			
-			expect(statistics.spawns).to be == 1
-			
-			controller.stop
 		end
 		
 		it "propagates exceptions" do

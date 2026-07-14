@@ -4,12 +4,15 @@
 # Copyright, 2026, by Samuel Williams.
 
 require "sus/shared"
+require "sus/fixtures/async/scheduler_context"
 require "tmpdir"
 require "fileutils"
 
 module Async
 	module Container
 		AContainer = Sus::Shared("a container") do
+			include Sus::Fixtures::Async::SchedulerContext
+			
 			let(:container) {subject.new}
 			
 			def temporary_directory

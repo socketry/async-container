@@ -6,8 +6,8 @@
 require "etc"
 require "async/clock"
 require "async/deadline"
+require "async/task"
 require "set"
-require "thread"
 
 require_relative "group"
 require_relative "statistics"
@@ -55,7 +55,7 @@ module Async
 				@statistics = @policy.make_statistics
 				
 				@keyed = {}
-				@threads = Set.new
+				@tasks = Set.new
 				@mutex = Mutex.new
 				@stopping = false
 			end
@@ -123,16 +123,19 @@ module Async
 				end
 			end
 			
-			# Wait until all lifecycle owner threads complete.
+			# Wait until all lifecycle owner tasks complete.
 			def wait
 				loop do
-					current = Thread.current
-					threads = @mutex.synchronize{@threads.reject{|thread| thread.equal?(current)}}
-					break if threads.empty?
+					tasks = @mutex.synchronize{@tasks.to_a}
+					break if tasks.empty?
 					
-					threads.each do |thread|
-						thread.join
-						@mutex.synchronize{@threads.delete(thread)}
+					current = Async::Task.current
+					tasks = tasks.reject{|task| task.equal?(current)}
+					break if tasks.empty?
+					
+					tasks.each do |task|
+						task.wait
+						@mutex.synchronize{@tasks.delete(task)}
 					end
 				end
 			end
@@ -169,7 +172,7 @@ module Async
 			end
 			
 			# Spawn a child into the container.
-			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, startup_timeout: nil, **options, &block)
+			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, startup_timeout: nil, parent: Async::Task.current, **options, &block)
 				name ||= UNNAMED
 				
 				if reuse?(key)
@@ -179,21 +182,21 @@ module Async
 				child = start_child(name: name, **options, &block)
 				register_child(child, name: name, key: key)
 				
-				thread = Thread.new do
+				task = parent.async do
 					manage_child(child, name: name, key: key, restart: restart, health_check_timeout: health_check_timeout, startup_timeout: startup_timeout, options: options, block: block)
 				ensure
-					@mutex.synchronize{@threads.delete(Thread.current)}
+					@mutex.synchronize{@tasks.delete(Async::Task.current)}
 				end
 				
-				@mutex.synchronize{@threads.add(thread)}
+				@mutex.synchronize{@tasks.add(task)}
 				
 				return true
 			end
 			
 			# Run multiple instances of the same block in the container.
-			def run(count: Container.processor_count, **options, &block)
+			def run(count: Container.processor_count, parent: Async::Task.current, **options, &block)
 				count.times do
-					spawn(**options, &block)
+					spawn(parent: parent, **options, &block)
 				end
 				
 				return self
@@ -226,7 +229,7 @@ module Async
 			protected
 			
 			def lifecycle_running?
-				@mutex.synchronize{@threads.any?(&:alive?)}
+				@mutex.synchronize{@tasks.any?{|task| task.status == :running}}
 			end
 			
 			def stopping!
