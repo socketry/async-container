@@ -34,21 +34,23 @@ module Async
 				
 				forks.times do
 					spawn(**options) do |instance|
-						container = Threaded.new
-						
-						container.run(count: threads, health_check_timeout: health_check_timeout, **options, &block)
-						container.wait_until_ready
-						
-						instance.ready!
-						
-						begin
-							container.wait
-						rescue Interrupt
-							container.interrupt
-							retry
+						Sync do
+							container = Threaded.new
+							
+							container.run(count: threads, health_check_timeout: health_check_timeout, **options, &block)
+							container.wait_until_ready
+							
+							instance.ready!
+							
+							begin
+								container.wait
+							rescue Interrupt
+								container.interrupt
+								retry
+							end
+						ensure
+							container&.stop(false)
 						end
-					ensure
-						container&.stop(false)
 					end
 				end
 				
