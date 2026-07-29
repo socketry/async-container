@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Fork child processes from a clean fiber stack rather than a short-lived native thread, preserving child garbage collection while improving compatibility with native libraries.
+
 ## v0.37.0
 
   - Rename `ASYNC_CONTAINER_GRACEFUL_TIMEOUT` to `ASYNC_CONTAINER_GRACEFUL_STOP` and apply it at the controller level as `GRACEFUL_STOP`. `Group#stop` now only applies the shutdown policy it is given.
