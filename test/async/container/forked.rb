@@ -8,13 +8,45 @@ require "async/container/best"
 require "async/container/forked"
 require "async/container/a_container"
 require "sus/fixtures/async/scheduler_context"
+require "weakref"
 
 describe Async::Container::Forked do
 	include Sus::Fixtures::Async::SchedulerContext
 	
 	let(:container) {subject.new}
 	
+	def fork_with_weak_marker(weak_marker, output)
+		Async::Container::Forked::Child.fork do
+			3.times do
+				GC.start(full_mark: true, immediate_sweep: true)
+			end
+			
+			output.puts(weak_marker.weakref_alive? ? "alive" : "collected")
+		ensure
+			output.close
+		end
+	end
+	
 	it_behaves_like Async::Container::AContainer
+	
+	it "forks with a clean child fiber stack" do
+		input, output = IO.pipe
+		marker = Object.new
+		weak_marker = WeakRef.new(marker)
+		
+		child = fork_with_weak_marker(weak_marker, output)
+		output.close
+		
+		expect(input.read).to be == "collected\n"
+		expect(child.wait).to be(:success?)
+		
+		# Keep the marker live on the caller's stack until after the child exits:
+		marker.object_id
+	ensure
+		input&.close
+		output&.close
+		child&.wait
+	end
 	
 	it "can restart child" do
 		trigger = IO.pipe
