@@ -102,8 +102,7 @@ module Async
 					# $stderr.puts fork: caller
 					self.new(**options) do |process|
 						# CRuby makes the currently executing fiber the root fiber in the child process and clears its resuming fiber, so the caller's stack can be collected without forking from a separate native thread:
-						# This must remain a non-blocking fiber so resuming it does not register a blocked operation with an active fiber scheduler.
-						::Fiber.new do
+						::Fiber.new(blocking: true) do
 							::Process.fork do
 								# We use `Thread.current.raise(...)` so that exceptions are filtered through `Thread.handle_interrupt` correctly.
 								Signal.trap(:INT){::Thread.current.raise(Interrupt)}
