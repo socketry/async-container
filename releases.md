@@ -1,5 +1,10 @@
 # Releases
 
+## Unreleased
+
+  - **Removed** `Controller#reload` and the container-level keyed reconciliation (`Keyed`, mark/sweep, and stopping of obsolete keyed children on reload). This functionality was incomplete and not correctly wired, and will be revisited with a simpler design. Keyed `spawn(key:)` registration and `container[key]` lookup are retained, and `Container#reload` now simply re-runs the given block (reusing existing keyed children).
+  - Container `spawn` and `run` now attach child lifecycle supervision to the current Async task when available, otherwise they use an internal lifecycle thread for direct synchronous use.
+
 ## v0.37.0
 
   - Rename `ASYNC_CONTAINER_GRACEFUL_TIMEOUT` to `ASYNC_CONTAINER_GRACEFUL_STOP` and apply it at the controller level as `GRACEFUL_STOP`. `Group#stop` now only applies the shutdown policy it is given.

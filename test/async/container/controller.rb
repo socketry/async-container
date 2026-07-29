@@ -44,115 +44,103 @@ describe Async::Container::Controller do
 		end
 	end
 	
-	with "#reload" do
-		it "can reuse keyed child" do
-			input, output = IO.pipe
-			
-			controller.instance_variable_set(:@output, output)
-			
-			def controller.setup(container)
-				container.spawn(key: "test") do |instance|
-					instance.ready!
-					
-					@output.write(".")
-					@output.flush
-					
-					sleep(0.2)
+	with "#restart" do
+		it "replaces the running container with a new one" do
+			Sync do
+				def controller.setup(container)
+					container.spawn do |instance|
+						instance.ready!
+						sleep
+					end
 				end
 				
-				container.spawn do |instance|
-					instance.ready!
-					
-					sleep(0.1)
-					
-					@output.write(",")
-					@output.flush
+				controller.start
+				first = controller.container
+				
+				expect(first).not.to be_nil
+				expect(controller).to be(:running?)
+				
+				# A restart is a blue-green swap: a new container is created and the old one is stopped.
+				controller.restart
+				
+				expect(controller.container).not.to be_equal(first)
+				expect(controller).to be(:running?)
+			ensure
+				controller.stop(false)
+			end
+		end
+		
+		it "starts a new container if not already running" do
+			Sync do
+				def controller.setup(container)
+					container.spawn do |instance|
+						instance.ready!
+						sleep
+					end
 				end
+				
+				expect(controller).not.to be(:running?)
+				
+				controller.restart
+				
+				expect(controller).to be(:running?)
+				expect(controller.container).not.to be_nil
+			ensure
+				controller.stop(false)
 			end
-			
-			controller.start
-			
-			expect(controller.state_string).to be == "running"
-			
-			expect(input.read(2)).to be == ".,"
-			
-			controller.reload
-			
-			expect(input.read(1)).to be == ","
-			
-			controller.wait
-		end
-	end
-	
-	with "notify" do
-		before do
-			@notify_server = Async::Container::Notify::Server.open
-			@notify_client = Async::Container::Notify::Socket.new(@notify_server.path)
-			@notify = @notify_server.bind
-		end
-		
-		after do
-			@notify&.close
-		end
-		
-		let(:controller) {subject.new(notify: @notify_client)}
-		
-		it "sends status with ready notification on reload" do
-			def controller.setup(container)
-				container.spawn do |instance|
-					instance.ready!
-					sleep(0.1)
-				end
-			end
-			
-			controller.start
-			
-			# Drain the start ready message:
-			@notify.wait_until_ready
-			
-			controller.reload
-			
-			# Capture messages until we find the reload ready notification:
-			while message = @notify.receive
-				break if message[:ready]
-			end
-			
-			expect(message).to have_keys(
-				ready: be == true,
-				status: be =~ /Running/
-			)
 		end
 	end
 	
 	with "#start" do
 		it "can start up a container" do
-			expect(controller).to receive(:setup)
-			
-			controller.start
-			
-			expect(controller).to be(:running?)
-			expect(controller.container).not.to be_nil
-			
-			controller.stop
-			
-			expect(controller).not.to be(:running?)
-			expect(controller.container).to be_nil
+			Sync do
+				expect(controller).to receive(:setup)
+				
+				controller.start
+				
+				expect(controller).to be(:running?)
+				expect(controller.container).not.to be_nil
+				
+				controller.stop
+				
+				expect(controller).not.to be(:running?)
+				expect(controller.container).to be_nil
+			end
+		end
+		
+		it "doesn't restart a container if it's already running" do
+			Sync do
+				expect(controller).to receive(:setup)
+				
+				expect(controller.start).to be == true
+				expect(controller).to be(:running?)
+				
+				container = controller.container
+				
+				# Starting again is idempotent: it returns false and the container is not replaced.
+				expect(controller.start).to be == false
+				expect(controller.container).to be_equal(container)
+			ensure
+				controller.stop
+			end
 		end
 		
 		it "can spawn a reactor" do
-			def controller.setup(container)
-				container.async do |task|
-					task.sleep 0.001
+			Sync do
+				def controller.setup(container)
+					container.async do |task|
+						task.sleep 0.001
+					end
 				end
+				
+				controller.start
+				
+				statistics = controller.container.statistics
+				
+				expect(statistics.spawns).to be == 1
+				
+				controller.stop
 			end
-			
-			controller.start
-			
-			statistics = controller.container.statistics
-			
-			expect(statistics.spawns).to be == 1
-			
-			controller.stop
 		end
 		
 		it "propagates exceptions" do

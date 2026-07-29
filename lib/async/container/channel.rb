@@ -10,9 +10,9 @@ module Async
 		# Provides a basic multi-thread/multi-process uni-directional communication channel.
 		class Channel
 			# Initialize the channel using a pipe.
-			def initialize(timeout: 1.0)
+			def initialize(timeout: nil)
 				@in, @out = ::IO.pipe
-				@in.timeout = timeout
+				@in.timeout = timeout if timeout
 			end
 			
 			# The input end of the pipe.
@@ -46,8 +46,7 @@ module Async
 				if data = @in.gets
 					return JSON.parse(data, symbolize_names: true)
 				end
-			rescue => error
-				Console.error(self, "Error during channel receive!", error)
+			rescue JSON::ParserError
 				return nil
 			end
 		end

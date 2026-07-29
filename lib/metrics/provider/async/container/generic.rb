@@ -9,7 +9,7 @@ require "metrics/provider"
 Metrics::Provider(Async::Container::Generic) do
 	ASYNC_CONTAINER_GENERIC_HEALTH_CHECK_FAILED = Metrics.metric("async.container.generic.health_check_failed", :counter, description: "The number of health checks that failed.")
 	
-	protected def health_check_failed!(child, age_clock, health_check_timeout)
+	protected def health_check_failed(child, health_check_timeout)
 		ASYNC_CONTAINER_GENERIC_HEALTH_CHECK_FAILED.emit(1)
 		
 		super
