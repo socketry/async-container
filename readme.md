@@ -28,6 +28,10 @@ Please see the [project documentation](https://socketry.github.io/async-containe
 
 Please see the [project releases](https://socketry.github.io/async-container/releases/index) for all releases.
 
+### Unreleased
+
+  - Add `Async::Container::Signals` for installing scoped signal traps that enqueue signal events.
+
 ### v0.37.0
 
   - Rename `ASYNC_CONTAINER_GRACEFUL_TIMEOUT` to `ASYNC_CONTAINER_GRACEFUL_STOP` and apply it at the controller level as `GRACEFUL_STOP`. `Group#stop` now only applies the shutdown policy it is given.
@@ -63,10 +67,6 @@ Please see the [project releases](https://socketry.github.io/async-container/rel
 ### v0.34.0
 
   - Add `Async::Container::Generic#stopping?` so that policies can more accurately track the state of the container.
-
-### v0.33.0
-
-  - Add `Policy#make_statistics` to allow policies to customize statistics initialization.
 
 ## Contributing
 

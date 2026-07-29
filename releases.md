@@ -1,5 +1,11 @@
 # Releases
 
+## Unreleased
+
+  - Use `async-signals` to coordinate controller signal traps while queueing signal events through the controller event loop.
+  - Require `async-signals` v0.6 so controller signal handling is implicit only when running on the main thread without an existing fiber scheduler, and loading `async-container` installs graceful default `SIGINT`/`SIGTERM` handling.
+  - Remove the obsolete `Async::Container::Restart` signal exception.
+
 ## v0.37.0
 
   - Rename `ASYNC_CONTAINER_GRACEFUL_TIMEOUT` to `ASYNC_CONTAINER_GRACEFUL_STOP` and apply it at the controller level as `GRACEFUL_STOP`. `Group#stop` now only applies the shutdown policy it is given.
