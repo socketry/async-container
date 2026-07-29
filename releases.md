@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.38.0
 
   - Fork child processes from a clean fiber stack rather than a short-lived native thread, preserving child garbage collection while improving compatibility with native libraries.
 
