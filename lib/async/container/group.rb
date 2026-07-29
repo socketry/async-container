@@ -160,7 +160,7 @@ module Async
 					self.interrupt
 					
 					if graceful == true
-						graceful = DEFAULT_GRACEFUL_TIMEOUT
+						graceful = ENV.fetch("ASYNC_CONTAINER_GRACEFUL_STOP_TIMEOUT", DEFAULT_GRACEFUL_TIMEOUT).to_f
 					end
 					
 					clock = Clock.start

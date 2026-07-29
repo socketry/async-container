@@ -10,6 +10,9 @@ require_relative "statistics"
 require_relative "notify"
 require_relative "policy"
 
+# This sets up graceful handling of SIGINT and SIGTERM.
+require "async/signals/graceful"
+
 module Async
 	module Container
 		# The default graceful stop policy for controllers.
@@ -117,13 +120,18 @@ module Async
 			end
 			
 			# Start the container unless it's already running.
+			# @returns [Boolean] Whether a new container was started.
 			def start
 				unless @container
 					Console.info(self, "Controller starting...")
 					self.restart
+					
+					Console.info(self, "Controller started.")
+					
+					return true
 				end
 				
-				Console.info(self, "Controller started.")
+				return false
 			end
 			
 			# Stop the container if it's running.
@@ -183,32 +191,6 @@ module Async
 				if container
 					Console.warn(self, "Stopping failed container...", exception: error)
 					container.stop(false)
-				end
-			end
-			
-			# Reload the existing container. Children instances will be reloaded using `SIGHUP`.
-			def reload
-				@notify&.reloading!
-				
-				Console.info(self){"Reloading container: #{@container}..."}
-				
-				begin
-					self.setup(@container)
-				rescue
-					raise SetupError, container
-				end
-				
-				# Wait for all child processes to enter the ready state.
-				Console.info(self, "Waiting for startup...")
-				@container.wait_until_ready
-				Console.info(self, "Finished startup.")
-				
-				if @container.failed?
-					@notify.error!("Container failed to reload!")
-					
-					raise SetupError, @container
-				else
-					@notify&.ready!(size: @container.size, status: "Running with #{@container.size} children.")
 				end
 			end
 			

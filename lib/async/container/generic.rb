@@ -8,7 +8,6 @@ require "etc"
 require "async/clock"
 
 require_relative "group"
-require_relative "keyed"
 require_relative "statistics"
 require_relative "policy"
 
@@ -79,7 +78,7 @@ module Async
 			# Look up a child process by key.
 			# A key could be a symbol, a file path, or something else which the child instance represents.
 			def [] key
-				@keyed[key]&.value
+				@keyed[key]
 			end
 			
 			# Statistics relating to the behavior of children instances.
@@ -210,13 +209,13 @@ module Async
 			# Spawn a child instance into the container.
 			# @parameter name [String] The name of the child instance.
 			# @parameter restart [Boolean] Whether to restart the child instance if it fails.
-			# @parameter key [Symbol] A key used for reloading child instances.
+			# @parameter key [Symbol] An optional key used to look up (via {[]}) and reuse the child instance.
 			# @parameter health_check_timeout [Numeric | Nil] The maximum time a child instance can run without updating its state, before it is terminated as unhealthy.
 			# @parameter startup_timeout [Numeric | Nil] The maximum time a child instance can run without becoming ready, before it is terminated as unhealthy.
 			def spawn(name: nil, restart: false, key: nil, health_check_timeout: nil, startup_timeout: nil, &block)
 				name ||= UNNAMED
 				
-				if mark?(key)
+				if reuse?(key)
 					Console.debug(self, "Reusing existing child.", child: {key: key, name: name})
 					return false
 				end
@@ -326,32 +325,22 @@ module Async
 				end
 			end
 			
-			# Reload the container's keyed instances.
+			# Re-run the given block against the container.
+			#
+			# Existing keyed children are reused (see {spawn}), so re-running setup will not
+			# duplicate them. Reconciliation of children whose keys are no longer configured
+			# (i.e. stopping obsolete children) is not currently supported and will be revisited.
 			def reload
-				@keyed.each_value(&:clear!)
-				
 				yield
-				
-				dirty = false
-				
-				@keyed.delete_if do |key, value|
-					value.stop? && (dirty = true)
-				end
-				
-				return dirty
 			end
 			
-			# Mark the container's keyed instance which ensures that it won't be discarded.
-			def mark?(key)
+			# Whether a child instance already exists for the given key, in which case it can be reused rather than spawned again.
+			def reuse?(key)
 				if key
-					if value = @keyed[key]
-						value.mark!
-						
-						return true
-					end
+					@keyed.key?(key)
+				else
+					false
 				end
-				
-				return false
 			end
 			
 			# Whether a child instance exists for the given key.
@@ -366,7 +355,7 @@ module Async
 			# Register the child (value) as running.
 			def insert(key, child)
 				if key
-					@keyed[key] = Keyed.new(key, child)
+					@keyed[key] = child
 				end
 				
 				state = {}
