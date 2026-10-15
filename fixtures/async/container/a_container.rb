@@ -323,6 +323,8 @@ module Async
 				end
 				
 				it "can terminate a child process if it does not update its state within the specified time" do
+					expect(ASYNC_CONTAINER_GENERIC_HEALTH_CHECK_FAILED).to receive(:emit).with(1)
+					
 					container.spawn(health_check_timeout: 1.0) do |instance|
 						instance.ready!
 						
