@@ -136,27 +136,24 @@ module Async
 			# Wait until all the children instances have indicated that they are ready.
 			# @returns [Boolean] The children all became ready.
 			def wait_until_ready
-				while true
-					Console.debug(self) do |buffer|
-						buffer.puts "Waiting for ready:"
-						@state.each do |child, state|
-							buffer.puts "\t#{child.inspect}: #{state}"
-						end
-					end
-					
-					self.sleep
-					
-					if self.status?(:ready)
-						Console.debug(self) do |buffer|
-							buffer.puts "All ready:"
-							@state.each do |child, state|
-								buffer.puts "\t#{child.inspect}: #{state}"
-							end
-						end
-						
-						return true
+				Console.debug(self) do |buffer|
+					buffer.puts "Waiting for ready:"
+					@state.each do |child, state|
+						buffer.puts "\t#{child.inspect}: #{state}"
 					end
 				end
+				
+				# Health checks must run while waiting, or startup and health check timeouts are not enforced:
+				ready = @group.wait_until{self.status?(:ready)}
+				
+				Console.debug(self) do |buffer|
+					buffer.puts "All ready:"
+					@state.each do |child, state|
+						buffer.puts "\t#{child.inspect}: #{state}"
+					end
+				end
+				
+				return ready
 			end
 			
 			# Stop the children instances.

@@ -68,6 +68,19 @@ module Async
 				end
 			end
 			
+			# Wait for children, performing health checks, until the block returns true or no children remain.
+			# @yields {...} Called after each wait; return true to stop waiting.
+			# @returns [Boolean] The final result of the block.
+			def wait_until
+				with_health_checks do |duration|
+					self.wait_for_children(duration)
+					
+					return true if yield
+				end
+				
+				return yield
+			end
+			
 			private def with_health_checks
 				if @health_check_interval
 					health_check_clock = Clock.start
