@@ -41,6 +41,9 @@ module Async
 					def initialize(io)
 						super
 						
+						# Ruby closes IOs early during exit, which the parent would read as the child having exited. Leave it to the kernel:
+						io.autoclose = false
+						
 						@name = nil
 					end
 					
