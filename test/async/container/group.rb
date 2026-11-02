@@ -63,6 +63,13 @@ describe Async::Container::Group do
 		end
 	end
 	
+	with "#wait_until" do
+		it "returns the result of the block once no children remain" do
+			expect(group.wait_until{true}).to be == true
+			expect(group.wait_until{false}).to be == false
+		end
+	end
+	
 	with "#empty?" do
 		it "returns true for empty group" do
 			expect(group).to be(:empty?)

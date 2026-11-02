@@ -4,6 +4,7 @@
 # Copyright, 2019-2026, by Samuel Williams.
 
 require "async"
+require "timeout"
 
 module Async
 	module Container
@@ -350,6 +351,21 @@ module Async
 					container.wait
 					
 					expect(container.statistics).to have_attributes(failures: be > 0)
+				end
+			end
+			
+			with "#wait_until_ready" do
+				let(:container) {subject.new(health_check_interval: 0.05)}
+				
+				it "enforces startup_timeout while waiting" do
+					container.spawn(startup_timeout: 0.2){|instance| instance.ready!; sleep}
+					container.spawn(startup_timeout: 0.2){|instance| sleep}
+					
+					::Timeout.timeout(5){container.wait_until_ready}
+					
+					expect(container.size).to be == 1
+				ensure
+					container.stop(false)
 				end
 			end
 			
